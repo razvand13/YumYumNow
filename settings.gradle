@@ -1,4 +1,5 @@
-rootProject.name = 'template'
+rootProject.name = 'yumyumnow-orders'
 
-include 'authentication-microservice'
-include 'example-microservice'
+//include 'authentication-microservice'
+//include 'example-microservice'
+include 'orders-microservice'
