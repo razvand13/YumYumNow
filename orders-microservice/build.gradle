@@ -109,6 +109,11 @@ checkstyle {
 	maxWarnings = 0
 }
 
+tasks.withType(Checkstyle) {
+	exclude 'nl/tudelft/sem/template/api/*.java'
+	exclude 'nl/tudelft/sem/template/model/*.java'
+}
+
 pmd {
 	incrementalAnalysis = true
 	sourceSets = [sourceSets.main]
