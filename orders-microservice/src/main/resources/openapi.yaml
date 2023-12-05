@@ -1,0 +1,650 @@
+openapi: 3.0.0
+info:
+  title: YumYumNow Orders API
+  version: 1.0.0
+  description: API for handling orders in the YumYumNow application.
+tags:
+  - name: Customer
+    description: Operations available to customer users.
+  - name: Admin
+    description: Administrative operations.
+  - name: Vendor
+    description: Operations available to vendors.
+
+paths:
+  /order/{orderId}:
+    put:
+      tags:
+        - Order
+      summary: Update an order
+      description: Allows a vendor, courier or an admin to update details (status/special requirements) of a specific order.
+      parameters:
+        - in: path
+          name: orderId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  $ref: '#/components/schemas/Order'
+      responses:
+        '200':
+          description: Order status updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: Bad request - Invalid order or request format.
+        '401':
+          description: Unauthorized - User is not authorized to update orders.
+        '404':
+          description: Not Found - Order ID does not exist.
+          
+          
+          
+  /customer/{customerId}:
+    post:
+      tags:
+        - Customer
+      summary: Create a new order
+      description: Creates a new (mostly empty) order for the customer.
+      parameters:
+        - in: path
+          name: customerId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Address'
+      responses:
+        '200':
+          description: Newly created order object with orderId, customerId populated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: Bad Request - No location present.
+        '401':
+          description: Unauthorized - Not a customer user.
+        '404':
+          description: Not Found - User does not exist.
+
+  /customer/{customerId}/order/{orderId}/vendor:
+    get:
+      tags:
+        - Customer
+      summary: Get list of vendors
+      description: Returns list of vendors in a fixed radius around the location specified in the order object.
+      parameters:
+        - in: path
+          name: customerId
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: orderId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of vendors.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Vendor'
+        '401':
+          description: Unauthorized - Order does not belong to user.
+        '404':
+          description: Not Found - Order or user does not exist.
+
+  /customer/{customerId}/order/{orderId}/vendor/{vendorId}:
+    post:
+      tags:
+        - Customer
+      summary: Associate a vendor to an order
+      description: Associates a vendor to an order and returns available dishes.
+      parameters:
+        - in: path
+          name: customerId
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: orderId
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: vendorId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                searchBy:
+                  type: string
+                filterBy:
+                  type: object
+                  additionalProperties:
+                    type: string
+      responses:
+        '200':
+          description: List of dishes for the specified vendor.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Dish'
+        '401':
+          description: Unauthorized - Order does not belong to user.
+        '404':
+          description: Not Found - Order or vendor does not exist.
+  /customer/{customerId}/order/{orderId}/dish/{dishId}:
+    post:
+      tags:
+        - Customer
+      summary: Add dish to order
+      description: Adds the specified dish to the order.
+      parameters:
+        - in: path
+          name: customerId
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: orderId
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: dishId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quantity:
+                  type: integer
+                requirements:
+                  type: string
+      responses:
+        '200':
+          description: Dish added successfully, updated order returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: Bad Request - Dish not added to order.
+        '401':
+          description: Unauthorized - Order does not belong to user.
+        '404':
+          description: Not Found - Dish or order not found.
+
+    put:
+      tags:
+        - Customer
+      summary: Remove dish from order
+      description: Removes the specified quantity of a dish from the order.
+      parameters:
+        - in: path
+          name: customerId
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: orderId
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: dishId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quantity:
+                  type: integer
+      responses:
+        '200':
+          description: Quantity of dish reduced in order, updated order returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: Bad Request - Order not updated.
+        '401':
+          description: Unauthorized - Order does not belong to user.
+        '404':
+          description: Not Found - Order not found or dish not in order.
+  /customer/{customerId}/order/{orderId}/pay:
+    post:
+      tags:
+        - Customer
+      summary: Pay for an order
+      description: Processes payment for the specified order.
+      parameters:
+        - in: path
+          name: customerId
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: orderId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                paymentInformation:
+                  type: string
+                paymentOption:
+                  enum: [creditCard, iDEAL, GooglePay, ApplePay]
+      responses:
+        '200':
+          description: Payment processed successfully, order payment flag set to true.
+        '400':
+          description: Bad Request - Payment information missing or payment unsuccessful.
+        '401':
+          description: Unauthorized - Order does not belong to user.
+        '404':
+          description: Not Found - Order or user does not exist.
+
+  /customer/{customerId}/reorder:
+    get:
+      tags:
+        - Customer
+      summary: Get list of previous orders
+      description: Returns a list of previous orders for the specified user.
+      parameters:
+        - in: path
+          name: customerId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of previous orders.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+        '404':
+          description: Not Found - User does not exist.
+
+  /customer/{customerId}/reorder/{orderId}:
+    post:
+      tags:
+        - Customer
+      summary: Reorder based on a previous order
+      description: Creates a new order with identical contents as a previous order.
+      parameters:
+        - in: path
+          name: customerId
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: orderId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Address'
+      responses:
+        '200':
+          description: Successfully created duplicate order.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '404':
+          description: Not Found - Order ID does not exist.
+  /admin:
+    get:
+      tags:
+        - Admin
+      summary: View all orders
+      description: Allows an admin to view all orders in the system.
+      responses:
+        '200':
+          description: List of all orders.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+        '401':
+          description: Unauthorized - User not authenticated.
+        '403':
+          description: Forbidden - User is authenticated but not admin.
+
+  /admin/{orderId}:
+    put:
+      tags:
+        - Admin
+      summary: Modify a specific order
+      description: Allows an admin to modify any attribute of a specific order.
+      parameters:
+        - in: path
+          name: orderId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Order'
+      responses:
+        '200':
+          description: Order updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '401':
+          description: Unauthorized - User not authenticated.
+        '403':
+          description: Forbidden - User is authenticated but not admin.
+        '404':
+          description: Not Found - Order ID does not exist.
+
+    delete:
+      tags:
+        - Admin
+      summary: Remove an order
+      description: Allows an admin to remove any order from the system.
+      parameters:
+        - in: path
+          name: orderId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Order deleted successfully.
+        '401':
+          description: Unauthorized - User not authenticated.
+        '403':
+          description: Forbidden - User is authenticated but not admin.
+        '404':
+          description: Not Found - Order ID does not exist.
+  /vendor/{vendorId}/dish:
+    post:
+      tags:
+        - Vendor
+      summary: Add a new dish to the vendor menu
+      parameters:
+        - name: vendorId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Dish'
+      responses:
+        '200':
+          description: New dish has been added to the vendor menu
+        '401':
+          description: Unauthorized - User is not a vendor
+        '404':
+          description: Vendor not found
+  /vendor/{vendorId}/orders:
+    get:
+      tags:
+        - Vendor
+      summary: Get orders for a vendor
+      parameters:
+        - name: vendorId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, accepted, rejected, delivered]
+      responses:
+        '200':
+          description: List of orders for the vendor
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+        '404':
+          description: Vendor not found
+  /vendor/{vendorId}/orders/{orderId}:
+    get:
+      tags:
+        - Vendor
+      summary: Get details of a specific order
+      parameters:
+        - name: vendorId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Details of the specified order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '404':
+          description: Order not found
+  /vendor/{vendorId}/dish/{dishId}:
+    delete:
+      tags:
+        - Vendor
+      summary: Delete a dish from the menu
+      parameters:
+        - name: vendorId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: dishId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Dish deleted successfully
+        '404':
+          description: Dish not found
+
+    post:
+      tags:
+        - Vendor
+      summary: Update details of a dish
+      parameters:
+        - name: vendorId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: dishId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Dish'
+      responses:
+        '200':
+          description: Dish updated successfully
+        '400':
+          description: Bad request - missing fields or wrong parameter types
+        '404':
+          description: Dish not found
+
+components:
+  schemas:
+    Order:
+      type: object
+      properties:
+        ID:
+          type: integer
+        dishes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Dish'
+        location:
+          $ref: '#/components/schemas/Address'
+        specialRequirements:
+          type: array
+          items:
+            type: string
+        status:
+          $ref: '#/components/schemas/Status'
+        totalPrice:
+          type: number
+          format: double
+        vendorId:
+          type: integer
+        customerId:
+          type: integer
+
+    Address:
+      type: object
+      properties:
+        houseNumber:
+          type: integer
+        street:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        zip:
+          type: string
+        Longitude:
+          type: number
+          format: double
+        Latitude:
+          type: number
+          format: double
+
+    Vendor:
+      type: object
+      properties:
+        ID:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        dishes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Dish'
+        location:
+          $ref: '#/components/schemas/Address'
+
+    Dish:
+      type: object
+      properties:
+        ID:
+          type: integer
+        name:
+          type: string
+        imageLink:
+          type: string
+        price:
+          type: number
+          format: double
+        allergens:
+          type: array
+          items:
+            type: string
+        ingredients:
+          type: array
+          items:
+            type: string
+        description:
+          type: string
+
+    Status:
+      type: string
+      enum:
+        - pending
+        - accepted
+        - rejected
+        - preparing
+        - givenToCourier
+        - onTransit
+        - delivered
+
+    Payment:
+      type: string
+      enum:
+        - creditCard
+        - iDEAL
+        - GooglePay
+        - ApplePay
+
