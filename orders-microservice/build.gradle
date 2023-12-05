@@ -117,6 +117,13 @@ tasks.withType(Checkstyle) {
 pmd {
 	incrementalAnalysis = true
 	sourceSets = [sourceSets.main]
+
+	pmdMain {
+		excludes = [
+				'nl/tudelft/sem/template/api/*.java',
+				'nl/tudelft/sem/template/model/*.java'
+		]
+	}
 }
 
 apply plugin: 'info.solidsoft.pitest'
