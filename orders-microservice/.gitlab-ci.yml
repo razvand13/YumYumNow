@@ -42,7 +42,7 @@ checkStyle-orders-microservice:
   allow_failure: true
 
 
-PMD-example-microservice:
+PMD-orders-microservice:
   extends:
     - .build_cached
   needs:
@@ -54,7 +54,7 @@ PMD-example-microservice:
     gradle orders-microservice:pmdMain
   allow_failure: true
 
-test-example-microservice:
+test-orders-microservice:
   extends:
     - .build_cached
   needs:
