@@ -1,4 +1,4 @@
-package nl.tudelft.sem.template.orders.repositories;
+package nl.tudelft.sem.template.orders.entities.status;
 
 import java.util.UUID;
 import nl.tudelft.sem.template.model.Status;
