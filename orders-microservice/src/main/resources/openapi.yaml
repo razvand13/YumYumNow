@@ -1316,6 +1316,7 @@ components:
   schemas:
     Order:
       type: object
+      x-class-extra-annotation: "@javax.persistence.Entity"
       properties:
         ID:
           type: string
@@ -1346,6 +1347,7 @@ components:
 
     Address:
       type: object
+      x-class-extra-annotation: "@javax.persistence.Entity"
       properties:
         houseNumber:
           type: integer
@@ -1360,6 +1362,7 @@ components:
 
     Vendor:
       type: object
+      x-class-extra-annotation: "@javax.persistence.Entity"
       properties:
         ID:
           type: string
@@ -1371,6 +1374,7 @@ components:
 
     Dish:
       type: object
+      x-class-extra-annotation: "@javax.persistence.Entity"
       properties:
         ID:
           type: string
@@ -1397,6 +1401,7 @@ components:
           format: uuid
 
     Status:
+      x-class-extra-annotation: "@javax.persistence.Entity"
       type: string
       enum:
         - pending
@@ -1410,6 +1415,7 @@ components:
         
     Payment:
       type: string
+      x-class-extra-annotation: "@javax.persistence.Entity"
       enum:
         - creditCard
         - iDeal
@@ -1419,6 +1425,7 @@ components:
         
     Analytics:
       type: object
+      x-class-extra-annotation: "@javax.persistence.Entity"
       properties:
         orderVolumes:
           type: integer

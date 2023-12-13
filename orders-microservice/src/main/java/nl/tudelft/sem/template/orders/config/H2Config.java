@@ -1,6 +1,5 @@
 package nl.tudelft.sem.template.orders.config;
 
-import javax.sql.DataSource;
 import lombok.Getter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,12 +9,14 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
+import javax.sql.DataSource;
+
 
 /**
  * The H2 config.
  */
 @Configuration
-@EnableJpaRepositories("nl.tudelft.sem.template.example.domain")
+@EnableJpaRepositories("orders-microservice")
 @PropertySource("classpath:application-dev.properties")
 @EnableTransactionManagement
 public class H2Config {
