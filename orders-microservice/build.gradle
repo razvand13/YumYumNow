@@ -170,6 +170,14 @@ openApiGenerate {
 	configOptions = [
 			interfaceOnly: 'true'
 	]
+
+	schemaMappings.set([
+	        "Vendor":"nl.tudelft.sem.template.orders.entities.Vendor",
+			"Address":"nl.tudelft.sem.template.orders.entities.Address",
+			"Order":"nl.tudelft.sem.template.orders.entities.Order",
+			"Status":"nl.tudelft.sem.template.orders.entities.Status",
+			"Dish":"nl.tudelft.sem.template.orders.entities.Dish"
+	])
 }
 
 compileJava.dependsOn tasks.named("openApiGenerate")
