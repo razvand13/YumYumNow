@@ -2,14 +2,13 @@ package nl.tudelft.sem.template.orders.entities;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
-
-import javax.persistence.*;
-import javax.validation.Valid;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import javax.persistence.*;
+import javax.validation.Valid;
 
 /**
  * Analytics
@@ -35,7 +34,7 @@ public class Analytics {
 
 
     /**
-     * Total number of orders for the vendor
+     * Total number of orders for the vendor.
      * @return orderVolumes
      */
 
@@ -58,7 +57,7 @@ public class Analytics {
     }
 
     /**
-     * Get popularItems
+     * Get popularItems.
      * @return popularItems
      */
     @Valid
@@ -81,7 +80,7 @@ public class Analytics {
     }
 
     /**
-     * Times when the highest number of orders are placed
+     * Times when the highest number of orders are placed.
      * @return peakOrderingTimes
      */
     @Valid
@@ -104,7 +103,7 @@ public class Analytics {
     }
 
     /**
-     * Get customerPreferences
+     * Get customerPreferences.
      * @return customerPreferences
      */
     @Valid
@@ -151,7 +150,7 @@ public class Analytics {
     }
 
     /**
-     * Convert the given object to string with each line indented by 4 spaces
+     * Convert the given object to string with each line indented by 4 spaces.
      * (except the first line).
      */
     private String toIndentedString(Object o) {

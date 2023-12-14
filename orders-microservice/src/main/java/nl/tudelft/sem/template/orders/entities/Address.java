@@ -2,13 +2,12 @@ package nl.tudelft.sem.template.orders.entities;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
-
+import java.util.Objects;
+import java.util.UUID;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import java.util.Objects;
-import java.util.UUID;
 
 /**
  * Address.
@@ -30,13 +29,13 @@ public class Address {
     private Double latitude;
 
     /**
-     * Get houseNumber
+     * Get houseNumber.
      * @return houseNumber
     */
     @Schema(name = "houseNumber", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     @JsonProperty("houseNumber")
     public Integer getHouseNumber() {
-       return houseNumber;
+        return houseNumber;
     }
 
     public void setHouseNumber(Integer houseNumber) {
@@ -44,7 +43,7 @@ public class Address {
     }
 
     /**
-     * Get zip
+     * Get zip.
      * @return zip
     */
 
@@ -59,7 +58,7 @@ public class Address {
     }
 
     /**
-     * Get longitude
+     * Get longitude.
      * @return longitude
     */
 
@@ -70,11 +69,11 @@ public class Address {
     }
 
     public void setLongitude(Double longitude) {
-       this.longitude = longitude;
+        this.longitude = longitude;
     }
 
     /**
-     * Get latitude
+     * Get latitude.
      * @return latitude
     */
     @Schema(name = "latitude", requiredMode = Schema.RequiredMode.NOT_REQUIRED)

@@ -2,20 +2,18 @@ package nl.tudelft.sem.template.orders.entities;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
-import org.springframework.format.annotation.DateTimeFormat;
-
-import javax.persistence.*;
-import javax.validation.Valid;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import javax.persistence.*;
+import javax.validation.Valid;
+import org.springframework.format.annotation.DateTimeFormat;
 
 /**
  * Order
  */
-
 @Entity
 @Table(name = "CUSTOMER_ORDER")
 public class Order {
@@ -46,7 +44,7 @@ public class Order {
     private UUID customerId;
 
     /**
-     * Get ID
+     * Get ID.
      * @return ID
      */
     @Valid
@@ -69,7 +67,7 @@ public class Order {
     }
 
     /**
-     * Get dishes
+     * Get dishes.
      * @return dishes
      */
     @Valid
@@ -84,7 +82,7 @@ public class Order {
     }
 
     /**
-     * Get location
+     * Get location.
      * @return location
      */
     @Valid
@@ -99,7 +97,7 @@ public class Order {
     }
 
     /**
-     * Get specialRequirements
+     * Get specialRequirements.
      * @return specialRequirements
      */
 
@@ -114,7 +112,7 @@ public class Order {
     }
 
     /**
-     * Get status
+     * Get status.
      * @return status
      */
     @Valid
@@ -129,7 +127,7 @@ public class Order {
     }
 
     /**
-     * Get totalPrice
+     * Get totalPrice.
      * @return totalPrice
      */
 
@@ -159,7 +157,7 @@ public class Order {
     }
 
     /**
-     * Get vendorId
+     * Get vendorId.
      * @return vendorId
      */
     @Valid
@@ -174,7 +172,7 @@ public class Order {
     }
 
     /**
-     * Get customerId
+     * Get customerId.
      * @return customerId
      */
     @Valid
@@ -197,15 +195,15 @@ public class Order {
             return false;
         }
         Order order = (Order) o;
-        return Objects.equals(this.ID, order.ID) &&
-                Objects.equals(this.dishes, order.dishes) &&
-                Objects.equals(this.location, order.location) &&
-                Objects.equals(this.specialRequirements, order.specialRequirements) &&
-                Objects.equals(this.status, order.status) &&
-                Objects.equals(this.totalPrice, order.totalPrice) &&
-                Objects.equals(this.orderTime, order.orderTime) &&
-                Objects.equals(this.vendorId, order.vendorId) &&
-                Objects.equals(this.customerId, order.customerId);
+        return Objects.equals(this.ID, order.ID)
+                && Objects.equals(this.dishes, order.dishes)
+                && Objects.equals(this.location, order.location)
+                && Objects.equals(this.specialRequirements, order.specialRequirements)
+                && Objects.equals(this.status, order.status)
+                && Objects.equals(this.totalPrice, order.totalPrice)
+                && Objects.equals(this.orderTime, order.orderTime)
+                && Objects.equals(this.vendorId, order.vendorId)
+                && Objects.equals(this.customerId, order.customerId);
     }
 
     @Override

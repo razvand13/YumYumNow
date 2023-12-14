@@ -2,14 +2,12 @@ package nl.tudelft.sem.template.orders.entities;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
-import org.hibernate.annotations.TypeDef;
-
-import javax.persistence.*;
-import javax.validation.Valid;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import javax.persistence.*;
+import javax.validation.Valid;
 
 /**
  * Dish
@@ -41,7 +39,7 @@ public class Dish {
     private Vendor vendor;
 
     /**
-     * Get ID
+     * Get ID.
      * @return ID
      */
     @Valid
@@ -56,7 +54,7 @@ public class Dish {
     }
 
     /**
-     * Get name
+     * Get name.
      * @return name
      */
 
@@ -71,7 +69,7 @@ public class Dish {
     }
 
     /**
-     * Get imageLink
+     * Get imageLink.
      * @return imageLink
      */
 
@@ -86,7 +84,7 @@ public class Dish {
     }
 
     /**
-     * Get price
+     * Get price.
      * @return price
      */
 
@@ -109,7 +107,7 @@ public class Dish {
     }
 
     /**
-     * Get allergens
+     * Get allergens.
      * @return allergens
      */
 
@@ -132,7 +130,7 @@ public class Dish {
     }
 
     /**
-     * Get ingredients
+     * Get ingredients.
      * @return ingredients
      */
 
@@ -147,7 +145,7 @@ public class Dish {
     }
 
     /**
-     * Get description
+     * Get description.
      * @return description
      */
 
@@ -162,7 +160,7 @@ public class Dish {
     }
 
     /**
-     * Get vendorId
+     * Get vendorId.
      * @return vendorId
      */
     @Valid
@@ -185,14 +183,14 @@ public class Dish {
             return false;
         }
         Dish dish = (Dish) o;
-        return Objects.equals(this.ID, dish.ID) &&
-                Objects.equals(this.name, dish.name) &&
-                Objects.equals(this.imageLink, dish.imageLink) &&
-                Objects.equals(this.price, dish.price) &&
-                Objects.equals(this.allergens, dish.allergens) &&
-                Objects.equals(this.ingredients, dish.ingredients) &&
-                Objects.equals(this.description, dish.description) &&
-                Objects.equals(this.vendor, dish.vendor);
+        return Objects.equals(this.ID, dish.ID)
+                && Objects.equals(this.name, dish.name)
+                && Objects.equals(this.imageLink, dish.imageLink)
+                && Objects.equals(this.price, dish.price)
+                && Objects.equals(this.allergens, dish.allergens)
+                && Objects.equals(this.ingredients, dish.ingredients)
+                && Objects.equals(this.description, dish.description)
+                && Objects.equals(this.vendor, dish.vendor);
     }
 
     @Override
