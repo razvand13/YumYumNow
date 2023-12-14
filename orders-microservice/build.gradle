@@ -177,7 +177,7 @@ compileJava.dependsOn tasks.named("openApiGenerate")
 sourceSets {
 	getByName("main") {
 		java {
-			srcDir("$buildDir/src/main/java")
+			srcDir("$buildDir/generated/src/main/java")
 		}
 	}
 }

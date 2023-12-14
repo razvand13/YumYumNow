@@ -32,7 +32,6 @@ public class Analytics {
     @Embedded
     private List<AnalyticsCustomerPreferences> customerPreferences;
 
-
     /**
      * Total number of orders for the vendor.
      * @return orderVolumes
