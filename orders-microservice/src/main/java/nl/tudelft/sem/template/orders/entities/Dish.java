@@ -2,6 +2,7 @@ package nl.tudelft.sem.template.orders.entities;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
+import org.hibernate.annotations.TypeDef;
 
 import javax.persistence.*;
 import javax.validation.Valid;
@@ -15,7 +16,7 @@ import java.util.UUID;
  */
 
 @Entity
-public class DishEntity {
+public class Dish {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,17 +28,17 @@ public class DishEntity {
 
     private Double price;
 
-    @Valid
     @ElementCollection
     private List<String> allergens;
 
-    @Valid
     @ElementCollection
     private List<String> ingredients;
 
     private String description;
 
-    private UUID vendorId;
+    @ManyToOne
+    @JoinColumn(name = "vendorId", referencedColumnName = "ID")
+    private Vendor vendor;
 
     /**
      * Get ID
@@ -99,7 +100,7 @@ public class DishEntity {
         this.price = price;
     }
 
-    public DishEntity addAllergensItem(String allergensItem) {
+    public Dish addAllergensItem(String allergensItem) {
         if (this.allergens == null) {
             this.allergens = new ArrayList<>();
         }
@@ -122,7 +123,7 @@ public class DishEntity {
         this.allergens = allergens;
     }
 
-    public DishEntity addIngredientsItem(String ingredientsItem) {
+    public Dish addIngredientsItem(String ingredientsItem) {
         if (this.ingredients == null) {
             this.ingredients = new ArrayList<>();
         }
@@ -167,12 +168,12 @@ public class DishEntity {
     @Valid
     @Schema(name = "vendorId", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     @JsonProperty("vendorId")
-    public UUID getVendorId() {
-        return vendorId;
+    public Vendor getVendor() {
+        return vendor;
     }
 
-    public void setVendorId(UUID vendorId) {
-        this.vendorId = vendorId;
+    public void setVendor(Vendor vendor) {
+        this.vendor = vendor;
     }
 
     @Override
@@ -183,7 +184,7 @@ public class DishEntity {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        DishEntity dish = (DishEntity) o;
+        Dish dish = (Dish) o;
         return Objects.equals(this.ID, dish.ID) &&
                 Objects.equals(this.name, dish.name) &&
                 Objects.equals(this.imageLink, dish.imageLink) &&
@@ -191,12 +192,12 @@ public class DishEntity {
                 Objects.equals(this.allergens, dish.allergens) &&
                 Objects.equals(this.ingredients, dish.ingredients) &&
                 Objects.equals(this.description, dish.description) &&
-                Objects.equals(this.vendorId, dish.vendorId);
+                Objects.equals(this.vendor, dish.vendor);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(ID, name, imageLink, price, allergens, ingredients, description, vendorId);
+        return Objects.hash(ID, name, imageLink, price, allergens, ingredients, description, vendor);
     }
 
     @Override
@@ -210,7 +211,7 @@ public class DishEntity {
         sb.append("    allergens: ").append(toIndentedString(allergens)).append("\n");
         sb.append("    ingredients: ").append(toIndentedString(ingredients)).append("\n");
         sb.append("    description: ").append(toIndentedString(description)).append("\n");
-        sb.append("    vendorId: ").append(toIndentedString(vendorId)).append("\n");
+        sb.append("    vendorId: ").append(toIndentedString(vendor)).append("\n");
         sb.append("}");
         return sb.toString();
     }

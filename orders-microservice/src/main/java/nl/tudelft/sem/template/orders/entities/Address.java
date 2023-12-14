@@ -15,11 +15,11 @@ import java.util.UUID;
  */
 
 @Entity
-public class AddressEntity {
+public class Address {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private UUID Id;
+    private UUID ID;
 
     private Integer houseNumber;
 
@@ -95,7 +95,7 @@ public class AddressEntity {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        AddressEntity address = (AddressEntity) o;
+        Address address = (Address) o;
         return Objects.equals(this.houseNumber, address.houseNumber)
                 && Objects.equals(this.zip, address.zip)
                 && Objects.equals(this.longitude, address.longitude)

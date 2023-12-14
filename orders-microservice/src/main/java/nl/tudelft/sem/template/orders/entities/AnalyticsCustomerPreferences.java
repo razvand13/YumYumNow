@@ -1,11 +1,6 @@
 package nl.tudelft.sem.template.orders.entities;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.swagger.v3.oas.annotations.media.Schema;
-
-import javax.persistence.*;
-import javax.validation.Valid;
+import javax.persistence.Embeddable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -15,30 +10,19 @@ import java.util.UUID;
  * Customer-specific preferences based on most frequently ordered dishes
  */
 
-@Schema(name = "Analytics_customerPreferences_inner", description = "Customer-specific preferences based on most frequently ordered dishes")
-@JsonTypeName("Analytics_customerPreferences_inner")
-@Entity
-public class AnalyticsCustomerPreferencesInner {
+@Embeddable
+public class AnalyticsCustomerPreferences {
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
   private UUID customerId;
 
-  @Valid
-  @OneToMany(cascade = CascadeType.ALL)
-  private List<@Valid DishEntity> mostOrderedDishes;
+  private List<Dish> mostOrderedDishes;
 
-  @ManyToOne
-  @JoinColumn(name = "analytics_entity_id")
-  private AnalyticsEntity analyticsEntity;
+  private Analytics analyticsEntity;
 
   /**
    * The unique identifier of the customer
    * @return customerId
-  */
-  @Valid 
-  @Schema(name = "customerId", description = "The unique identifier of the customer", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-  @JsonProperty("customerId")
+   */
   public UUID getCustomerId() {
     return customerId;
   }
@@ -47,7 +31,7 @@ public class AnalyticsCustomerPreferencesInner {
     this.customerId = customerId;
   }
 
-  public AnalyticsCustomerPreferencesInner addMostOrderedDishesItem(DishEntity mostOrderedDishesItem) {
+  public AnalyticsCustomerPreferences addMostOrderedDishesItem(Dish mostOrderedDishesItem) {
     if (this.mostOrderedDishes == null) {
       this.mostOrderedDishes = new ArrayList<>();
     }
@@ -58,23 +42,20 @@ public class AnalyticsCustomerPreferencesInner {
   /**
    * Most frequently ordered dishes by the specific customer
    * @return mostOrderedDishes
-  */
-  @Valid 
-  @Schema(name = "mostOrderedDishes", description = "Most frequently ordered dishes by the specific customer", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-  @JsonProperty("mostOrderedDishes")
-  public List<@Valid DishEntity> getMostOrderedDishes() {
+   */
+  public List<Dish> getMostOrderedDishes() {
     return mostOrderedDishes;
   }
 
-  public void setMostOrderedDishes(List<@Valid DishEntity> mostOrderedDishes) {
+  public void setMostOrderedDishes(List<Dish> mostOrderedDishes) {
     this.mostOrderedDishes = mostOrderedDishes;
   }
 
-  public AnalyticsEntity getAnalyticsEntity() {
+  public Analytics getAnalyticsEntity() {
     return analyticsEntity;
   }
 
-  public void setAnalyticsEntity(AnalyticsEntity analyticsEntity) {
+  public void setAnalyticsEntity(Analytics analyticsEntity) {
     this.analyticsEntity = analyticsEntity;
   }
 
@@ -86,9 +67,9 @@ public class AnalyticsCustomerPreferencesInner {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    AnalyticsCustomerPreferencesInner analyticsCustomerPreferencesInner = (AnalyticsCustomerPreferencesInner) o;
-    return Objects.equals(this.customerId, analyticsCustomerPreferencesInner.customerId) &&
-        Objects.equals(this.mostOrderedDishes, analyticsCustomerPreferencesInner.mostOrderedDishes);
+    AnalyticsCustomerPreferences analyticsCustomerPreferences = (AnalyticsCustomerPreferences) o;
+    return Objects.equals(this.customerId, analyticsCustomerPreferences.customerId) &&
+            Objects.equals(this.mostOrderedDishes, analyticsCustomerPreferences.mostOrderedDishes);
   }
 
   @Override

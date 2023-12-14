@@ -16,25 +16,22 @@ import java.util.UUID;
  */
 
 @Entity
-public class AnalyticsEntity {
+public class Analytics {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private UUID itemId;
+    private UUID ID;
 
     private Integer orderVolumes;
 
-    @Valid
-    @OneToMany(mappedBy = "analyticsEntity", cascade = CascadeType.ALL)
-    private List<@Valid AnalyticsPopularItemsInner> popularItems;
+    @Embedded
+    private List<AnalyticsPopularItems> popularItems;
 
-    @Valid
-    @ElementCollection
+    @Embedded
     private List<OffsetDateTime> peakOrderingTimes;
 
-    @Valid
-    @OneToMany(mappedBy = "analyticsEntity", cascade = CascadeType.ALL)
-    private List<@Valid AnalyticsCustomerPreferencesInner> customerPreferences;
+    @Embedded
+    private List<AnalyticsCustomerPreferences> customerPreferences;
 
 
     /**
@@ -52,7 +49,7 @@ public class AnalyticsEntity {
         this.orderVolumes = orderVolumes;
     }
 
-    public AnalyticsEntity addPopularItemsItem(AnalyticsPopularItemsInner popularItemsItem) {
+    public Analytics addPopularItemsItem(AnalyticsPopularItems popularItemsItem) {
         if (this.popularItems == null) {
             this.popularItems = new ArrayList<>();
         }
@@ -67,15 +64,15 @@ public class AnalyticsEntity {
     @Valid
     @Schema(name = "popularItems", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     @JsonProperty("popularItems")
-    public List<@Valid AnalyticsPopularItemsInner> getPopularItems() {
+    public List<@Valid AnalyticsPopularItems> getPopularItems() {
         return popularItems;
     }
 
-    public void setPopularItems(List<@Valid AnalyticsPopularItemsInner> popularItems) {
+    public void setPopularItems(List<@Valid AnalyticsPopularItems> popularItems) {
         this.popularItems = popularItems;
     }
 
-    public AnalyticsEntity addPeakOrderingTimesItem(OffsetDateTime peakOrderingTimesItem) {
+    public Analytics addPeakOrderingTimesItem(OffsetDateTime peakOrderingTimesItem) {
         if (this.peakOrderingTimes == null) {
             this.peakOrderingTimes = new ArrayList<>();
         }
@@ -98,7 +95,7 @@ public class AnalyticsEntity {
         this.peakOrderingTimes = peakOrderingTimes;
     }
 
-    public AnalyticsEntity addCustomerPreferencesItem(AnalyticsCustomerPreferencesInner customerPreferencesItem) {
+    public Analytics addCustomerPreferencesItem(AnalyticsCustomerPreferences customerPreferencesItem) {
         if (this.customerPreferences == null) {
             this.customerPreferences = new ArrayList<>();
         }
@@ -113,11 +110,11 @@ public class AnalyticsEntity {
     @Valid
     @Schema(name = "customerPreferences", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     @JsonProperty("customerPreferences")
-    public List<@Valid AnalyticsCustomerPreferencesInner> getCustomerPreferences() {
+    public List<@Valid AnalyticsCustomerPreferences> getCustomerPreferences() {
         return customerPreferences;
     }
 
-    public void setCustomerPreferences(List<@Valid AnalyticsCustomerPreferencesInner> customerPreferences) {
+    public void setCustomerPreferences(List<@Valid AnalyticsCustomerPreferences> customerPreferences) {
         this.customerPreferences = customerPreferences;
     }
 
@@ -129,7 +126,7 @@ public class AnalyticsEntity {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        AnalyticsEntity analytics = (AnalyticsEntity) o;
+        Analytics analytics = (Analytics) o;
         return Objects.equals(this.orderVolumes, analytics.orderVolumes) &&
                 Objects.equals(this.popularItems, analytics.popularItems) &&
                 Objects.equals(this.peakOrderingTimes, analytics.peakOrderingTimes) &&

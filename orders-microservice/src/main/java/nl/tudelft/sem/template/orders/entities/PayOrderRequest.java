@@ -18,7 +18,7 @@ public class PayOrderRequest {
 
   private String paymentInformation;
 
-  private PaymentEntity paymentOption = PaymentEntity.IDEAL;
+  private Payment paymentOption = Payment.IDEAL;
 
   /**
    * Get paymentInformation
@@ -42,11 +42,11 @@ public class PayOrderRequest {
   @Valid 
   @Schema(name = "paymentOption", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
   @JsonProperty("paymentOption")
-  public PaymentEntity getPaymentOption() {
+  public Payment getPaymentOption() {
     return paymentOption;
   }
 
-  public void setPaymentOption(PaymentEntity paymentOption) {
+  public void setPaymentOption(Payment paymentOption) {
     this.paymentOption = paymentOption;
   }
 

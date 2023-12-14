@@ -17,7 +17,8 @@ import java.util.UUID;
  */
 
 @Entity
-public class OrderEntity {
+@Table(name = "CUSTOMER_ORDER")
+public class Order {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,14 +26,15 @@ public class OrderEntity {
 
     @Valid
     @OneToMany(cascade = CascadeType.ALL)
-    private List<@Valid DishEntity> dishes;
+    @JoinColumn(name = "order_id")
+    private List<@Valid Dish> dishes;
 
     @ManyToOne
-    private AddressEntity location;
+    private Address location;
 
     private String specialRequirements;
 
-    private StatusEntity status;
+    private Status status;
 
     private Double totalPrice;
 
@@ -58,7 +60,7 @@ public class OrderEntity {
         this.ID = ID;
     }
 
-    public OrderEntity addDishesItem(DishEntity dishesItem) {
+    public Order addDishesItem(Dish dishesItem) {
         if (this.dishes == null) {
             this.dishes = new ArrayList<>();
         }
@@ -73,11 +75,11 @@ public class OrderEntity {
     @Valid
     @Schema(name = "dishes", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     @JsonProperty("dishes")
-    public List<@Valid DishEntity> getDishes() {
+    public List<@Valid Dish> getDishes() {
         return dishes;
     }
 
-    public void setDishes(List<@Valid DishEntity> dishes) {
+    public void setDishes(List<@Valid Dish> dishes) {
         this.dishes = dishes;
     }
 
@@ -88,11 +90,11 @@ public class OrderEntity {
     @Valid
     @Schema(name = "location", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     @JsonProperty("location")
-    public AddressEntity getLocation() {
+    public Address getLocation() {
         return location;
     }
 
-    public void setLocation(AddressEntity location) {
+    public void setLocation(Address location) {
         this.location = location;
     }
 
@@ -118,11 +120,11 @@ public class OrderEntity {
     @Valid
     @Schema(name = "status", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     @JsonProperty("status")
-    public StatusEntity getStatus() {
+    public Status getStatus() {
         return status;
     }
 
-    public void setStatus(StatusEntity status) {
+    public void setStatus(Status status) {
         this.status = status;
     }
 
@@ -194,7 +196,7 @@ public class OrderEntity {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        OrderEntity order = (OrderEntity) o;
+        Order order = (Order) o;
         return Objects.equals(this.ID, order.ID) &&
                 Objects.equals(this.dishes, order.dishes) &&
                 Objects.equals(this.location, order.location) &&

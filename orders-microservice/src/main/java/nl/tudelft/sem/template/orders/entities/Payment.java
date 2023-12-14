@@ -7,7 +7,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * Gets or Sets Payment
  */
 
-public enum PaymentEntity {
+public enum Payment {
 
     CREDITCARD("creditCard"),
 
@@ -19,7 +19,7 @@ public enum PaymentEntity {
 
     private String value;
 
-    PaymentEntity(String value) {
+    Payment(String value) {
         this.value = value;
     }
 
@@ -34,8 +34,8 @@ public enum PaymentEntity {
     }
 
     @JsonCreator
-    public static PaymentEntity fromValue(String value) {
-        for (PaymentEntity b : PaymentEntity.values()) {
+    public static Payment fromValue(String value) {
+        for (Payment b : Payment.values()) {
             if (b.value.equals(value)) {
                 return b;
             }

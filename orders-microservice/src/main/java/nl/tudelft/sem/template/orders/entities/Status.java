@@ -7,7 +7,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * Gets or Sets Status
  */
 
-public enum StatusEntity {
+public enum Status {
 
     PENDING("pending"),
 
@@ -25,7 +25,7 @@ public enum StatusEntity {
 
     private String value;
 
-    StatusEntity(String value) {
+    Status(String value) {
         this.value = value;
     }
 
@@ -40,8 +40,8 @@ public enum StatusEntity {
     }
 
     @JsonCreator
-    public static StatusEntity fromValue(String value) {
-        for (StatusEntity b : StatusEntity.values()) {
+    public static Status fromValue(String value) {
+        for (Status b : Status.values()) {
             if (b.value.equals(value)) {
                 return b;
             }

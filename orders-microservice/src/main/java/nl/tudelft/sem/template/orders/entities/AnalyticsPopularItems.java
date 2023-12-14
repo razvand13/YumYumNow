@@ -12,30 +12,22 @@ import java.util.UUID;
  * List of popular items based on order frequency
  */
 
-@Schema(name = "Analytics_popularItems_inner", description = "List of popular items based on order frequency")
-@JsonTypeName("Analytics_popularItems_inner")
-@Entity
-public class AnalyticsPopularItemsInner {
+@Embeddable
+public class AnalyticsPopularItems {
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
   private UUID itemId;
 
   private String itemName;
 
   private Integer orderCount;
 
-  @ManyToOne
-  @JoinColumn(name = "analytics_entity_id")
-  private AnalyticsEntity analyticsEntity;
+  private Analytics analyticsEntity;
 
   /**
    * Get itemId
    * @return itemId
   */
 
-  @Schema(name = "itemId", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-  @JsonProperty("itemId")
   public UUID getItemId() {
     return itemId;
   }
@@ -49,8 +41,6 @@ public class AnalyticsPopularItemsInner {
    * @return itemName
   */
 
-  @Schema(name = "itemName", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-  @JsonProperty("itemName")
   public String getItemName() {
     return itemName;
   }
@@ -64,8 +54,6 @@ public class AnalyticsPopularItemsInner {
    * @return orderCount
   */
 
-  @Schema(name = "orderCount", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-  @JsonProperty("orderCount")
   public Integer getOrderCount() {
     return orderCount;
   }
@@ -82,10 +70,10 @@ public class AnalyticsPopularItemsInner {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    AnalyticsPopularItemsInner analyticsPopularItemsInner = (AnalyticsPopularItemsInner) o;
-    return Objects.equals(this.itemId, analyticsPopularItemsInner.itemId) &&
-        Objects.equals(this.itemName, analyticsPopularItemsInner.itemName) &&
-        Objects.equals(this.orderCount, analyticsPopularItemsInner.orderCount);
+    AnalyticsPopularItems analyticsPopularItems = (AnalyticsPopularItems) o;
+    return Objects.equals(this.itemId, analyticsPopularItems.itemId) &&
+        Objects.equals(this.itemName, analyticsPopularItems.itemName) &&
+        Objects.equals(this.orderCount, analyticsPopularItems.orderCount);
   }
 
   @Override

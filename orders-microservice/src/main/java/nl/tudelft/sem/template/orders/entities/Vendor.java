@@ -15,15 +15,15 @@ import java.util.UUID;
  */
 
 @Entity
-public class VendorEntity {
+public class Vendor {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private UUID ID;
 
     @Valid
-    @ElementCollection
-    private List<@Valid DishEntity> dishes;
+    @OneToMany(mappedBy = "vendor", cascade = CascadeType.ALL)
+    private List<@Valid Dish> dishes;
 
     /**
      * Get ID
@@ -40,7 +40,7 @@ public class VendorEntity {
         this.ID = ID;
     }
 
-    public VendorEntity addDishesItem(DishEntity dishesItem) {
+    public Vendor addDishesItem(Dish dishesItem) {
         if (this.dishes == null) {
             this.dishes = new ArrayList<>();
         }
@@ -55,11 +55,11 @@ public class VendorEntity {
     @Valid
     @Schema(name = "dishes", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     @JsonProperty("dishes")
-    public List<@Valid DishEntity> getDishes() {
+    public List<@Valid Dish> getDishes() {
         return dishes;
     }
 
-    public void setDishes(List<@Valid DishEntity> dishes) {
+    public void setDishes(List<@Valid Dish> dishes) {
         this.dishes = dishes;
     }
 
@@ -71,7 +71,7 @@ public class VendorEntity {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        VendorEntity vendor = (VendorEntity) o;
+        Vendor vendor = (Vendor) o;
         return Objects.equals(this.ID, vendor.ID) &&
                 Objects.equals(this.dishes, vendor.dishes);
     }
