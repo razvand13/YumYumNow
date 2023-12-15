@@ -119,6 +119,7 @@ tasks.withType(Checkstyle) {
 	//exclude generated code
 	exclude 'nl/tudelft/sem/template/api/'
 	exclude 'nl/tudelft/sem/template/model/'
+	exclude 'orders-microservice/build/**'
 }
 
 checkstyle {
