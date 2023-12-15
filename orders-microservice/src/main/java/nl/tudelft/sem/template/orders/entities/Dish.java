@@ -14,7 +14,7 @@ import javax.validation.Valid;
  */
 
 @Entity
-public class DishEntity {
+public class Dish {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -98,7 +98,7 @@ public class DishEntity {
         this.price = price;
     }
 
-    public DishEntity addAllergensItem(String allergensItem) {
+    public Dish addAllergensItem(String allergensItem) {
         if (this.allergens == null) {
             this.allergens = new ArrayList<>();
         }
@@ -121,7 +121,7 @@ public class DishEntity {
         this.allergens = allergens;
     }
 
-    public DishEntity addIngredientsItem(String ingredientsItem) {
+    public Dish addIngredientsItem(String ingredientsItem) {
         if (this.ingredients == null) {
             this.ingredients = new ArrayList<>();
         }
@@ -182,7 +182,7 @@ public class DishEntity {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        DishEntity dish = (DishEntity) o;
+        Dish dish = (Dish) o;
         return Objects.equals(this.ID, dish.ID)
                 && Objects.equals(this.name, dish.name)
                 && Objects.equals(this.imageLink, dish.imageLink)
@@ -201,7 +201,7 @@ public class DishEntity {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("class DishEntity {\n");
+        sb.append("class Dish {\n");
         sb.append("    ID: ").append(toIndentedString(ID)).append("\n");
         sb.append("    name: ").append(toIndentedString(name)).append("\n");
         sb.append("    imageLink: ").append(toIndentedString(imageLink)).append("\n");

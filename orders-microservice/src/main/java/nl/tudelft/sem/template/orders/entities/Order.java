@@ -25,7 +25,7 @@ public class Order {
     @Valid
     @OneToMany(cascade = CascadeType.ALL)
     @JoinColumn(name = "order_id")
-    private List<@Valid DishEntity> dishes;
+    private List<@Valid Dish> dishes;
 
     @ManyToOne
     private Address location;
@@ -58,7 +58,7 @@ public class Order {
         this.ID = ID;
     }
 
-    public Order addDishesItem(DishEntity dishesItem) {
+    public Order addDishesItem(Dish dishesItem) {
         if (this.dishes == null) {
             this.dishes = new ArrayList<>();
         }
@@ -73,11 +73,11 @@ public class Order {
     @Valid
     @Schema(name = "dishes", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     @JsonProperty("dishes")
-    public List<@Valid DishEntity> getDishes() {
+    public List<@Valid Dish> getDishes() {
         return dishes;
     }
 
-    public void setDishes(List<@Valid DishEntity> dishes) {
+    public void setDishes(List<@Valid Dish> dishes) {
         this.dishes = dishes;
     }
 

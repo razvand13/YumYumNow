@@ -15,7 +15,7 @@ public class AnalyticsCustomerPreferences {
 
     private UUID customerId;
 
-    private List<DishEntity> mostOrderedDishes;
+    private List<Dish> mostOrderedDishes;
 
     private Analytics analyticsEntity;
 
@@ -31,7 +31,7 @@ public class AnalyticsCustomerPreferences {
         this.customerId = customerId;
     }
 
-    public AnalyticsCustomerPreferences addMostOrderedDishesItem(DishEntity mostOrderedDishesItem) {
+    public AnalyticsCustomerPreferences addMostOrderedDishesItem(Dish mostOrderedDishesItem) {
         if (this.mostOrderedDishes == null) {
             this.mostOrderedDishes = new ArrayList<>();
         }
@@ -43,11 +43,11 @@ public class AnalyticsCustomerPreferences {
     * Most frequently ordered dishes by the specific customer.
     * @return mostOrderedDishes
     */
-    public List<DishEntity> getMostOrderedDishes() {
+    public List<Dish> getMostOrderedDishes() {
         return mostOrderedDishes;
     }
 
-    public void setMostOrderedDishes(List<DishEntity> mostOrderedDishes) {
+    public void setMostOrderedDishes(List<Dish> mostOrderedDishes) {
         this.mostOrderedDishes = mostOrderedDishes;
     }
 

@@ -14,7 +14,7 @@ import javax.validation.Valid;
  * Analytics
  */
 
-
+@Entity
 public class Analytics {
 
     @Id
