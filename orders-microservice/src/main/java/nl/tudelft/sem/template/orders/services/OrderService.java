@@ -19,4 +19,8 @@ public class OrderService implements IOrderService {
     public Order findById(UUID orderId) {
         return orderRepository.findById(orderId).orElseThrow(IllegalArgumentException::new);
     }
+
+    public Order save(Order order) {
+        return orderRepository.save(order);
+    }
 }

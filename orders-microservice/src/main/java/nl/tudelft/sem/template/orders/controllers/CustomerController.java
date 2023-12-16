@@ -30,7 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class CustomerController implements CustomerApi {
     private final VendorMapper vendorMapper;
     private final DishMapper dishMapper;
-    private final VendorService vendorService; // TODO service should include the repo's
+    private final VendorService vendorService;
     private final DishService dishService;
     private final OrderService orderService;
     private final CustomerAdapter customerAdapter;
@@ -137,6 +137,7 @@ public class CustomerController implements CustomerApi {
      * POST /customer/{customerId}/order : Create a new order
      * Creates a new order for the customer with a specified vendor. This is done by selecting a vendor from
      * the list of all vendors basically, so we are sure that the customer is in the range of the vendor.
+     * The newly created order is saved in the database.
      *
      * @param customerId         (required)
      * @param createOrderRequest (required)
@@ -175,6 +176,7 @@ public class CustomerController implements CustomerApi {
         order.setOrderTime(OffsetDateTime.now());
         order.setVendorId(UUID.fromString(Integer.toString(vendorId))); // TODO change API for this to be UUID
         order.setCustomerId(customerId);
+        orderService.save(order);
 
         return ResponseEntity.ok(order);
     }
