@@ -46,16 +46,13 @@ public class CustomerController implements CustomerApi {
     private final OrderService orderService;
     private final CustomerAdapter customerAdapter;
     private final VendorAdapter vendorAdapter;
-    VendorRepository vendorRepository;
-    OrderRepository orderRepository;
-    DishRepository dishRepository;
 
 
     // TODO make service instead
     @Autowired
-    public CustomerController(VendorMapper vendorMapper, DishMapper dishMapper, VendorService vendorService, DishService dishService, OrderService orderService,
-                              CustomerAdapter customerAdapter, VendorAdapter vendorAdapter, VendorRepository vendorRepository,
-                              OrderRepository orderRepository, DishRepository dishRepository) {
+    public CustomerController(VendorMapper vendorMapper, DishMapper dishMapper, VendorService vendorService,
+                              DishService dishService, OrderService orderService,
+                              CustomerAdapter customerAdapter, VendorAdapter vendorAdapter) {
         this.vendorMapper = vendorMapper;
         this.dishMapper = dishMapper;
         this.vendorService = vendorService;
@@ -63,9 +60,6 @@ public class CustomerController implements CustomerApi {
         this.orderService = orderService;
         this.customerAdapter = customerAdapter;
         this.vendorAdapter = vendorAdapter;
-        this.vendorRepository = vendorRepository;
-        this.orderRepository = orderRepository;
-        this.dishRepository = dishRepository;
     }
 
     /**

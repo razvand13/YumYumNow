@@ -37,7 +37,7 @@ public class VendorService implements IVendorService {
 
         double distance = Math.hypot(vendorLatitude - customerLatitude, vendorLongitude - customerLongitude);
 
-        return distance < 0.45; // not geographically accurate
+        return distance <= 5.0; // not geographically accurate
     }
 
     /**
