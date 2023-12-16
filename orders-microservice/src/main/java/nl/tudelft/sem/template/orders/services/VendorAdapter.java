@@ -28,6 +28,7 @@ public class VendorAdapter {
 
     /**
      * Request all vendors from the Users microservice
+     *
      * @return a list of VendorDTO
      */
     public List<VendorDTO> requestVendors() {
@@ -47,6 +48,7 @@ public class VendorAdapter {
 
     /**
      * Send a GET request to a specified uri
+     *
      * @param uri uri
      * @return the request that was created
      */

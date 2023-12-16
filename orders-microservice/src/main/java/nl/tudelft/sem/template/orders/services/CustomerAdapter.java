@@ -1,21 +1,13 @@
 package nl.tudelft.sem.template.orders.services;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import nl.tudelft.sem.template.orders.entities.Address;
 import nl.tudelft.sem.template.orders.external.CustomerDTO;
-import nl.tudelft.sem.template.orders.external.VendorDTO;
 import nl.tudelft.sem.template.orders.mappers.CustomerMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.lang.reflect.Type;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.List;
 import java.util.UUID;
 
 @Component
@@ -32,6 +24,7 @@ public class CustomerAdapter {
 
     /**
      * Requests customer from the Users microservice
+     *
      * @param customerId id of that customer
      * @return CustomerDTO object containing all relevant attributes
      */
@@ -53,6 +46,7 @@ public class CustomerAdapter {
 
     /**
      * Send a GET request to a specified uri
+     *
      * @param uri uri
      * @return the request that was created
      */

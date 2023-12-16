@@ -1,16 +1,8 @@
 package nl.tudelft.sem.template.orders.controllers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import nl.tudelft.sem.template.api.CustomerApi;
 import nl.tudelft.sem.template.model.CreateOrderRequest;
@@ -24,10 +16,11 @@ import nl.tudelft.sem.template.orders.external.CustomerDTO;
 import nl.tudelft.sem.template.orders.external.VendorDTO;
 import nl.tudelft.sem.template.orders.mappers.DishMapper;
 import nl.tudelft.sem.template.orders.mappers.VendorMapper;
-import nl.tudelft.sem.template.orders.repositories.DishRepository;
-import nl.tudelft.sem.template.orders.repositories.OrderRepository;
-import nl.tudelft.sem.template.orders.repositories.VendorRepository;
-import nl.tudelft.sem.template.orders.services.*;
+import nl.tudelft.sem.template.orders.services.CustomerAdapter;
+import nl.tudelft.sem.template.orders.services.DishService;
+import nl.tudelft.sem.template.orders.services.OrderService;
+import nl.tudelft.sem.template.orders.services.VendorAdapter;
+import nl.tudelft.sem.template.orders.services.VendorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,10 +28,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class CustomerController implements CustomerApi {
-
-    private static final  String USERS_URL = "https://localhost:8088";
-    private static final String DELIVERY_URL = "https://localhost:8081";
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private final VendorMapper vendorMapper;
     private final DishMapper dishMapper;
     private final VendorService vendorService; // TODO service should include the repo's
@@ -47,8 +36,17 @@ public class CustomerController implements CustomerApi {
     private final CustomerAdapter customerAdapter;
     private final VendorAdapter vendorAdapter;
 
-
-    // TODO make service instead
+    /**
+     * Constructor for this controller
+     *
+     * @param vendorMapper vendor mapper
+     * @param dishMapper dish mapper
+     * @param vendorService vendor service
+     * @param dishService dish service
+     * @param orderService order service
+     * @param customerAdapter customer adapter
+     * @param vendorAdapter vendor adapter
+     */
     @Autowired
     public CustomerController(VendorMapper vendorMapper, DishMapper dishMapper, VendorService vendorService,
                               DishService dishService, OrderService orderService,

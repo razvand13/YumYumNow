@@ -25,6 +25,7 @@ public class VendorService implements IVendorService {
      * Calculates if the vendor is within the fixed range of the customer.
      * It should be noted that although this method is using latitude and longitude,
      * the calculation is not geographically accurate.
+     *
      * @param vendorLocation the vendor's location
      * @param customerLocation the customer's location
      * @return true iff they are in range
@@ -42,6 +43,7 @@ public class VendorService implements IVendorService {
 
     /**
      * Calculate the average price of all items from a vendor
+     *
      * @param vendor vendor
      * @return the average price
      */

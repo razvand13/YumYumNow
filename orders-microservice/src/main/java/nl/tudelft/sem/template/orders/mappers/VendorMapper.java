@@ -13,6 +13,12 @@ import java.util.List;
 public class VendorMapper {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
+    /**
+     * This method maps a VendorDTO to a Vendor
+     *
+     * @param vendorDTO VendorDTO
+     * @return Vendor
+     */
     public Vendor toEntity(VendorDTO vendorDTO) {
         Vendor vendor = new Vendor();
         vendor.setID(vendorDTO.getVendorId());
@@ -20,6 +26,12 @@ public class VendorMapper {
         return vendor;
     }
 
+    /**
+     * This method maps a Vendor to a VendorDTO
+     *
+     * @param vendor Vendor
+     * @return VendorDTO
+     */
     public VendorDTO toDTO(Vendor vendor) {
         VendorDTO vendorDTO = new VendorDTO();
         vendorDTO.setVendorId(vendor.getID());
@@ -27,6 +39,12 @@ public class VendorMapper {
         return vendorDTO;
     }
 
+    /**
+     * This method maps a JSON response object to a List of VendorDTOs
+     *
+     * @param responseBody JSON
+     * @return List of VendorDTO
+     */
     public List<VendorDTO> toDTO(String responseBody) {
         List<VendorDTO> vendors;
         try {
