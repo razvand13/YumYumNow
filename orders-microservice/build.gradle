@@ -172,11 +172,10 @@ openApiGenerate {
 	]
 
 	schemaMappings.set([
-	        "Vendor":"nl.tudelft.sem.template.orders.entities.Vendor",
+			"Vendor":"nl.tudelft.sem.template.orders.entities.Vendor",
 			"Address":"nl.tudelft.sem.template.orders.entities.Address",
 			"Order":"nl.tudelft.sem.template.orders.entities.Order",
-			"Status":"nl.tudelft.sem.template.orders.entities.Status",
-			"Dish":"nl.tudelft.sem.template.orders.entities.Dish"
+			"Status":"nl.tudelft.sem.template.orders.entities.Status"
 	])
 }
 

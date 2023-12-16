@@ -3,19 +3,6 @@ package nl.tudelft.sem.template.orders.controllers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import nl.tudelft.sem.template.api.CustomerApi;
-import nl.tudelft.sem.template.model.CreateOrderRequest;
-import nl.tudelft.sem.template.orders.entities.Address;
-import nl.tudelft.sem.template.orders.entities.Vendor;
-import nl.tudelft.sem.template.orders.entities.Order;
-import nl.tudelft.sem.template.orders.entities.Dish;
-import nl.tudelft.sem.template.orders.entities.Status;
-import nl.tudelft.sem.template.orders.repositories.OrderRepository;
-import nl.tudelft.sem.template.orders.repositories.VendorRepository;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RestController;
-
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -25,19 +12,60 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import nl.tudelft.sem.template.api.CustomerApi;
+import nl.tudelft.sem.template.model.CreateOrderRequest;
+import nl.tudelft.sem.template.model.Dish;
+import nl.tudelft.sem.template.orders.entities.Address;
+import nl.tudelft.sem.template.orders.entities.DishEntity;
+import nl.tudelft.sem.template.orders.entities.Order;
+import nl.tudelft.sem.template.orders.entities.Status;
+import nl.tudelft.sem.template.orders.entities.Vendor;
+import nl.tudelft.sem.template.orders.external.CustomerDTO;
+import nl.tudelft.sem.template.orders.external.VendorDTO;
+import nl.tudelft.sem.template.orders.mappers.DishMapper;
+import nl.tudelft.sem.template.orders.mappers.VendorMapper;
+import nl.tudelft.sem.template.orders.repositories.DishRepository;
+import nl.tudelft.sem.template.orders.repositories.OrderRepository;
+import nl.tudelft.sem.template.orders.repositories.VendorRepository;
+import nl.tudelft.sem.template.orders.services.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class CustomerController implements CustomerApi {
 
-    private final static String USERS_URL = "https://localhost:8088";
-    private final static String DELIVERY_URL = "https://localhost:8081";
-    private final static ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final  String USERS_URL = "https://localhost:8088";
+    private static final String DELIVERY_URL = "https://localhost:8081";
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private final VendorMapper vendorMapper;
+    private final DishMapper dishMapper;
+    private final VendorService vendorService; // TODO service should include the repo's
+    private final DishService dishService;
+    private final OrderService orderService;
+    private final CustomerAdapter customerAdapter;
+    private final VendorAdapter vendorAdapter;
     VendorRepository vendorRepository;
     OrderRepository orderRepository;
+    DishRepository dishRepository;
 
-    public CustomerController(VendorRepository vendorRepository, OrderRepository orderRepository) {
+
+    // TODO make service instead
+    @Autowired
+    public CustomerController(VendorMapper vendorMapper, DishMapper dishMapper, VendorService vendorService, DishService dishService, OrderService orderService,
+                              CustomerAdapter customerAdapter, VendorAdapter vendorAdapter, VendorRepository vendorRepository,
+                              OrderRepository orderRepository, DishRepository dishRepository) {
+        this.vendorMapper = vendorMapper;
+        this.dishMapper = dishMapper;
+        this.vendorService = vendorService;
+        this.dishService = dishService;
+        this.orderService = orderService;
+        this.customerAdapter = customerAdapter;
+        this.vendorAdapter = vendorAdapter;
         this.vendorRepository = vendorRepository;
         this.orderRepository = orderRepository;
+        this.dishRepository = dishRepository;
     }
 
     /**
@@ -53,10 +81,10 @@ public class CustomerController implements CustomerApi {
      * @param minAvgPrice (optional)
      * @param maxAvgPrice (optional)
      * @return List of vendors. (status code 200)
-     * or Bad Request - Invalid request parameters. (status code 400)
-     * or Unauthorized - Not a customer user. (status code 401)
-     * or Not Found - User does not exist. (status code 404)
-     * or Internal Server Error - An unexpected error occurred on the server. (status code 500)
+     *         or Bad Request - Invalid request parameters. (status code 400)
+     *         or Unauthorized - Not a customer user. (status code 401)
+     *         or Not Found - User does not exist. (status code 404)
+     *         or Internal Server Error - An unexpected error occurred on the server. (status code 500)
      */
     @Override
     public ResponseEntity<List<Vendor>> getVendors(UUID customerId, String name,
@@ -74,42 +102,43 @@ public class CustomerController implements CustomerApi {
 
         // Authorize customer
         // TODO external check method is to be done by someone else, edit when added
-          boolean isCustomer = true;
+        boolean isCustomer = true;
         if (!isCustomer) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        final HttpClient client = HttpClient.newBuilder().build();
+        List<VendorDTO> vendors = vendorAdapter.requestVendors();
+        Address customerLocation;
+        CustomerDTO customer = customerAdapter.requestCustomer(customerId);
 
-        // Request vendors from the Users microservice
-        final HttpRequest requestVendors = HttpRequest.newBuilder()
-                .uri(URI.create(USERS_URL + "/vendors"))
-                .GET()
-                .build();
-
-        final HttpResponse<String> responseVendors;
-        try {
-            responseVendors = client.send(requestVendors, HttpResponse.BodyHandlers.ofString());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-        List<Vendor> vendors;
-        try {
-            vendors = OBJECT_MAPPER.readValue(responseVendors.body(), new TypeReference<>() {
-            });
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+        if (customer.getCurrentLocation() != null) {
+            customerLocation = customer.getCurrentLocation();
+        } else if (customer.getHomeAddress() != null) {
+            customerLocation = customer.getHomeAddress();
+        } else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
         List<Vendor> filteredVendors = new ArrayList<>();
 
-        for (Vendor vendor : vendors) {
-            // TODO filter input by distance
-            // TODO filter input by name and average price
-            // name : use vendor.name.contains(name)
-            // avg price : SQL query in repo, get average of dish price per vendorId (todo CALLED BY SERVICE)
-            filteredVendors.add(vendor);
+        // Filter vendors by name, average price and distance to delivery location
+        for (VendorDTO vendor : vendors) {
+            Address vendorLocation = vendor.getLocation();
+            Double avgPrice = vendorService.getAveragePrice(vendor);
+
+            if (minAvgPrice == null) {
+                minAvgPrice = Integer.MIN_VALUE;
+            }
+            if (maxAvgPrice == null) {
+                maxAvgPrice = Integer.MAX_VALUE;
+            }
+
+            if (vendorService.isInRange(vendorLocation, customerLocation)
+                    && avgPrice >= minAvgPrice && avgPrice <= maxAvgPrice) {
+                if (name == null || vendor.getName().contains(name)) {
+                    filteredVendors.add(vendorMapper.toEntity(vendor));
+                }
+            }
         }
 
         return ResponseEntity.ok(filteredVendors);
@@ -123,17 +152,17 @@ public class CustomerController implements CustomerApi {
      * @param customerId         (required)
      * @param createOrderRequest (required)
      * @return Newly created order object with orderId, customerId, vendorId and address populated. (status code 200)
-     * or Bad Request - No location present or other input errors (invalid format). (status code 400)
-     * or Unauthorized - Not a customer user. (status code 401)
-     * or Not Found - User does not exist. (status code 404)
-     * or Internal Server Error - An unexpected error occurred on the server. (status code 500)
+     *         or Bad Request - No location present or other input errors (invalid format). (status code 400)
+     *         or Unauthorized - Not a customer user. (status code 401)
+     *         or Not Found - User does not exist. (status code 404)
+     *         or Internal Server Error - An unexpected error occurred on the server. (status code 500)
      */
     @Override
     public ResponseEntity<Order> createOrder(UUID customerId, CreateOrderRequest createOrderRequest) {
         Integer vendorId = createOrderRequest.getVendorId();
         Address address = createOrderRequest.getAddress();
 
-        if(customerId == null || vendorId == null || address == null) {
+        if (customerId == null || vendorId == null || address == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
@@ -155,7 +184,7 @@ public class CustomerController implements CustomerApi {
         order.setLocation(address);
         order.setStatus(Status.PENDING);
         order.setOrderTime(OffsetDateTime.now());
-//        order.setVendorId(vendorId); // TODO this should be an UUID
+        order.setVendorId(UUID.fromString(Integer.toString(vendorId))); // TODO change API for this to be UUID
         order.setCustomerId(customerId);
 
         return ResponseEntity.ok(order);
@@ -163,20 +192,20 @@ public class CustomerController implements CustomerApi {
 
     /**
      * GET /customer/{customerId}/order/{orderId}/vendor : Get all dishes of the selected vendor for the order.
-     * Get a list of all of the dishes of the vendor associated with the order (the selected vendor) as a customer.
+     * Get a list of all the dishes of the vendor associated with the order (the selected vendor) as a customer.
      * Only show dishes that don&#39;t include the customer&#39;s allergies.
      *
      * @param customerId (required)
      * @param orderId    (required)
      * @return A list of dishes offered by the vendor. (status code 200)
-     * or Bad Request - Invalid request parameters. (status code 400)
-     * or Unauthorized - User is not a customer/order does not belong to user. (status code 401)
-     * or User or order not found (status code 404)
-     * or Internal Server Error - An unexpected error occurred on the server. (status code 500)
+     *         or Bad Request - Invalid request parameters. (status code 400)
+     *         or Unauthorized - User is not a customer/order does not belong to user. (status code 401)
+     *         or User or order not found (status code 404)
+     *         or Internal Server Error - An unexpected error occurred on the server. (status code 500)
      */
     @Override
     public ResponseEntity<List<Dish>> getVendorDishes(UUID customerId, UUID orderId) {
-        if(customerId == null || orderId == null) {
+        if (customerId == null || orderId == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
@@ -194,50 +223,32 @@ public class CustomerController implements CustomerApi {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        final HttpClient client = HttpClient.newBuilder().build();
-
-        // Request customer from the Users microservice
-        final HttpRequest requestVendors = HttpRequest.newBuilder()
-                .uri(URI.create(USERS_URL + "/customers/" + customerId))
-                .GET()
-                .build();
-
-        final HttpResponse<String> responseCustomer;
+        // Get order from repository, check if order exists
+        Order order;
         try {
-            responseCustomer = client.send(requestVendors, HttpResponse.BodyHandlers.ofString());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-        // TODO order service: remove this by just returning the order
-        Optional<Order> orderOptional = orderRepository.findById(orderId);
-
-        // Check that order exists
-        if(orderOptional.isEmpty()) {
+            order = orderService.findById(orderId);
+        } catch (IllegalArgumentException e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
-        Order order = orderOptional.get();
-
         // Check that order has customerId and vendorId inside
-        if(order.getCustomerId() == null || order.getVendorId() == null) {
+        if (order.getCustomerId() == null || order.getVendorId() == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
         // Check that order belongs to this customer
-        if(order.getCustomerId() != customerId) {
+        if (order.getCustomerId() != customerId) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        UUID vendorId = order.getVendorId();
-        List<Dish> vendorDishes = new ArrayList<>();
+        // Get the vendor's dishes from the repository
+        List<DishEntity> vendorDishes = dishService.findAllByVendorId(order.getVendorId());
 
-        // TODO filter dishes by allergens
-        // TODO customer (or order) service: get allergens of customer
-        List<String> allergens = new ArrayList<>();
-
-        // TODO filter dishes by allergens (SQL?)
         List<Dish> filteredDishes = new ArrayList<>();
+        for (DishEntity dish : vendorDishes) {
+            filteredDishes.add(dishMapper.toDTO(dish));
+        }
 
         return ResponseEntity.ok(filteredDishes);
     }
