@@ -100,8 +100,8 @@ public class CustomerController implements CustomerApi {
         }
 
         List<VendorDTO> vendors = vendorAdapter.requestVendors();
-        Address customerLocation;
         CustomerDTO customer = customerAdapter.requestCustomer(customerId);
+        Address customerLocation;
 
         if (customer.getCurrentLocation() != null) {
             customerLocation = customer.getCurrentLocation();
@@ -118,12 +118,9 @@ public class CustomerController implements CustomerApi {
             Address vendorLocation = vendor.getLocation();
             Double avgPrice = vendorService.getAveragePrice(vendor);
 
-            if (minAvgPrice == null) {
-                minAvgPrice = Integer.MIN_VALUE;
-            }
-            if (maxAvgPrice == null) {
-                maxAvgPrice = Integer.MAX_VALUE;
-            }
+            // If these filters are not specified, max them out
+            minAvgPrice = minAvgPrice != null ? minAvgPrice : Integer.MIN_VALUE;
+            maxAvgPrice = maxAvgPrice != null ? maxAvgPrice : Integer.MAX_VALUE;
 
             if (vendorService.isInRange(vendorLocation, customerLocation)
                     && avgPrice >= minAvgPrice && avgPrice <= maxAvgPrice) {
@@ -230,7 +227,7 @@ public class CustomerController implements CustomerApi {
         }
 
         // Check that order belongs to this customer
-        if (order.getCustomerId() != customerId) {
+        if (!order.getCustomerId().equals(customerId)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
