@@ -12,13 +12,19 @@ import java.util.ArrayList;
 @Component
 public class DishMapper {
 
-    private final VendorRepository vendorRepository;
+    private final transient VendorRepository vendorRepository;
 
     @Autowired
     public DishMapper(VendorRepository vendorRepository) {
         this.vendorRepository = vendorRepository;
     }
 
+    /**
+     * Maps a dish DTO to a dish entity.
+     *
+     * @param dishDTO the dish DTO
+     * @return the dish entity
+     */
     public DishEntity toEntity(Dish dishDTO) {
         DishEntity dish = new DishEntity();
         dish.setID(dishDTO.getID());
@@ -30,12 +36,18 @@ public class DishMapper {
         dish.setDescription(dishDTO.getDescription());
 
         Vendor vendor = vendorRepository.findById(dishDTO.getVendorId())
-                .orElseThrow(() -> new IllegalArgumentException("Invalid vendor ID"));
+            .orElseThrow(() -> new IllegalArgumentException("Invalid vendor ID"));
         dish.setVendor(vendor);
 
         return dish;
     }
 
+    /**
+     * Maps a dish entity to a dish DTO.
+     *
+     * @param dish the dish entity
+     * @return the dish DTO
+     */
     public Dish toDTO(DishEntity dish) {
         Dish dishDTO = new Dish();
         dishDTO.setID(dish.getID());

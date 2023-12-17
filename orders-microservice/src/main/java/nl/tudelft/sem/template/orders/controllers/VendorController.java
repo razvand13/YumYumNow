@@ -16,10 +16,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class VendorController implements VendorApi {
 
-    private final VendorAdapter vendorAdapter;
-    private final DishService dishService;
-    private final DishMapper dishMapper;
+    private final transient VendorAdapter vendorAdapter;
+    private final transient DishService dishService;
+    private final transient DishMapper dishMapper;
 
+    /**
+     * Creates an instance of the VendorController.
+     *
+     * @param vendorAdapter the vendor adapter
+     * @param dishService the dish service
+     * @param dishMapper the dish mapper
+     */
     @Autowired
     public VendorController(VendorAdapter vendorAdapter, DishService dishService, DishMapper dishMapper) {
         this.vendorAdapter = vendorAdapter;

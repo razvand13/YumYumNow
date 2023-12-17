@@ -10,18 +10,31 @@ import java.util.UUID;
 
 @Component
 public class VendorAdapter {
-    private final String USERS_URL = "https://localhost:8088";
-    private final String DELIVERY_URL = "https://localhost:8081";
-    private final HttpClient client = HttpClient.newBuilder().build();
+    private final transient String USERS_URL = "https://localhost:8088";
+    private final transient String DELIVERY_URL = "https://localhost:8081";
+    private final transient HttpClient client = HttpClient.newBuilder().build();
 
     public boolean existsById(UUID vendorId) {
         return sendGetRequest(USERS_URL + "/vendor/" + vendorId);
     }
 
+    /**
+     * Checks if the user with the given UUID is a customer, courier or admin.
+     * If so, the user is not authorized to add a dish to a menu.
+     *
+     * @param userId the id of the user
+     * @return true if the user is a vendor, false otherwise
+     */
     public boolean checkRoleById(UUID userId) {
-        if (isRole(userId, "/customers/")) return false;
-        if (isRole(userId, "/couriers/")) return false;
-        if (isRole(userId, "/admins/")) return false;
+        if (isRole(userId, "/customers/")) {
+            return false;
+        }
+        if (isRole(userId, "/couriers/")) {
+            return false;
+        }
+        if (isRole(userId, "/admins/")) {
+            return false;
+        }
         return true;
     }
 
