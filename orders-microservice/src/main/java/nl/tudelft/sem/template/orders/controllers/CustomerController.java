@@ -72,7 +72,6 @@ public class CustomerController implements CustomerApi {
      * or Not Found - Dish, order or customer not found. (status code 404)
      * or Internal Server Error - An unexpected error occurred on the server. (status code 500)
      */
-    // TODO: Adapt with the change of entities
     @Override
     public ResponseEntity<Order> addDishToOrder(UUID customerId, UUID orderId, UUID dishId, UpdateDishQtyRequest updateDishQtyRequest) {
         // Fetch order
@@ -103,7 +102,7 @@ public class CustomerController implements CustomerApi {
 
         // Recalculate total price
         double newTotalPrice = order.getDishes().stream()
-                .mapToDouble(DishEntity::getPrice) // Ensure getPrice() exists in DishEntity
+                .mapToDouble(DishEntity::getPrice)
                 .sum();
 
         order.setTotalPrice(newTotalPrice);
@@ -128,7 +127,6 @@ public class CustomerController implements CustomerApi {
      * or Not Found - Dish, order, or customer not found. (status code 404)
      * or Internal Server Error - An unexpected error occurred on the server. (status code 500)
      */
-    // TODO: Adapt with the change of entities
     @Override
     public ResponseEntity<Order> removeDishFromOrder(UUID customerId, UUID orderId, UUID dishId) {
         // Fetch order
@@ -187,7 +185,6 @@ public class CustomerController implements CustomerApi {
      * or Not Found - Dish, order, or customer not found. (status code 404)
      * or Internal Server Error - An unexpected error occurred on the server. (status code 500)
      */
-    // TODO: Adapt with the change of entities
     @Override
     public ResponseEntity<Order> updateDishQuantityInOrder(UUID customerId, UUID orderId, UUID dishId, UpdateDishQtyRequest updateDishQtyRequest) {
         // Validate the requested quantity - it should not be negative
@@ -220,6 +217,14 @@ public class CustomerController implements CustomerApi {
 
         // Set the updated list of dishes in the order
         order.setDishes(updatedDishes);
+
+        // Recalculate the total price of the order
+        double newTotalPrice = updatedDishes.stream()
+                .mapToDouble(DishEntity::getPrice)
+                .sum();
+
+        // Update the total price of the order
+        order.setTotalPrice(newTotalPrice);
 
         // Save the order with the updated list of dishes
         Order updatedOrder = orderService.save(order);
