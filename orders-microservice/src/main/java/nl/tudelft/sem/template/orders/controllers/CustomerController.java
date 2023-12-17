@@ -1,45 +1,59 @@
 package nl.tudelft.sem.template.orders.controllers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import nl.tudelft.sem.template.api.CustomerApi;
 import nl.tudelft.sem.template.model.UpdateDishQtyRequest;
-import nl.tudelft.sem.template.orders.entities.Dish;
+import nl.tudelft.sem.template.orders.entities.DishEntity;
 import nl.tudelft.sem.template.orders.entities.Order;
-import nl.tudelft.sem.template.orders.repositories.DishRepository;
-import nl.tudelft.sem.template.orders.repositories.OrderRepository;
-import nl.tudelft.sem.template.orders.repositories.VendorRepository;
-import com.fasterxml.jackson.core.type.TypeReference;
-import org.springframework.http.ResponseEntity;
+import nl.tudelft.sem.template.orders.mappers.DishMapper;
+import nl.tudelft.sem.template.orders.mappers.VendorMapper;
+import nl.tudelft.sem.template.orders.services.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+
 @RestController
 public class CustomerController implements CustomerApi {
+    private final transient VendorMapper vendorMapper;
+    private final transient DishMapper dishMapper;
+    private final transient VendorService vendorService;
+    private final transient DishService dishService;
+    private final transient OrderService orderService;
+    private final transient CustomerService customerService;
+    private final transient CustomerAdapter customerAdapter;
+    private final transient VendorAdapter vendorAdapter;
 
-    private final static String USERS_URL = "https://localhost:8088";
-    private final static String DELIVERY_URL = "https://localhost:8081";
-    private final static ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    VendorRepository vendorRepository;
-    OrderRepository orderRepository;
-    DishRepository dishRepository;
-
-    public CustomerController(VendorRepository vendorRepository, OrderRepository orderRepository, DishRepository dishRepository) {
-        this.vendorRepository = vendorRepository;
-        this.orderRepository = orderRepository;
-        this.dishRepository = dishRepository;
+    /**
+     * Constructor for this controller
+     *
+     * @param vendorMapper    vendor mapper
+     * @param dishMapper      dish mapper
+     * @param vendorService   vendor service
+     * @param dishService     dish service
+     * @param orderService    order service
+     * @param customerAdapter customer adapter
+     * @param vendorAdapter   vendor adapter
+     * @param orderRepository
+     */
+    @Autowired
+    public CustomerController(VendorMapper vendorMapper, DishMapper dishMapper, VendorService vendorService,
+                              DishService dishService, OrderService orderService, CustomerService customerService,
+                              CustomerAdapter customerAdapter, VendorAdapter vendorAdapter) {
+        this.vendorMapper = vendorMapper;
+        this.dishMapper = dishMapper;
+        this.vendorService = vendorService;
+        this.dishService = dishService;
+        this.orderService = orderService;
+        this.customerService = customerService;
+        this.customerAdapter = customerAdapter;
+        this.vendorAdapter = vendorAdapter;
     }
 
 
@@ -60,69 +74,46 @@ public class CustomerController implements CustomerApi {
      */
     // TODO: Adapt with the change of entities
     @Override
-    public ResponseEntity<Order> addDishToOrder(UUID customerId, UUID orderId, UUID dishId, UpdateDishQtyRequest updateDishQtyRequest){
-        // Validate parameters
-        if (updateDishQtyRequest.getQuantity() <= 0) {
-            return  ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
-
+    public ResponseEntity<Order> addDishToOrder(UUID customerId, UUID orderId, UUID dishId, UpdateDishQtyRequest updateDishQtyRequest) {
         // Fetch order
-        Optional<Order> orderOptional = orderRepository.findById(orderId);
-        if (!orderOptional.isPresent() || !orderOptional.get().getCustomerId().equals(customerId)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        Optional<Order> orderOptional = Optional.ofNullable(orderService.findById(orderId));
+        if (!orderOptional.isPresent()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
 
         Order order = orderOptional.get();
-        final HttpClient client = HttpClient.newBuilder().build();
 
-        String url = USERS_URL + "/orders/customer/" + customerId + "/order/" + orderId + "/vendor";
-        HttpRequest requestDishes = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .GET()
-                .build();
-
-        HttpResponse<String> response;
-        try {
-            response = client.send(requestDishes, HttpResponse.BodyHandlers.ofString());
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException(e);
+        // Verify if the order belongs to the given customer
+        if (!customerId.equals(order.getCustomerId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null); // Unauthorized access
         }
 
-        // Process response to check if the dish belongs to the vendor
-        if (!response.body().contains(dishId.toString())) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-        List<Dish> dishList;
-        try {
-            dishList = OBJECT_MAPPER.readValue(response.body(), new TypeReference<List<Dish>>() {
-            });
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Error processing JSON", e);
+        // Fetch dish
+        Optional<DishEntity> dishOptional = Optional.ofNullable(dishService.findById(dishId));
+        if (!dishOptional.isPresent()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
 
-        // Check if the dish is in the dishList
-        boolean dishExists = dishList.stream()
-                .anyMatch(dish -> dish.getID().equals(dishId));
-        if (!dishExists) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
+        DishEntity dish = dishOptional.get();
 
-        // Find the dish in the list
-        Dish dish = dishList.stream()
-                .filter(d -> d.getID().equals(dishId))
-                .findFirst()
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dish not found in the vendor's list"));
-
-        // Add the dish to the order with the right quantity
-        for(int i = 0; i < updateDishQtyRequest.getQuantity(); i++){
+        // Add dish to the order
+        for (int i = 0; i < updateDishQtyRequest.getQuantity(); i++) {
             order.addDishesItem(dish);
         }
 
+        // Recalculate total price
+        double newTotalPrice = order.getDishes().stream()
+                .mapToDouble(DishEntity::getPrice) // Ensure getPrice() exists in DishEntity
+                .sum();
 
-        Order updatedOrder = orderRepository.save(order);
+        order.setTotalPrice(newTotalPrice);
+
+        // Save the updated order
+        Order updatedOrder = orderService.save(order);
 
         return ResponseEntity.ok(updatedOrder);
     }
+
 
     /**
      * DELETE /customer/{customerId}/order/{orderId}/dish/{dishId} : Remove dish from order
@@ -141,25 +132,42 @@ public class CustomerController implements CustomerApi {
     @Override
     public ResponseEntity<Order> removeDishFromOrder(UUID customerId, UUID orderId, UUID dishId) {
         // Fetch order
-        Optional<Order> orderOptional = orderRepository.findById(orderId);
-        if (!orderOptional.isPresent() || !orderOptional.get().getCustomerId().equals(customerId)) {
+        Optional<Order> orderOptional = Optional.ofNullable(orderService.findById(orderId));
+        if (!orderOptional.isPresent()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
         Order order = orderOptional.get();
 
+        // Verify if the order belongs to the given customer
+        if (!customerId.equals(order.getCustomerId())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
         // Check if the dish is part of the order
-        if (!order.getDishes().stream().anyMatch(dish -> dish.getID().equals(dishId))) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        List<DishEntity> currentDishes = order.getDishes();
+        boolean dishExists = currentDishes.stream().anyMatch(dish -> dish.getID().equals(dishId));
+
+        if (!dishExists) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build(); // Dish not found in order
         }
 
         // Remove the dish from the order
-        order.setDishes(order.getDishes().stream()
+        List<DishEntity> updatedDishes = currentDishes.stream()
                 .filter(dish -> !dish.getID().equals(dishId))
-                .collect(Collectors.toList()));
+                .collect(Collectors.toList());
+
+        order.setDishes(updatedDishes);
+
+        // Calculate new price of order
+        double newTotalPrice = updatedDishes.stream()
+                .mapToDouble(DishEntity::getPrice)
+                .sum();
+
+        order.setTotalPrice(newTotalPrice);
 
         // Save the updated order
-        Order updatedOrder = orderRepository.save(order);
+        Order updatedOrder = orderService.save(order);
 
         return ResponseEntity.ok(updatedOrder);
     }
@@ -182,51 +190,41 @@ public class CustomerController implements CustomerApi {
     // TODO: Adapt with the change of entities
     @Override
     public ResponseEntity<Order> updateDishQuantityInOrder(UUID customerId, UUID orderId, UUID dishId, UpdateDishQtyRequest updateDishQtyRequest) {
-        // Validate parameters
+        // Validate the requested quantity - it should not be negative
         if (updateDishQtyRequest.getQuantity() < 0) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
-        // Fetch order
-        Optional<Order> orderOptional = orderRepository.findById(orderId);
+        // Retrieve the order by ID and check if it exists and belongs to the given customer
+        Optional<Order> orderOptional = Optional.ofNullable(orderService.findById(orderId));
         if (!orderOptional.isPresent() || !orderOptional.get().getCustomerId().equals(customerId)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build(); // Order not found or doesn't belong to customer
         }
 
         Order order = orderOptional.get();
 
-        // Check if the dish is in the order
-        long existingCount = order.getDishes().stream()
+        // Get the current list of dishes in the order
+        List<DishEntity> currentDishes = order.getDishes();
+        List<DishEntity> updatedDishes = new ArrayList<>();
+
+        // Add all dishes to the updated list, except for the one we want to change the quantity of
+        currentDishes.stream()
+                .filter(dish -> !dish.getID().equals(dishId))
+                .forEach(updatedDishes::add);
+
+        // Now add the specified dish in the desired quantity
+        currentDishes.stream()
                 .filter(dish -> dish.getID().equals(dishId))
-                .count();
+                .limit(updateDishQtyRequest.getQuantity())
+                .forEach(updatedDishes::add);
 
-        if (existingCount == 0) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
+        // Set the updated list of dishes in the order
+        order.setDishes(updatedDishes);
 
-        if (updateDishQtyRequest.getQuantity() == 0) {
-            // Remove the dish if the quantity is 0
-            order.setDishes(order.getDishes().stream()
-                    .filter(dish -> !dish.getID().equals(dishId))
-                    .collect(Collectors.toList()));
-        } else {
-            // Update the quantity of the dish
-            List<Dish> updatedDishes = new ArrayList<>();
-            for (Dish dish : order.getDishes()) {
-                if (dish.getID().equals(dishId)) {
-                    if (updatedDishes.size() < updateDishQtyRequest.getQuantity()) {
-                        updatedDishes.add(dish);
-                    }
-                } else {
-                    updatedDishes.add(dish);
-                }
-            }
-            order.setDishes(updatedDishes);
-        }
+        // Save the order with the updated list of dishes
+        Order updatedOrder = orderService.save(order);
 
-        // Save the updated order
-        Order updatedOrder = orderRepository.save(order);
-
+        // Return the updated order
         return ResponseEntity.ok(updatedOrder);
     }
 

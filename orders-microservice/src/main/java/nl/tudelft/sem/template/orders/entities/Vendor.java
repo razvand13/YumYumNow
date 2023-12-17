@@ -23,7 +23,7 @@ public class Vendor {
 
     @Valid
     @OneToMany(mappedBy = "vendor", cascade = CascadeType.ALL)
-    private List<@Valid Dish> dishes;
+    private List<@Valid DishEntity> dishes;
 
     /**
      * Get ID
@@ -40,7 +40,7 @@ public class Vendor {
         this.ID = ID;
     }
 
-    public Vendor addDishesItem(Dish dishesItem) {
+    public Vendor addDishesItem(DishEntity dishesItem) {
         if (this.dishes == null) {
             this.dishes = new ArrayList<>();
         }
@@ -55,11 +55,11 @@ public class Vendor {
     @Valid
     @Schema(name = "dishes", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     @JsonProperty("dishes")
-    public List<@Valid Dish> getDishes() {
+    public List<@Valid DishEntity> getDishes() {
         return dishes;
     }
 
-    public void setDishes(List<@Valid Dish> dishes) {
+    public void setDishes(List<@Valid DishEntity> dishes) {
         this.dishes = dishes;
     }
 
