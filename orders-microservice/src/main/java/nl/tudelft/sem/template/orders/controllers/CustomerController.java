@@ -91,16 +91,12 @@ public class CustomerController implements CustomerApi {
         }
 
         // Check that user exists
-        // TODO external check method is to be done by someone else, edit when added
-        boolean exists = true;
-        if (!exists) {
+        if (!customerAdapter.existsById(customerId)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
         // Authorize customer
-        // TODO external check method is to be done by someone else, edit when added
-        boolean isCustomer = true;
-        if (!isCustomer) {
+        if (!customerAdapter.checkRoleById(customerId)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
@@ -145,16 +141,12 @@ public class CustomerController implements CustomerApi {
         }
 
         // Check that user exists
-        // TODO external check method is to be done by someone else, edit when added
-        boolean exists = true;
-        if (!exists) {
+        if (!customerAdapter.existsById(customerId)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
         // Authorize customer
-        // TODO external check method is to be done by someone else, edit when added
-        boolean isCustomer = true;
-        if (!isCustomer) {
+        if (!customerAdapter.checkRoleById(customerId)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
@@ -189,16 +181,12 @@ public class CustomerController implements CustomerApi {
         }
 
         // Check that user exists
-        // TODO external check method is to be done by someone else, edit when added
-        boolean exists = true;
-        if (!exists) {
+        if (!customerAdapter.existsById(customerId)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
         // Authorize customer
-        // TODO external check method is to be done by someone else, edit when added
-        boolean isCustomer = true;
-        if (!isCustomer) {
+        if (!customerAdapter.checkRoleById(customerId)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
