@@ -26,17 +26,21 @@ class VendorServiceTest {
     @InjectMocks
     private VendorService vendorService;
 
+    private Address vendorLocation;
+    private Address customerLocation;
+
     @BeforeEach
     void setup() {
         MockitoAnnotations.openMocks(this);
+        vendorLocation = new Address();
+        customerLocation = new Address();
     }
 
     @Test
     void testIsInRangeWithinRangeCenter() {
-        Address vendorLocation = new Address();
         vendorLocation.setLatitude(40.0);
         vendorLocation.setLongitude(45.0);
-        Address customerLocation = new Address();
+
         customerLocation.setLatitude(40.0);
         customerLocation.setLongitude(45.0);
 
@@ -47,10 +51,9 @@ class VendorServiceTest {
 
     @Test
     void testIsInRangeWithinRangeInside() {
-        Address vendorLocation = new Address();
         vendorLocation.setLatitude(40.0);
         vendorLocation.setLongitude(40.0);
-        Address customerLocation = new Address();
+
         customerLocation.setLatitude(43.5);
         customerLocation.setLongitude(42.5);
 
@@ -61,10 +64,9 @@ class VendorServiceTest {
 
     @Test
     void testIsInRangeWithinRangeEdge() {
-        Address vendorLocation = new Address();
         vendorLocation.setLatitude(40.0);
         vendorLocation.setLongitude(40.0);
-        Address customerLocation = new Address();
+
         customerLocation.setLatitude(44.0);
         customerLocation.setLongitude(43.0);
 
@@ -75,10 +77,9 @@ class VendorServiceTest {
 
     @Test
     void testIsInRangeOutOfRange() {
-        Address vendorLocation = new Address();
         vendorLocation.setLatitude(40.0);
         vendorLocation.setLongitude(40.0);
-        Address customerLocation = new Address();
+
         customerLocation.setLatitude(45.0);
         customerLocation.setLongitude(44.0);
 
@@ -120,9 +121,9 @@ class VendorServiceTest {
 
     @Test
     void testFilterVendors() {
-        Address customerLocation = new Address();
         customerLocation.setLongitude(52.0);
         customerLocation.setLatitude(4.0);
+
         Address vendorLocation1 = new Address();
         vendorLocation1.setLongitude(53.0);
         vendorLocation1.setLatitude(5.0);
@@ -142,11 +143,10 @@ class VendorServiceTest {
 
     @Test
     void testFilterVendorsByAveragePrice() {
-        Address location = new Address();
-        location.setLongitude(52.0);
-        location.setLatitude(4.0);
+        vendorLocation.setLongitude(52.0);
+        vendorLocation.setLatitude(4.0);
 
-        VendorDTO vendor = new VendorDTO(UUID.randomUUID(), "Vendor", false, "vendor@example.com", true, location);
+        VendorDTO vendor = new VendorDTO(UUID.randomUUID(), "Vendor", false, "vendor@example.com", true, vendorLocation);
 
 
         DishEntity dish1 = new DishEntity();
@@ -162,7 +162,7 @@ class VendorServiceTest {
 
         List<VendorDTO> vendors = List.of(vendor);
 
-        List<VendorDTO> filteredVendors = vendorService.filterVendors(vendors, "Ven", 20, 20, location);
+        List<VendorDTO> filteredVendors = vendorService.filterVendors(vendors, "Ven", 20, 20, vendorLocation);
 
         assertThat(filteredVendors).containsExactlyInAnyOrder(vendor);
     }
