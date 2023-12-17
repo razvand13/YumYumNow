@@ -99,10 +99,9 @@ public class CustomerController implements CustomerApi {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
 
-        DishEntity dishEntity = dishOptional.get();
-
         // Add dish to the order
         for (int i = 0; i < updateDishQtyRequest.getQuantity(); i++) {
+            DishEntity dishEntity = dishOptional.get();
             order.addDishesItem(dishEntity);
         }
 
