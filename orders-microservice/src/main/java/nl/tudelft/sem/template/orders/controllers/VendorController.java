@@ -34,6 +34,13 @@ public class VendorController implements VendorApi {
         this.dishMapper = dishMapper;
     }
 
+    /**
+     * Adds a dish to the menu of a vendor.
+     *
+     * @param vendorId the id of the vendor
+     * @param dish the dish to be added
+     * @return the added dish
+     */
     @Override
     public ResponseEntity<Dish> addDishToMenu(UUID vendorId, Dish dish) {
         if (!vendorAdapter.checkRoleById(vendorId)) {
