@@ -52,8 +52,9 @@ class OrderServiceTest {
         UUID orderId = UUID.randomUUID();
 
         when(orderRepository.findById(orderId)).thenReturn(Optional.empty()); // Unsuccessful query
+        Order order = orderService.findById(orderId);
 
-        assertThatThrownBy(() -> orderService.findById(orderId)).isInstanceOf(IllegalArgumentException.class);
+        assertThat(order).isNull();
     }
 
     @Test

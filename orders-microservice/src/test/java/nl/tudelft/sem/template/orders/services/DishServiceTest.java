@@ -49,8 +49,9 @@ public class DishServiceTest {
         UUID nonExistentDishId = UUID.randomUUID();
 
         when(dishRepository.findById(nonExistentDishId)).thenReturn(Optional.empty()); // Unsuccessful query
+        DishEntity dish = dishService.findById(nonExistentDishId);
 
-        assertThatThrownBy(() -> dishService.findById(nonExistentDishId)).isInstanceOf(IllegalArgumentException.class);
+        assertThat(dish).isNull();
     }
 
     @Test

@@ -11,8 +11,8 @@ import java.util.UUID;
 
 @Service
 public class DishService implements IDishService {
-    private final DishRepository dishRepository;
-    private final VendorRepository vendorRepository;
+    private final transient DishRepository dishRepository;
+    private final transient VendorRepository vendorRepository;
 
     @Autowired
     public DishService(DishRepository dishRepository, VendorRepository vendorRepository) {
@@ -28,7 +28,7 @@ public class DishService implements IDishService {
      * @throws IllegalArgumentException if there is no dish with the specified ID
      */
     public DishEntity findById(UUID dishId) {
-        return dishRepository.findById(dishId).orElseThrow(IllegalArgumentException::new);
+        return dishRepository.findById(dishId).orElse(null);
     }
 
     /**
