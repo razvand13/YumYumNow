@@ -186,7 +186,7 @@ public class CustomerController implements CustomerApi {
      * or Internal Server Error - An unexpected error occurred on the server. (status code 500)
      */
     @Override
-    public ResponseEntity<Order> updateDishQuantityInOrder(UUID customerId, UUID orderId, UUID dishId, UpdateDishQtyRequest updateDishQtyRequest) {
+    public ResponseEntity<Order> updateDishQty(UUID customerId, UUID orderId, UUID dishId, UpdateDishQtyRequest updateDishQtyRequest) {
         // Validate the requested quantity - it should not be negative
         if (updateDishQtyRequest.getQuantity() < 0) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
