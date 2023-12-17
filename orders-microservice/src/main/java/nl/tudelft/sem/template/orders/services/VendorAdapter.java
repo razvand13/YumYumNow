@@ -15,7 +15,7 @@ public class VendorAdapter {
     private final transient HttpClient client = HttpClient.newBuilder().build();
 
     public boolean existsById(UUID vendorId) {
-        return sendGetRequest(USERS_URL + "/vendor/" + vendorId);
+        return sendGetRequest(USERS_URL + "/vendors/" + vendorId);
     }
 
     /**
