@@ -9,12 +9,13 @@ import nl.tudelft.sem.template.orders.repositories.VendorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 @Service
 public class VendorService implements IVendorService {
-    private final DishRepository dishRepository;
+    private final transient DishRepository dishRepository;
 
     @Autowired
     public VendorService(DishRepository dishRepository) {
@@ -52,6 +53,38 @@ public class VendorService implements IVendorService {
         double sum = dishes.stream().mapToDouble(DishEntity::getPrice).sum();
 
         return sum / dishes.size();
+    }
+
+    /**
+     * Filter vendors by name, average price and distance to delivery location
+     *
+     * @param vendors vendors
+     * @param name name
+     * @param minAvgPrice min average price
+     * @param maxAvgPrice max average price
+     * @param customerLocation customer location
+     * @return the list of filtered vendors
+     */
+    public List<VendorDTO> filterVendors(List<VendorDTO> vendors, String name,
+                                         Integer minAvgPrice, Integer maxAvgPrice, Address customerLocation) {
+        List<VendorDTO> filteredVendors = new ArrayList<>();
+        for (VendorDTO vendor : vendors) {
+            Address vendorLocation = vendor.getLocation();
+            Double avgPrice = getAveragePrice(vendor);
+
+            // If these filters are not specified, max them out
+            minAvgPrice = minAvgPrice != null ? minAvgPrice : Integer.MIN_VALUE;
+            maxAvgPrice = maxAvgPrice != null ? maxAvgPrice : Integer.MAX_VALUE;
+
+            if (isInRange(vendorLocation, customerLocation)
+                    && avgPrice >= minAvgPrice && avgPrice <= maxAvgPrice) {
+                if (name == null || vendor.getName().contains(name)) {
+                    filteredVendors.add(vendor);
+                }
+            }
+        }
+
+        return filteredVendors;
     }
 
 }

@@ -12,7 +12,7 @@ import java.util.ArrayList;
 @Component
 public class DishMapper {
 
-    private final VendorRepository vendorRepository;
+    private final transient VendorRepository vendorRepository;
 
     @Autowired
     public DishMapper(VendorRepository vendorRepository) {

@@ -9,7 +9,7 @@ import java.util.UUID;
 
 @Service
 public class OrderService implements IOrderService {
-    OrderRepository orderRepository;
+    private final transient OrderRepository orderRepository;
 
     @Autowired
     public OrderService(OrderRepository orderRepository) {
@@ -17,7 +17,7 @@ public class OrderService implements IOrderService {
     }
 
     public Order findById(UUID orderId) {
-        return orderRepository.findById(orderId).orElseThrow(IllegalArgumentException::new);
+        return orderRepository.findById(orderId).orElse(null);
     }
 
     public Order save(Order order) {

@@ -18,8 +18,8 @@ public class VendorAdapter {
 
     private static final String USERS_URL = "https://localhost:8088";
     private static final String DELIVERY_URL = "https://localhost:8081";
-    private final HttpClient client = HttpClient.newBuilder().build();
-    private final VendorMapper vendorMapper;
+    private static final HttpClient CLIENT = HttpClient.newBuilder().build();
+    private final transient VendorMapper vendorMapper;
 
     @Autowired
     public VendorAdapter(VendorMapper vendorMapper) {
@@ -35,15 +35,13 @@ public class VendorAdapter {
         String uri = USERS_URL + "/vendors";
         final HttpRequest requestVendors = createGetRequest(uri);
 
-        List<VendorDTO> vendors;
         try {
-            HttpResponse<String> responseVendors = client.send(requestVendors, HttpResponse.BodyHandlers.ofString());
-            vendors = vendorMapper.toDTO(responseVendors.body());
+            HttpResponse<String> responseVendors = CLIENT.send(requestVendors, HttpResponse.BodyHandlers.ofString());
+            return vendorMapper.toDTO(responseVendors.body());
         } catch (Exception e) {
+            e.printStackTrace();
             throw new RuntimeException(e);
         }
-
-        return vendors;
     }
 
     /**

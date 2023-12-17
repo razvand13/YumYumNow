@@ -46,13 +46,11 @@ public class VendorMapper {
      * @return List of VendorDTO
      */
     public List<VendorDTO> toDTO(String responseBody) {
-        List<VendorDTO> vendors;
         try {
-            vendors = OBJECT_MAPPER.readValue(responseBody, new TypeReference<List<VendorDTO>>() {});
+            return OBJECT_MAPPER.readValue(responseBody, new TypeReference<List<VendorDTO>>() {});
         } catch (JsonProcessingException e) {
+            e.printStackTrace();
             throw new RuntimeException(e);
         }
-
-        return vendors;
     }
 }

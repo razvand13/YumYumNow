@@ -4,6 +4,8 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
+
 import nl.tudelft.sem.template.api.CustomerApi;
 import nl.tudelft.sem.template.model.CreateOrderRequest;
 import nl.tudelft.sem.template.model.Dish;
@@ -16,11 +18,12 @@ import nl.tudelft.sem.template.orders.external.CustomerDTO;
 import nl.tudelft.sem.template.orders.external.VendorDTO;
 import nl.tudelft.sem.template.orders.mappers.DishMapper;
 import nl.tudelft.sem.template.orders.mappers.VendorMapper;
-import nl.tudelft.sem.template.orders.services.CustomerAdapter;
+import nl.tudelft.sem.template.orders.services.CustomerService;
 import nl.tudelft.sem.template.orders.services.DishService;
 import nl.tudelft.sem.template.orders.services.OrderService;
-import nl.tudelft.sem.template.orders.services.VendorAdapter;
 import nl.tudelft.sem.template.orders.services.VendorService;
+import nl.tudelft.sem.template.orders.services.CustomerAdapter;
+import nl.tudelft.sem.template.orders.services.VendorAdapter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,13 +31,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class CustomerController implements CustomerApi {
-    private final VendorMapper vendorMapper;
-    private final DishMapper dishMapper;
-    private final VendorService vendorService;
-    private final DishService dishService;
-    private final OrderService orderService;
-    private final CustomerAdapter customerAdapter;
-    private final VendorAdapter vendorAdapter;
+    private final transient VendorMapper vendorMapper;
+    private final transient DishMapper dishMapper;
+    private final transient VendorService vendorService;
+    private final transient DishService dishService;
+    private final transient OrderService orderService;
+    private final transient CustomerService customerService;
+    private final transient CustomerAdapter customerAdapter;
+    private final transient VendorAdapter vendorAdapter;
 
     /**
      * Constructor for this controller
@@ -49,13 +53,14 @@ public class CustomerController implements CustomerApi {
      */
     @Autowired
     public CustomerController(VendorMapper vendorMapper, DishMapper dishMapper, VendorService vendorService,
-                              DishService dishService, OrderService orderService,
+                              DishService dishService, OrderService orderService, CustomerService customerService,
                               CustomerAdapter customerAdapter, VendorAdapter vendorAdapter) {
         this.vendorMapper = vendorMapper;
         this.dishMapper = dishMapper;
         this.vendorService = vendorService;
         this.dishService = dishService;
         this.orderService = orderService;
+        this.customerService = customerService;
         this.customerAdapter = customerAdapter;
         this.vendorAdapter = vendorAdapter;
     }
@@ -99,38 +104,21 @@ public class CustomerController implements CustomerApi {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        List<VendorDTO> vendors = vendorAdapter.requestVendors();
+        // Get the customer's delivery location
         CustomerDTO customer = customerAdapter.requestCustomer(customerId);
-        Address customerLocation;
+        Address customerLocation = customerService.getDeliveryLocation(customer);
 
-        if (customer.getCurrentLocation() != null) {
-            customerLocation = customer.getCurrentLocation();
-        } else if (customer.getHomeAddress() != null) {
-            customerLocation = customer.getHomeAddress();
-        } else {
+        if (customerLocation == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
-        List<Vendor> filteredVendors = new ArrayList<>();
-
         // Filter vendors by name, average price and distance to delivery location
-        for (VendorDTO vendor : vendors) {
-            Address vendorLocation = vendor.getLocation();
-            Double avgPrice = vendorService.getAveragePrice(vendor);
+        List<VendorDTO> vendors = vendorAdapter.requestVendors();
+        List<VendorDTO> filteredVendors = vendorService.filterVendors(
+                vendors, name, minAvgPrice, maxAvgPrice, customerLocation);
+        var filteredVendorEntities = filteredVendors.stream().map(vendorMapper::toEntity).collect(Collectors.toList());
 
-            // If these filters are not specified, max them out
-            minAvgPrice = minAvgPrice != null ? minAvgPrice : Integer.MIN_VALUE;
-            maxAvgPrice = maxAvgPrice != null ? maxAvgPrice : Integer.MAX_VALUE;
-
-            if (vendorService.isInRange(vendorLocation, customerLocation)
-                    && avgPrice >= minAvgPrice && avgPrice <= maxAvgPrice) {
-                if (name == null || vendor.getName().contains(name)) {
-                    filteredVendors.add(vendorMapper.toEntity(vendor));
-                }
-            }
-        }
-
-        return ResponseEntity.ok(filteredVendors);
+        return ResponseEntity.ok(filteredVendorEntities);
     }
 
     /**
@@ -215,11 +203,8 @@ public class CustomerController implements CustomerApi {
         }
 
         // Get order from repository, check if order exists
-        Order order;
-        try {
-            order = orderService.findById(orderId);
-        } catch (IllegalArgumentException e) {
-            e.printStackTrace();
+        Order order = orderService.findById(orderId);
+        if (order == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
@@ -236,10 +221,8 @@ public class CustomerController implements CustomerApi {
         // Get the vendor's dishes from the repository
         List<DishEntity> vendorDishes = dishService.findAllByVendorId(order.getVendorId());
 
-        List<Dish> filteredDishes = new ArrayList<>();
-        for (DishEntity dish : vendorDishes) {
-            filteredDishes.add(dishMapper.toDTO(dish));
-        }
+        // When filtering by allergens, move this to DishService
+        List<Dish> filteredDishes = vendorDishes.stream().map(dishMapper::toDTO).collect(Collectors.toList());
 
         return ResponseEntity.ok(filteredDishes);
     }

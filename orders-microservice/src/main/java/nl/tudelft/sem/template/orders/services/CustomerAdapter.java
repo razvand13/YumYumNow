@@ -14,8 +14,8 @@ import java.util.UUID;
 public class CustomerAdapter {
     private static final String USERS_URL = "https://localhost:8088";
     private static final String DELIVERY_URL = "https://localhost:8081";
-    private final HttpClient client = HttpClient.newBuilder().build();
-    private final CustomerMapper customerMapper;
+    private static final HttpClient CLIENT = HttpClient.newBuilder().build();
+    private final transient CustomerMapper customerMapper;
 
     @Autowired
     public CustomerAdapter(CustomerMapper customerMapper) {
@@ -32,16 +32,14 @@ public class CustomerAdapter {
         String uri = USERS_URL + "/customers/" + customerId;
         final HttpRequest requestCustomer = createGetRequest(uri);
 
-        CustomerDTO customer;
         try {
-            HttpResponse<String> responseCustomer = client.send(requestCustomer, HttpResponse.BodyHandlers.ofString());
-            customer = customerMapper.toDTO(responseCustomer.body());
+            HttpResponse<String> responseCustomer = CLIENT.send(requestCustomer, HttpResponse.BodyHandlers.ofString());
+            return customerMapper.toDTO(responseCustomer.body());
 
         } catch (Exception e) {
+            e.printStackTrace();
             throw new RuntimeException(e);
         }
-
-        return customer;
     }
 
     /**

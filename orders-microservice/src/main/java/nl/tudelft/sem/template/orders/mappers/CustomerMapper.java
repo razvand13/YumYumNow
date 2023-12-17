@@ -17,13 +17,11 @@ public class CustomerMapper {
      * @return CustomerDTO after parsing
      */
     public CustomerDTO toDTO(String responseBody) {
-        CustomerDTO customer;
         try {
-            customer = OBJECT_MAPPER.readValue(responseBody, new TypeReference<CustomerDTO>() {});
+            return OBJECT_MAPPER.readValue(responseBody, new TypeReference<CustomerDTO>() {});
         } catch (JsonProcessingException e) {
+            e.printStackTrace();
             throw new RuntimeException(e);
         }
-
-        return customer;
     }
 }
