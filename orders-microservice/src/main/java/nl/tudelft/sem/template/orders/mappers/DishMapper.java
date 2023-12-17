@@ -36,7 +36,7 @@ public class DishMapper {
         dish.setDescription(dishDTO.getDescription());
 
         Vendor vendor = vendorRepository.findById(dishDTO.getVendorId())
-            .orElseThrow(() -> new IllegalArgumentException("Invalid vendor ID"));
+                .orElseThrow(() -> new IllegalArgumentException("Invalid vendor ID"));
         dish.setVendor(vendor);
 
         return dish;

@@ -1,50 +1,46 @@
 package nl.tudelft.sem.template.orders.services;
 
-import nl.tudelft.sem.template.orders.external.VendorDTO;
-import nl.tudelft.sem.template.orders.mappers.VendorMapper;
+import nl.tudelft.sem.template.orders.external.CustomerDTO;
+import nl.tudelft.sem.template.orders.mappers.CustomerMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.http.HttpStatus;
-
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.List;
 import java.util.UUID;
 
 @Component
-public class VendorAdapter {
-
+public class CustomerAdapter {
     private static final String USERS_URL = "https://localhost:8088";
     private static final String DELIVERY_URL = "https://localhost:8081";
     private static final HttpClient CLIENT = HttpClient.newBuilder().build();
-    private final transient VendorMapper vendorMapper;
+    private final transient CustomerMapper customerMapper;
 
     @Autowired
-    public VendorAdapter(VendorMapper vendorMapper) {
-        this.vendorMapper = vendorMapper;
+    public CustomerAdapter(CustomerMapper customerMapper) {
+        this.customerMapper = customerMapper;
     }
 
     /**
-     * Checks if a vendor with a specified ID exists
+     * Checks if a customer with a specified ID exists
      *
-     * @param vendorId id
-     * @return true iff the vendor exists in the database
+     * @param customerId id
+     * @return true iff the customer exists in the database
      */
-    public boolean existsById(UUID vendorId) {
-        return sendGetRequest(USERS_URL + "/vendors/" + vendorId).statusCode() == 200;
+    public boolean existsById(UUID customerId) {
+        return sendGetRequest(USERS_URL + "/customers/" + customerId).statusCode() == 200;
     }
 
     /**
-     * Checks if the user with the given UUID is a customer, courier or admin.
+     * Checks if the user with the given UUID is a vendor, courier or admin.
      * If so, the user is not authorized.
      *
      * @param userId the id of the user
-     * @return true iff the user is a vendor
+     * @return true iff the user is a customer
      */
     public boolean checkRoleById(UUID userId) {
-        if (isRole(userId, "/customers/")) {
+        if (isRole(userId, "/vendors/")) {
             return false;
         }
         if (isRole(userId, "/couriers/")) {
@@ -67,14 +63,16 @@ public class VendorAdapter {
         return sendGetRequest(USERS_URL + path + userId).statusCode() == 200;
     }
 
+
     /**
-     * Request all vendors from the Users microservice
+     * Requests customer from the Users microservice
      *
-     * @return a list of VendorDTO
+     * @param customerId id of that customer
+     * @return CustomerDTO object containing all relevant attributes
      */
-    public List<VendorDTO> requestVendors() {
-        String uri = USERS_URL + "/vendors";
-        return vendorMapper.toDTO(sendGetRequest(uri).body());
+    public CustomerDTO requestCustomer(UUID customerId) {
+        String uri = USERS_URL + "/customers/" + customerId;
+        return customerMapper.toDTO(sendGetRequest(uri).body());
     }
 
     /**
@@ -96,6 +94,4 @@ public class VendorAdapter {
         }
     }
 
-
 }
-
