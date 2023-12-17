@@ -12,6 +12,7 @@ import java.util.UUID;
 
 @Repository
 public interface DishRepository extends JpaRepository<DishEntity, UUID> {
+
     @Query("SELECT d FROM DishEntity d WHERE d.vendor.ID = :vendorId")
     List<DishEntity> getDishesByVendorId(@Param("vendorId") UUID vendorId);
 

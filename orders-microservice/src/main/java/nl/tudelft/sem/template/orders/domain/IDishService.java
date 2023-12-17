@@ -9,4 +9,7 @@ public interface IDishService {
     DishEntity findById(UUID dishId);
 
     List<DishEntity> findAllByVendorId(UUID vendorId);
+
+    DishEntity addDish(UUID vendorId, DishEntity dish);
+
 }
