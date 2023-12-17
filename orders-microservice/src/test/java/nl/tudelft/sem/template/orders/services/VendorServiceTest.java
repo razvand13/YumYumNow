@@ -10,6 +10,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -105,5 +106,64 @@ class VendorServiceTest {
         Double averagePrice = vendorService.getAveragePrice(vendor);
 
         assertThat(averagePrice).isEqualTo(20.0);
+    }
+
+    @Test
+    void testGetAveragePriceNoDishes() {
+        VendorDTO vendor = new VendorDTO();
+        vendor.setVendorId(UUID.randomUUID());
+
+        Double averagePrice = vendorService.getAveragePrice(vendor);
+
+        assertThat(averagePrice).isEqualTo(0.0);
+    }
+
+    @Test
+    void testFilterVendors() {
+        Address customerLocation = new Address();
+        customerLocation.setLongitude(52.0);
+        customerLocation.setLatitude(4.0);
+        Address vendorLocation1 = new Address();
+        vendorLocation1.setLongitude(53.0);
+        vendorLocation1.setLatitude(5.0);
+        Address vendorLocation2 = new Address();
+        vendorLocation2.setLongitude(52.0);
+        vendorLocation2.setLatitude(4.0);
+
+        VendorDTO vendor1 = new VendorDTO(UUID.randomUUID(), "Vendor 1", false, "vendor1@example.com", true, vendorLocation1);
+        VendorDTO vendor2 = new VendorDTO(UUID.randomUUID(), "Rodnev 2", false, "vendor2@example.com", true, vendorLocation2);
+
+        List<VendorDTO> vendors = List.of(vendor1, vendor2);
+
+        List<VendorDTO> filteredVendors = vendorService.filterVendors(vendors, "Ven", 0, 100, customerLocation);
+
+        assertThat(filteredVendors).containsExactlyInAnyOrder(vendor1);
+    }
+
+    @Test
+    void testFilterVendorsByAveragePrice() {
+        Address location = new Address();
+        location.setLongitude(52.0);
+        location.setLatitude(4.0);
+
+        VendorDTO vendor = new VendorDTO(UUID.randomUUID(), "Vendor", false, "vendor@example.com", true, location);
+
+
+        DishEntity dish1 = new DishEntity();
+        dish1.setPrice(10.0);
+        DishEntity dish2 = new DishEntity();
+        dish2.setPrice(20.0);
+        DishEntity dish3 = new DishEntity();
+        dish3.setPrice(30.0);
+
+        List<DishEntity> dishes = Arrays.asList(dish1, dish2, dish3);
+
+        when(dishRepository.getDishesByVendorId(vendor.getVendorId())).thenReturn(dishes);
+
+        List<VendorDTO> vendors = List.of(vendor);
+
+        List<VendorDTO> filteredVendors = vendorService.filterVendors(vendors, "Ven", 20, 20, location);
+
+        assertThat(filteredVendors).containsExactlyInAnyOrder(vendor);
     }
 }

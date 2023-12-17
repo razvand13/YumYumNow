@@ -50,6 +50,11 @@ public class VendorService implements IVendorService {
      */
     public Double getAveragePrice(VendorDTO vendor) {
         List<DishEntity> dishes = dishRepository.getDishesByVendorId(vendor.getVendorId());
+
+        if(dishes == null || dishes.isEmpty()) {
+            return 0.0;
+        }
+
         double sum = dishes.stream().mapToDouble(DishEntity::getPrice).sum();
 
         return sum / dishes.size();
