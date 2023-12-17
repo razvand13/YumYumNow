@@ -6,7 +6,12 @@ import nl.tudelft.sem.template.orders.entities.DishEntity;
 import nl.tudelft.sem.template.orders.entities.Order;
 import nl.tudelft.sem.template.orders.mappers.DishMapper;
 import nl.tudelft.sem.template.orders.mappers.VendorMapper;
-import nl.tudelft.sem.template.orders.services.*;
+import nl.tudelft.sem.template.orders.services.OrderService;
+import nl.tudelft.sem.template.orders.services.VendorAdapter;
+import nl.tudelft.sem.template.orders.services.VendorService;
+import nl.tudelft.sem.template.orders.services.DishService;
+import nl.tudelft.sem.template.orders.services.CustomerService;
+import nl.tudelft.sem.template.orders.services.CustomerAdapter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -40,7 +45,6 @@ public class CustomerController implements CustomerApi {
      * @param orderService    order service
      * @param customerAdapter customer adapter
      * @param vendorAdapter   vendor adapter
-     * @param orderRepository
      */
     @Autowired
     public CustomerController(VendorMapper vendorMapper, DishMapper dishMapper, VendorService vendorService,
@@ -68,12 +72,14 @@ public class CustomerController implements CustomerApi {
      * @param updateDishQtyRequest (required)
      * @return Dish added successfully, updated order returned. (status code 200)
      * or Bad Request - Dish not added to order. (status code 400)
-     * or Unauthorized - Order does not belong to user/dish does not belong to current vendor/user is not a customer. (status code 401)
+     * or Unauthorized - Order does not belong to user/dish does not belong to
+     * current vendor/user is not a customer. (status code 401)
      * or Not Found - Dish, order or customer not found. (status code 404)
      * or Internal Server Error - An unexpected error occurred on the server. (status code 500)
      */
     @Override
-    public ResponseEntity<Order> addDishToOrder(UUID customerId, UUID orderId, UUID dishId, UpdateDishQtyRequest updateDishQtyRequest) {
+    public ResponseEntity<Order> addDishToOrder(UUID customerId, UUID orderId,
+                                                UUID dishId, UpdateDishQtyRequest updateDishQtyRequest) {
         // Fetch order
         Optional<Order> orderOptional = Optional.ofNullable(orderService.findById(orderId));
         if (!orderOptional.isPresent()) {
@@ -123,7 +129,8 @@ public class CustomerController implements CustomerApi {
      * @param dishId      (required)
      * @return Dish removed successfully, updated order returned. (status code 200)
      * or Bad Request - Dish not removed from order. (status code 400)
-     * or Unauthorized - Order does not belong to user/dish does not belong to current vendor/user is not a customer. (status code 401)
+     * or Unauthorized - Order does not belong to user/dish does not belong to
+     * current vendor/user is not a customer. (status code 401)
      * or Not Found - Dish, order, or customer not found. (status code 404)
      * or Internal Server Error - An unexpected error occurred on the server. (status code 500)
      */
@@ -181,12 +188,14 @@ public class CustomerController implements CustomerApi {
      * @param updateDishQtyRequest (required)
      * @return Dish quantity updated successfully, updated order returned. (status code 200)
      * or Bad Request - Invalid quantity provided. (status code 400)
-     * or Unauthorized - Order does not belong to user/dish does not belong to current vendor/user is not a customer. (status code 401)
+     * or Unauthorized - Order does not belong to user/dish does not belong to
+     * current vendor/user is not a customer. (status code 401)
      * or Not Found - Dish, order, or customer not found. (status code 404)
      * or Internal Server Error - An unexpected error occurred on the server. (status code 500)
      */
     @Override
-    public ResponseEntity<Order> updateDishQty(UUID customerId, UUID orderId, UUID dishId, UpdateDishQtyRequest updateDishQtyRequest) {
+    public ResponseEntity<Order> updateDishQty(UUID customerId, UUID orderId,
+                                               UUID dishId, UpdateDishQtyRequest updateDishQtyRequest) {
         // Validate the requested quantity - it should not be negative
         if (updateDishQtyRequest.getQuantity() < 0) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
