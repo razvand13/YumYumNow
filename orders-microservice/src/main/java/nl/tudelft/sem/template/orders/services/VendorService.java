@@ -3,23 +3,37 @@ package nl.tudelft.sem.template.orders.services;
 import nl.tudelft.sem.template.orders.domain.IVendorService;
 import nl.tudelft.sem.template.orders.entities.Address;
 import nl.tudelft.sem.template.orders.entities.DishEntity;
+import nl.tudelft.sem.template.orders.entities.Order;
+import nl.tudelft.sem.template.orders.external.PaymentMock;
 import nl.tudelft.sem.template.orders.external.VendorDTO;
 import nl.tudelft.sem.template.orders.repositories.DishRepository;
-import nl.tudelft.sem.template.orders.repositories.VendorRepository;
+import nl.tudelft.sem.template.orders.repositories.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class VendorService implements IVendorService {
     private final transient DishRepository dishRepository;
+    private final transient OrderRepository orderRepository;
+    private final transient PaymentMock paymentMock;
 
+    /**
+     * Constructor for Vendor Service
+     *
+     * @param dishRepository the dish repo
+     * @param orderRepository the order repo
+     * @param paymentMock the payment mock
+     */
     @Autowired
-    public VendorService(DishRepository dishRepository) {
+    public VendorService(DishRepository dishRepository, OrderRepository orderRepository, PaymentMock paymentMock) {
         this.dishRepository = dishRepository;
+        this.orderRepository = orderRepository;
+        this.paymentMock = paymentMock;
     }
 
     /**
@@ -92,4 +106,16 @@ public class VendorService implements IVendorService {
         return filteredVendors;
     }
 
+    /**
+     * Collects and returns orders belonging to vendor with ID vendorID
+     * Pre-condition: vendorID should be a valid id of a vendor
+     *
+     * @param vendorId ID of vendor
+     * @return List of orders. Only orders that belong to the vendor and are paid are returned;
+     */
+    @Override
+    public List<Order> getVendorOrders(UUID vendorId) {
+        List<Order> orders = orderRepository.getOrdersByVendorId(vendorId);
+        return orders.stream().filter((o) -> paymentMock.isPaid(o.getID())).collect(Collectors.toList());
+    }
 }

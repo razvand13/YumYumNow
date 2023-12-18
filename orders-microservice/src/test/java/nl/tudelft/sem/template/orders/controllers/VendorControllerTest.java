@@ -4,7 +4,9 @@ import nl.tudelft.sem.template.model.Dish;
 import nl.tudelft.sem.template.orders.entities.DishEntity;
 import nl.tudelft.sem.template.orders.mappers.DishMapper;
 import nl.tudelft.sem.template.orders.services.DishService;
+import nl.tudelft.sem.template.orders.services.OrderService;
 import nl.tudelft.sem.template.orders.services.VendorAdapter;
+import nl.tudelft.sem.template.orders.services.VendorService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -24,13 +26,17 @@ class VendorControllerTest {
     private DishService dishService;
     private DishMapper dishMapper;
     private VendorController vendorController;
+    private OrderService orderService;
+    private VendorService vendorService;
 
     @BeforeEach
     void setUp() {
         vendorAdapter = mock(VendorAdapter.class);
         dishService = mock(DishService.class);
         dishMapper = mock(DishMapper.class);
-        vendorController = new VendorController(vendorAdapter, dishService, dishMapper);
+        orderService = mock(OrderService.class);
+        vendorService = mock(VendorService.class);
+        vendorController = new VendorController(vendorAdapter, dishService, dishMapper, orderService, vendorService);
     }
 
     @Test
