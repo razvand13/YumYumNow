@@ -307,12 +307,12 @@ public class CustomerController implements CustomerApi {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
-        Order order = orderOptional.get();
-
         // verify that it is a user making the modification
         if (!customerAdapter.checkRoleById(customerId)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
+
+        Order order = orderOptional.get();
 
         // check if order belongs to the right customer
         if (!customerId.equals(order.getCustomerId())){
