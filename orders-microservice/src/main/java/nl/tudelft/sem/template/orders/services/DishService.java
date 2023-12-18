@@ -1,5 +1,6 @@
 package nl.tudelft.sem.template.orders.services;
 
+import nl.tudelft.sem.template.model.Dish;
 import nl.tudelft.sem.template.orders.domain.IDishService;
 import nl.tudelft.sem.template.orders.entities.DishEntity;
 import nl.tudelft.sem.template.orders.entities.Vendor;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class DishService implements IDishService {
@@ -60,6 +62,16 @@ public class DishService implements IDishService {
         dish.setVendor(vendor);
         vendorRepository.save(vendor); // <- should be removed
         return dishRepository.save(dish);
+    }
+
+    public boolean isDishInOrder(List<DishEntity> dishEntityList, UUID dishId){
+        return dishEntityList.stream().anyMatch(dish -> dish.getID().equals(dishId));
+    }
+
+    public List<DishEntity> removeDishOrder(List<DishEntity> dishEntityList, UUID dishId){
+        return dishEntityList.stream()
+                .filter(dish -> !dish.getID().equals(dishId))
+                .collect(Collectors.toList());
     }
 }
 
