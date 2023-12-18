@@ -89,14 +89,14 @@ public class CustomerController implements CustomerApi {
         Order order = orderOptional.get();
 
         // Verify if the order belongs to the given customer
-        if (!customerId.equals(order.getCustomerId())) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null); // Unauthorized access
+        if (!customerAdapter.checkRoleById(customerId)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // Unauthorized access
         }
 
         // Fetch dish
         Optional<DishEntity> dishOptional = Optional.ofNullable(dishService.findById(dishId));
         if (!dishOptional.isPresent()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
         // Add dish to the order
@@ -143,9 +143,18 @@ public class CustomerController implements CustomerApi {
 
         Order order = orderOptional.get();
 
+        if (!customerAdapter.existsById(customerId)){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+
         // Verify if the order belongs to the given customer
-        if (!customerId.equals(order.getCustomerId())) {
+        if (!customerAdapter.checkRoleById(customerId)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        if (dishService.findById(dishId) == null){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
         // Check if the dish is part of the order
@@ -203,7 +212,7 @@ public class CustomerController implements CustomerApi {
         // Retrieve the order by ID and check if it exists and belongs to the given customer
         Optional<Order> orderOptional = Optional.ofNullable(orderService.findById(orderId));
         if (!orderOptional.isPresent() || !orderOptional.get().getCustomerId().equals(customerId)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build(); // Order not found or doesn't belong to customer
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // Order not found or doesn't belong to customer
         }
 
         Order order = orderOptional.get();
