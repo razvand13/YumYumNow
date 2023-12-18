@@ -19,6 +19,13 @@ public class DishMapper {
         this.vendorRepository = vendorRepository;
     }
 
+    /**
+     * Maps a dish DTO to a dish entity.
+     *
+     * @param dishDTO the dish DTO
+     * @return the dish entity
+     */
+
     public DishEntity toEntity(Dish dishDTO) {
         DishEntity dish = new DishEntity();
         dish.setID(dishDTO.getID());
@@ -36,6 +43,12 @@ public class DishMapper {
         return dish;
     }
 
+    /**
+     * Maps a dish entity to a dish DTO.
+     *
+     * @param dish the dish entity
+     * @return the dish DTO
+     */
     public Dish toDTO(DishEntity dish) {
         Dish dishDTO = new Dish();
         dishDTO.setID(dish.getID());
