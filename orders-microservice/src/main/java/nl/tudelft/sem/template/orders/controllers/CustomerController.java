@@ -244,12 +244,13 @@ public class CustomerController implements CustomerApi {
         // Fetch order
         Optional<Order> orderOptional = Optional.ofNullable(orderService.findById(orderId));
         if (!orderOptional.isPresent()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
+        Order order = orderOptional.get();
 
-        // Verify if the order belongs to the given customer
-        if (!customerAdapter.checkRoleById(customerId)) {
+        // Verify if the order belongs to the given customer and that it is a user making the modification
+        if (!customerAdapter.checkRoleById(customerId) && !customerId.equals(order.getCustomerId())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // Unauthorized access
         }
 
@@ -258,8 +259,6 @@ public class CustomerController implements CustomerApi {
         if (!dishOptional.isPresent()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
-
-        Order order = orderOptional.get();
 
         // Add dish to the order
         for (int i = 0; i < updateDishQtyRequest.getQuantity(); i++) {
@@ -303,42 +302,43 @@ public class CustomerController implements CustomerApi {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
-
+        // check if the customer exists
         if (!customerAdapter.existsById(customerId)){
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
-
-
-        // Verify if the order belongs to the given customer
-        if (!customerAdapter.checkRoleById(customerId)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        if (dishService.findById(dishId) == null){
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
         Order order = orderOptional.get();
 
+        // verify that it is a user making the modification
+        if (!customerAdapter.checkRoleById(customerId)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        // check if order belongs to the right customer
+        if (!customerId.equals(order.getCustomerId())){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // Unauthorized access
+        }
+
+        // check if the dish exists
+        if (dishService.findById(dishId) == null){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
         // Check if the dish is part of the order
         List<DishEntity> currentDishes = order.getDishes();
-        boolean dishExists = currentDishes.stream().anyMatch(dish -> dish.getID().equals(dishId));
+        boolean dishExists = dishService.isDishInOrder(currentDishes, dishId);
 
         if (!dishExists) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build(); // Dish not found in order
         }
 
         // Remove the dish from the order
-        List<DishEntity> updatedDishes = currentDishes.stream()
-                .filter(dish -> !dish.getID().equals(dishId))
-                .collect(Collectors.toList());
+        List<DishEntity> updatedDishes = dishService.removeDishOrder(currentDishes, dishId);
 
         order.setDishes(updatedDishes);
 
         // Calculate new price of order
-        double newTotalPrice = updatedDishes.stream()
-                .mapToDouble(DishEntity::getPrice)
-                .sum();
+        double newTotalPrice = orderService.calculateOrderPrice(updatedDishes);
 
         order.setTotalPrice(newTotalPrice);
 
@@ -372,13 +372,18 @@ public class CustomerController implements CustomerApi {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
-        // Retrieve the order by ID and check if it exists and belongs to the given customer
+        // Retrieve the order by ID and check if it exists
         Optional<Order> orderOptional = Optional.ofNullable(orderService.findById(orderId));
-        if (!orderOptional.isPresent() || !orderOptional.get().getCustomerId().equals(customerId)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // Order not found or doesn't belong to customer
+        if (!orderOptional.isPresent()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
         Order order = orderOptional.get();
+
+        // check if order belongs to the right customer
+        if (!customerId.equals(order.getCustomerId())){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // Unauthorized access
+        }
 
         // Get the current list of dishes in the order
         List<DishEntity> currentDishes = order.getDishes();
