@@ -9,6 +9,10 @@ import java.util.stream.Collectors;
 import nl.tudelft.sem.template.api.CustomerApi;
 import nl.tudelft.sem.template.model.CreateOrderRequest;
 import nl.tudelft.sem.template.model.Dish;
+import nl.tudelft.sem.template.orders.domain.ICustomerService;
+import nl.tudelft.sem.template.orders.domain.IDishService;
+import nl.tudelft.sem.template.orders.domain.IOrderService;
+import nl.tudelft.sem.template.orders.domain.IVendorService;
 import nl.tudelft.sem.template.orders.entities.Address;
 import nl.tudelft.sem.template.orders.entities.DishEntity;
 import nl.tudelft.sem.template.orders.entities.Order;
@@ -18,10 +22,6 @@ import nl.tudelft.sem.template.orders.external.CustomerDTO;
 import nl.tudelft.sem.template.orders.external.VendorDTO;
 import nl.tudelft.sem.template.orders.mappers.DishMapper;
 import nl.tudelft.sem.template.orders.mappers.VendorMapper;
-import nl.tudelft.sem.template.orders.services.CustomerService;
-import nl.tudelft.sem.template.orders.services.DishService;
-import nl.tudelft.sem.template.orders.services.OrderService;
-import nl.tudelft.sem.template.orders.services.VendorService;
 import nl.tudelft.sem.template.orders.services.CustomerAdapter;
 import nl.tudelft.sem.template.orders.services.VendorAdapter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,10 +33,10 @@ import org.springframework.web.bind.annotation.RestController;
 public class CustomerController implements CustomerApi {
     private final transient VendorMapper vendorMapper;
     private final transient DishMapper dishMapper;
-    private final transient VendorService vendorService;
-    private final transient DishService dishService;
-    private final transient OrderService orderService;
-    private final transient CustomerService customerService;
+    private final transient IVendorService vendorService;
+    private final transient IDishService dishService;
+    private final transient IOrderService orderService;
+    private final transient ICustomerService customerService;
     private final transient CustomerAdapter customerAdapter;
     private final transient VendorAdapter vendorAdapter;
 
@@ -52,8 +52,8 @@ public class CustomerController implements CustomerApi {
      * @param vendorAdapter vendor adapter
      */
     @Autowired
-    public CustomerController(VendorMapper vendorMapper, DishMapper dishMapper, VendorService vendorService,
-                              DishService dishService, OrderService orderService, CustomerService customerService,
+    public CustomerController(VendorMapper vendorMapper, DishMapper dishMapper, IVendorService vendorService,
+                              IDishService dishService, IOrderService orderService, ICustomerService customerService,
                               CustomerAdapter customerAdapter, VendorAdapter vendorAdapter) {
         this.vendorMapper = vendorMapper;
         this.dishMapper = dishMapper;
@@ -156,9 +156,9 @@ public class CustomerController implements CustomerApi {
         order.setOrderTime(OffsetDateTime.now());
         order.setVendorId(UUID.fromString(Integer.toString(vendorId))); // TODO change API for this to be UUID
         order.setCustomerId(customerId);
-        orderService.save(order);
+        Order savedOrder = orderService.save(order);
 
-        return ResponseEntity.ok(order);
+        return ResponseEntity.ok(savedOrder);
     }
 
     /**
