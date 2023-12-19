@@ -410,9 +410,7 @@ public class CustomerController implements CustomerApi {
         order.setDishes(updatedDishes);
 
         // Recalculate the total price of the order
-        double newTotalPrice = updatedDishes.stream()
-                .mapToDouble(DishEntity::getPrice)
-                .sum();
+        double newTotalPrice = orderService.calculateOrderPrice(updatedDishes);
 
         // Update the total price of the order
         order.setTotalPrice(newTotalPrice);
