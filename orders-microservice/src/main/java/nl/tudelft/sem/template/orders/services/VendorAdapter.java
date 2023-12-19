@@ -4,7 +4,6 @@ import nl.tudelft.sem.template.orders.external.VendorDTO;
 import nl.tudelft.sem.template.orders.mappers.VendorMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.http.HttpStatus;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -95,7 +94,4 @@ public class VendorAdapter {
             throw new RuntimeException(e);
         }
     }
-
-
 }
-

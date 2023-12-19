@@ -56,7 +56,7 @@ public class CustomerAdapter {
      * Helper method. Queries the Users microservice for the specified ID, using a certain path.
      *
      * @param userId user id
-     * @param path path
+     * @param path   path
      * @return true iff the status code is 200
      */
     private boolean isRole(UUID userId, String path) {

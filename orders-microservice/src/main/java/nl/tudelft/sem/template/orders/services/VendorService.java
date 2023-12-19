@@ -27,7 +27,7 @@ public class VendorService implements IVendorService {
      * It should be noted that although this method is using latitude and longitude,
      * the calculation is not geographically accurate.
      *
-     * @param vendorLocation the vendor's location
+     * @param vendorLocation   the vendor's location
      * @param customerLocation the customer's location
      * @return true iff they are in range
      */
@@ -63,10 +63,10 @@ public class VendorService implements IVendorService {
     /**
      * Filter vendors by name, average price and distance to delivery location
      *
-     * @param vendors vendors
-     * @param name name
-     * @param minAvgPrice min average price
-     * @param maxAvgPrice max average price
+     * @param vendors          vendors
+     * @param name             name
+     * @param minAvgPrice      min average price
+     * @param maxAvgPrice      max average price
      * @param customerLocation customer location
      * @return the list of filtered vendors
      */

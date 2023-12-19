@@ -29,13 +29,13 @@ public class CustomerDTO {
      * Constructor for CustomerDTO.
      * CustomerDTO is what is expected as a response from querying an external microservice.
      *
-     * @param customerId customer id
-     * @param name name
-     * @param email email
-     * @param isBlocked blocked
-     * @param payment payment
-     * @param homeAddress home address
-     * @param allergens allergens
+     * @param customerId      customer id
+     * @param name            name
+     * @param email           email
+     * @param isBlocked       blocked
+     * @param payment         payment
+     * @param homeAddress     home address
+     * @param allergens       allergens
      * @param currentLocation current location
      */
     public CustomerDTO(String customerId, String name, String email, boolean isBlocked,
