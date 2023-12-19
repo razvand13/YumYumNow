@@ -1,6 +1,6 @@
 package nl.tudelft.sem.template.orders.services;
 
-import nl.tudelft.sem.template.model.Dish;
+import nl.tudelft.sem.template.orders.VendorNotFoundException;
 import nl.tudelft.sem.template.orders.domain.IDishService;
 import nl.tudelft.sem.template.orders.entities.DishEntity;
 import nl.tudelft.sem.template.orders.entities.Vendor;
@@ -47,9 +47,6 @@ public class DishService implements IDishService {
         return dishRepository.getDishesByVendorId(vendorId);
     }
 
-
-
-
     /**
      * Adds a dish to the menu of a vendor.
      *
@@ -57,8 +54,9 @@ public class DishService implements IDishService {
      * @param dish the dish to be added
      * @return the added dish
      */
-    public DishEntity addDish(UUID vendorId, DishEntity dish) {
-        Vendor vendor = vendorRepository.findById(vendorId).orElseThrow(IllegalArgumentException::new);
+    public DishEntity addDish(UUID vendorId, DishEntity dish) throws IllegalArgumentException {
+        Vendor vendor = vendorRepository.findById(vendorId)
+            .orElseThrow(() -> new VendorNotFoundException("Vendor with ID " + vendorId + " not found"));
         dish.setVendor(vendor);
         vendorRepository.save(vendor); // <- should be removed
         return dishRepository.save(dish);

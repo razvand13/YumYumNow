@@ -1,5 +1,6 @@
 package nl.tudelft.sem.template.orders.services;
 
+import nl.tudelft.sem.template.orders.VendorNotFoundException;
 import nl.tudelft.sem.template.orders.entities.DishEntity;
 import nl.tudelft.sem.template.orders.entities.Vendor;
 import nl.tudelft.sem.template.orders.repositories.DishRepository;
@@ -18,7 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -110,7 +110,7 @@ public class DishServiceTest {
         when(vendorRepository.findById(vendorId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> dishService.addDish(vendorId, dish))
-            .isInstanceOf(IllegalArgumentException.class);
+            .isInstanceOf(VendorNotFoundException.class);
 
         verify(vendorRepository).findById(vendorId);
         verifyNoInteractions(dishRepository);

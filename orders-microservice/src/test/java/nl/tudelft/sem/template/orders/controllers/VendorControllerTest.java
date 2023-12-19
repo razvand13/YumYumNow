@@ -1,6 +1,7 @@
 package nl.tudelft.sem.template.orders.controllers;
 
 import nl.tudelft.sem.template.model.Dish;
+import nl.tudelft.sem.template.orders.VendorNotFoundException;
 import nl.tudelft.sem.template.orders.entities.DishEntity;
 import nl.tudelft.sem.template.orders.entities.Order;
 import nl.tudelft.sem.template.orders.mappers.DishMapper;
@@ -19,6 +20,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
@@ -49,6 +51,19 @@ class VendorControllerTest {
 
         vendorId = UUID.randomUUID();
         orderId = UUID.randomUUID();
+    }
+
+    @Test
+    void addDishToMenuWhenVendorIdIsNull() {
+        Dish dish = new Dish();
+
+        ResponseEntity<Dish> response = vendorController.addDishToMenu(null, dish);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+
+        verifyNoInteractions(vendorAdapter);
+        verifyNoInteractions(dishService);
+        verifyNoInteractions(dishMapper);
     }
 
     @Test
@@ -102,6 +117,29 @@ class VendorControllerTest {
         verify(dishMapper).toEntity(dish);
         verify(dishService).addDish(vendorId, dishEntity);
         verify(dishMapper).toDTO(addedDishEntity);
+    }
+
+    @Test
+    void addDishToMenuVendorNotFound() {
+        UUID nonExistentVendorId = UUID.randomUUID();
+        Dish dish = new Dish();
+        DishEntity dishEntity = new DishEntity();
+
+        when(vendorAdapter.checkRoleById(any(UUID.class))).thenReturn(true);
+        when(vendorAdapter.existsById(any(UUID.class))).thenReturn(true);
+        when(dishMapper.toEntity(any(Dish.class))).thenReturn(dishEntity);
+        when(dishService.addDish(any(UUID.class), any(DishEntity.class)))
+            .thenThrow(new VendorNotFoundException());
+
+        ResponseEntity<Dish> response = vendorController.addDishToMenu(nonExistentVendorId, dish);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+
+        // Verify interactions
+        verify(vendorAdapter).checkRoleById(nonExistentVendorId);
+        verify(vendorAdapter).existsById(nonExistentVendorId);
+        verify(dishMapper).toEntity(dish);
+        verify(dishService).addDish(nonExistentVendorId, dishEntity);
     }
 
     @Test
