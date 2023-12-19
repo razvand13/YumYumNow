@@ -26,12 +26,19 @@ import nl.tudelft.sem.template.orders.services.CustomerAdapter;
 
 import nl.tudelft.sem.template.model.CreateOrderRequest;
 import nl.tudelft.sem.template.model.Dish;
+import nl.tudelft.sem.template.orders.domain.ICustomerService;
+import nl.tudelft.sem.template.orders.domain.IDishService;
+import nl.tudelft.sem.template.orders.domain.IOrderService;
+import nl.tudelft.sem.template.orders.domain.IVendorService;
 import nl.tudelft.sem.template.orders.entities.Address;
 import nl.tudelft.sem.template.orders.entities.Status;
 import nl.tudelft.sem.template.orders.entities.Vendor;
 import nl.tudelft.sem.template.orders.external.CustomerDTO;
 import nl.tudelft.sem.template.orders.external.VendorDTO;
-
+import nl.tudelft.sem.template.orders.mappers.DishMapper;
+import nl.tudelft.sem.template.orders.mappers.VendorMapper;
+import nl.tudelft.sem.template.orders.services.CustomerAdapter;
+import nl.tudelft.sem.template.orders.services.VendorAdapter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -61,8 +68,8 @@ public class CustomerController implements CustomerApi {
      * @param vendorAdapter   vendor adapter
      */
     @Autowired
-    public CustomerController(VendorMapper vendorMapper, DishMapper dishMapper, VendorService vendorService,
-                              DishService dishService, OrderService orderService, CustomerService customerService,
+    public CustomerController(VendorMapper vendorMapper, DishMapper dishMapper, IVendorService vendorService,
+                              IDishService dishService, IOrderService orderService, ICustomerService customerService,
                               CustomerAdapter customerAdapter, VendorAdapter vendorAdapter) {
         this.vendorMapper = vendorMapper;
         this.dishMapper = dishMapper;
@@ -165,9 +172,9 @@ public class CustomerController implements CustomerApi {
         order.setOrderTime(OffsetDateTime.now());
         order.setVendorId(UUID.fromString(Integer.toString(vendorId))); // TODO change API for this to be UUID
         order.setCustomerId(customerId);
-        orderService.save(order);
+        Order savedOrder = orderService.save(order);
 
-        return ResponseEntity.ok(order);
+        return ResponseEntity.ok(savedOrder);
     }
 
     /**
