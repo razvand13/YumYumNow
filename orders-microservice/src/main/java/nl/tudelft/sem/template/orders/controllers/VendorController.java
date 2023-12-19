@@ -40,8 +40,8 @@ public class VendorController implements VendorApi {
      * @param vendorService the vendor service
      */
     @Autowired
-    public VendorController(VendorAdapter vendorAdapter, DishService dishService, DishMapper dishMapper,
-                            OrderService orderService, VendorService vendorService) {
+    public VendorController(VendorAdapter vendorAdapter, IDishService dishService, DishMapper dishMapper,
+                            IOrderService orderService, IVendorService vendorService) {
         this.vendorAdapter = vendorAdapter;
         this.dishService = dishService;
         this.dishMapper = dishMapper;
