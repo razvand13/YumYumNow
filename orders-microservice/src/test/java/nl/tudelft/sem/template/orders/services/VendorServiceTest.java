@@ -2,8 +2,11 @@ package nl.tudelft.sem.template.orders.services;
 
 import nl.tudelft.sem.template.orders.entities.Address;
 import nl.tudelft.sem.template.orders.entities.DishEntity;
+import nl.tudelft.sem.template.orders.entities.Order;
+import nl.tudelft.sem.template.orders.external.PaymentMock;
 import nl.tudelft.sem.template.orders.external.VendorDTO;
 import nl.tudelft.sem.template.orders.repositories.DishRepository;
+import nl.tudelft.sem.template.orders.repositories.OrderRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -16,14 +19,17 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class VendorServiceTest {
 
-    @Mock
     private DishRepository dishRepository;
 
-    @InjectMocks
+    private OrderRepository orderRepository;
+
+    private PaymentMock paymentMock;
+
     private VendorService vendorService;
 
     private Address vendorLocation;
@@ -31,7 +37,10 @@ class VendorServiceTest {
 
     @BeforeEach
     void setup() {
-        MockitoAnnotations.openMocks(this);
+        dishRepository = mock(DishRepository.class);
+        orderRepository = mock(OrderRepository.class);
+        paymentMock = new PaymentMock();
+        vendorService = new VendorService(dishRepository, orderRepository, paymentMock);
         vendorLocation = new Address();
         customerLocation = new Address();
     }
@@ -165,5 +174,28 @@ class VendorServiceTest {
         List<VendorDTO> filteredVendors = vendorService.filterVendors(vendors, "Ven", 20, 20, vendorLocation);
 
         assertThat(filteredVendors).containsExactlyInAnyOrder(vendor);
+    }
+
+    @Test
+    void testGetVendorOrders() {
+        Order order1 = new Order();
+        order1.setID(UUID.randomUUID());
+        Order order2 = new Order();
+        order2.setID(UUID.randomUUID());
+        Order order3 = new Order();
+        order3.setID(UUID.randomUUID());
+
+        List<Order> orders = List.of(order1, order2, order3);
+
+        paymentMock.pay(order1.getID(), null);
+        paymentMock.pay(order3.getID(), null);
+
+        UUID vendorId = UUID.randomUUID();
+
+        when(orderRepository.getOrdersByVendorId(vendorId)).thenReturn(orders);
+
+        List<Order> result = vendorService.getVendorOrders(vendorId);
+
+        assertThat(result).containsExactlyInAnyOrder(order1, order3);
     }
 }

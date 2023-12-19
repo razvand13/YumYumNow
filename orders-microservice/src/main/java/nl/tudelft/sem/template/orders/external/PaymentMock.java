@@ -3,7 +3,9 @@ package nl.tudelft.sem.template.orders.external;
 import nl.tudelft.sem.template.orders.entities.PayOrderRequest;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * This Class mocks a theoretical payment microservice so that we can check the payment status of an order.
