@@ -17,8 +17,8 @@ import java.util.*;
  */
 @Component
 public class PaymentMock {
-    Set<UUID> paidOrders;
-    PaymentSuccessDecider paymentSuccessDecider;
+    private final transient Set<UUID> paidOrders;
+    private transient PaymentSuccessDecider paymentSuccessDecider;
 
     public PaymentMock() {
         this.paidOrders = new HashSet<UUID>();

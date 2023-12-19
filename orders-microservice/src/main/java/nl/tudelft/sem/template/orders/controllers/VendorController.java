@@ -91,14 +91,19 @@ public class VendorController implements VendorApi {
      */
     @Override
     public ResponseEntity<Order> getOrderDetails(UUID vendorId, UUID orderId) {
+        //Verify user is not of wrong type
+        if (!vendorAdapter.checkRoleById(vendorId)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
         //Verify existence of user and order
         Order order = orderService.findById(orderId);
         if (order == null || !vendorAdapter.existsById(vendorId)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
-        //Verify user type and order ownership
-        if (!vendorAdapter.checkRoleById(vendorId) || !order.getVendorId().equals(vendorId)) {
+        //Verify order ownership
+        if (!order.getVendorId().equals(vendorId)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
@@ -119,14 +124,14 @@ public class VendorController implements VendorApi {
      */
     @Override
     public ResponseEntity<List<Order>> getVendorOrders(UUID vendorId) {
-        //Verify existence of vendor
-        if (!vendorAdapter.existsById(vendorId)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
-
         //Verify user type
         if (!vendorAdapter.checkRoleById(vendorId)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        //Verify existence of vendor
+        if (!vendorAdapter.existsById(vendorId)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
         List<Order> orders = vendorService.getVendorOrders(vendorId);
