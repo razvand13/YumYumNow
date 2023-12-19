@@ -115,7 +115,7 @@ public class VendorService implements IVendorService {
      */
     @Override
     public List<Order> getVendorOrders(UUID vendorId) {
-        List<Order> orders = orderRepository.getOrdersByVendorId(vendorId);
+        List<Order> orders = orderRepository.findByVendorId(vendorId);
         return orders.stream().filter((o) -> paymentMock.isPaid(o.getID())).collect(Collectors.toList());
     }
 }

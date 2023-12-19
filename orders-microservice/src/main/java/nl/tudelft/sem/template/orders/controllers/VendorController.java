@@ -2,6 +2,8 @@ package nl.tudelft.sem.template.orders.controllers;
 
 import nl.tudelft.sem.template.api.VendorApi;
 import nl.tudelft.sem.template.model.Dish;
+import nl.tudelft.sem.template.orders.domain.IOrderService;
+import nl.tudelft.sem.template.orders.domain.IVendorService;
 import nl.tudelft.sem.template.orders.entities.DishEntity;
 import nl.tudelft.sem.template.orders.entities.Order;
 import nl.tudelft.sem.template.orders.mappers.DishMapper;
@@ -24,8 +26,8 @@ public class VendorController implements VendorApi {
     private final transient VendorAdapter vendorAdapter;
     private final transient DishService dishService;
     private final transient DishMapper dishMapper;
-    private final transient OrderService orderService;
-    private final transient VendorService vendorService;
+    private final transient IOrderService orderService;
+    private final transient IVendorService vendorService;
 
     /**
      * Creates an instance of the VendorController.
@@ -91,23 +93,32 @@ public class VendorController implements VendorApi {
      */
     @Override
     public ResponseEntity<Order> getOrderDetails(UUID vendorId, UUID orderId) {
+        if (vendorId == null || orderId == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+
         //Verify user is not of wrong type
         if (!vendorAdapter.checkRoleById(vendorId)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        //Verify existence of user and order
-        Order order = orderService.findById(orderId);
-        if (order == null || !vendorAdapter.existsById(vendorId)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
+        try {
+            Order order = orderService.findById(orderId);
 
-        //Verify order ownership
-        if (!order.getVendorId().equals(vendorId)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
+            //Verify order existence and user existence
+            if (order == null || !vendorAdapter.existsById(vendorId)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
 
-        return ResponseEntity.ok(order);
+            //Verify order ownership
+            if (!order.getVendorId().equals(vendorId)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+
+            return ResponseEntity.ok(order);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     /**
@@ -124,6 +135,10 @@ public class VendorController implements VendorApi {
      */
     @Override
     public ResponseEntity<List<Order>> getVendorOrders(UUID vendorId) {
+        if (vendorId == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+
         //Verify user type
         if (!vendorAdapter.checkRoleById(vendorId)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -134,7 +149,11 @@ public class VendorController implements VendorApi {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
-        List<Order> orders = vendorService.getVendorOrders(vendorId);
-        return ResponseEntity.ok(orders);
+        try {
+            List<Order> orders = vendorService.getVendorOrders(vendorId);
+            return ResponseEntity.ok(orders);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }

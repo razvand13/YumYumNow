@@ -3,7 +3,6 @@ package nl.tudelft.sem.template.orders.controllers;
 import nl.tudelft.sem.template.model.Dish;
 import nl.tudelft.sem.template.orders.entities.DishEntity;
 import nl.tudelft.sem.template.orders.entities.Order;
-import nl.tudelft.sem.template.orders.external.PaymentMock;
 import nl.tudelft.sem.template.orders.mappers.DishMapper;
 import nl.tudelft.sem.template.orders.repositories.OrderRepository;
 import nl.tudelft.sem.template.orders.services.DishService;
@@ -34,6 +33,8 @@ class VendorControllerTest {
     private OrderService orderService;
     private VendorService vendorService;
     private OrderRepository orderRepository;
+    private UUID vendorId;
+    private UUID orderId;
 
     @BeforeEach
     void setUp() {
@@ -45,11 +46,13 @@ class VendorControllerTest {
         vendorController = new VendorController(vendorAdapter, dishService, dishMapper, orderService, vendorService);
 
         orderRepository = mock(OrderRepository.class);
+
+        vendorId = UUID.randomUUID();
+        orderId = UUID.randomUUID();
     }
 
     @Test
     void addDishToMenuWhenVendorRoleIsInvalid() {
-        UUID vendorId = UUID.randomUUID();
         Dish dish = new Dish();
 
         when(vendorAdapter.checkRoleById(vendorId)).thenReturn(false);
@@ -64,7 +67,6 @@ class VendorControllerTest {
 
     @Test
     void addDishToMenuWhenVendorNotFound() {
-        UUID vendorId = UUID.randomUUID();
         Dish dish = new Dish();
 
         when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
@@ -81,7 +83,6 @@ class VendorControllerTest {
 
     @Test
     void addDishToMenuSuccessful() {
-        UUID vendorId = UUID.randomUUID();
         Dish dish = new Dish();
         DishEntity dishEntity = new DishEntity();
         DishEntity addedDishEntity = new DishEntity();
@@ -105,7 +106,6 @@ class VendorControllerTest {
 
     @Test
     void addDishToMenuBadRequest() {
-        UUID vendorId = UUID.randomUUID();
         Dish dish = new Dish();
         DishEntity dishEntity = new DishEntity();
 
@@ -122,7 +122,6 @@ class VendorControllerTest {
 
     @Test
     void addDishToMenuInternalServerError() {
-        UUID vendorId = UUID.randomUUID();
         Dish dish = new Dish();
 
         when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
@@ -138,7 +137,6 @@ class VendorControllerTest {
     @Test
     void testGetOrderDetailsWrongUserType() {
         UUID customerId = UUID.randomUUID();
-        UUID orderId = UUID.randomUUID();
 
         when(vendorAdapter.checkRoleById(customerId)).thenReturn(false);
 
@@ -149,9 +147,6 @@ class VendorControllerTest {
 
     @Test
     void testGetOrderDetailsOrderNotExists() {
-        UUID vendorId = UUID.randomUUID();
-        UUID orderId = UUID.randomUUID();
-
         when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
         when(orderService.findById(orderId)).thenReturn(null);
 
@@ -162,8 +157,6 @@ class VendorControllerTest {
 
     @Test
     void testGetOrderDetailsVendorNotExists() {
-        UUID vendorId = UUID.randomUUID();
-        UUID orderId = UUID.randomUUID();
         Order order = new Order();
 
         when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
@@ -177,8 +170,6 @@ class VendorControllerTest {
 
     @Test
     void testGetOrderDetailsOrderDoesNotBelongToVendor() {
-        UUID vendorId = UUID.randomUUID();
-        UUID orderId = UUID.randomUUID();
         Order order = new Order();
         order.setVendorId(UUID.randomUUID());
 
@@ -192,9 +183,16 @@ class VendorControllerTest {
     }
 
     @Test
+    void testGetOrderDetailsBadRequest() {
+        ResponseEntity<Order> response1 = vendorController.getOrderDetails(null, orderId);
+        ResponseEntity<Order> response2 = vendorController.getOrderDetails(vendorId, null);
+
+        assertThat(response1.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response2.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
     void testGetOrderDetails() {
-        UUID vendorId = UUID.randomUUID();
-        UUID orderId = UUID.randomUUID();
         Order order = new Order();
         order.setVendorId(vendorId);
         order.setID(orderId);
@@ -211,8 +209,6 @@ class VendorControllerTest {
 
     @Test
     void testGetVendorOrdersWrongUserType() {
-        UUID vendorId = UUID.randomUUID();
-
         when(vendorAdapter.checkRoleById(vendorId)).thenReturn(false);
 
         ResponseEntity<List<Order>> response = vendorController.getVendorOrders(vendorId);
@@ -222,8 +218,6 @@ class VendorControllerTest {
 
     @Test
     void testGetVendorOrdersVendorDoesNotExist() {
-        UUID vendorId = UUID.randomUUID();
-
         when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
         when(vendorAdapter.existsById(vendorId)).thenReturn(false);
 
@@ -234,16 +228,21 @@ class VendorControllerTest {
 
     @Test
     void testGetVendorOrdersEmpty() {
-        UUID vendorId = UUID.randomUUID();
-
         when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
         when(vendorAdapter.existsById(vendorId)).thenReturn(true);
-        when(orderRepository.getOrdersByVendorId(vendorId)).thenReturn(new ArrayList<Order>());
+        when(orderRepository.findByVendorId(vendorId)).thenReturn(new ArrayList<Order>());
 
         ResponseEntity<List<Order>> response = vendorController.getVendorOrders(vendorId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isEmpty();
+    }
+
+    @Test
+    void testGetVendorOrdersBadResponse() {
+        ResponseEntity<List<Order>> response = vendorController.getVendorOrders(null);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
     @Test
@@ -254,8 +253,6 @@ class VendorControllerTest {
         order2.setID(UUID.randomUUID());
         Order order3 = new Order();
         order3.setID(UUID.randomUUID());
-
-        UUID vendorId = UUID.randomUUID();
 
         List<Order> orders = List.of(order1, order2, order3);
 

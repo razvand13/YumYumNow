@@ -9,11 +9,7 @@ import nl.tudelft.sem.template.orders.repositories.DishRepository;
 import nl.tudelft.sem.template.orders.repositories.OrderRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -192,7 +188,7 @@ class VendorServiceTest {
 
         UUID vendorId = UUID.randomUUID();
 
-        when(orderRepository.getOrdersByVendorId(vendorId)).thenReturn(orders);
+        when(orderRepository.findByVendorId(vendorId)).thenReturn(orders);
 
         List<Order> result = vendorService.getVendorOrders(vendorId);
 
