@@ -1,7 +1,6 @@
 package nl.tudelft.sem.template.orders.external;
 
-import nl.tudelft.sem.template.orders.entities.Address;
-import nl.tudelft.sem.template.orders.external.CustomerDTO;
+import nl.tudelft.sem.template.model.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

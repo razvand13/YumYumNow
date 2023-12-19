@@ -1,7 +1,7 @@
 package nl.tudelft.sem.template.orders.domain;
 
-import nl.tudelft.sem.template.orders.entities.DishEntity;
-import nl.tudelft.sem.template.orders.entities.Order;
+import nl.tudelft.sem.template.model.Dish;
+import nl.tudelft.sem.template.model.Order;
 
 import java.util.List;
 import java.util.UUID;
@@ -11,5 +11,5 @@ public interface IOrderService {
 
     Order save(Order order);
 
-    double calculateOrderPrice(List<DishEntity> dishEntityList);
+    double calculateOrderPrice(List<Dish> dishEntityList);
 }

@@ -8,37 +8,22 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import nl.tudelft.sem.template.api.CustomerApi;
+import nl.tudelft.sem.template.model.Address;
+import nl.tudelft.sem.template.model.Order;
+import nl.tudelft.sem.template.model.Status;
 import nl.tudelft.sem.template.model.UpdateDishQtyRequest;
+import nl.tudelft.sem.template.model.Vendor;
 import nl.tudelft.sem.template.orders.domain.ICustomerService;
 import nl.tudelft.sem.template.orders.domain.IDishService;
 import nl.tudelft.sem.template.orders.domain.IOrderService;
 import nl.tudelft.sem.template.orders.domain.IVendorService;
-import nl.tudelft.sem.template.orders.entities.DishEntity;
-import nl.tudelft.sem.template.orders.entities.Order;
-import nl.tudelft.sem.template.orders.mappers.DishMapper;
 import nl.tudelft.sem.template.orders.mappers.VendorMapper;
-import nl.tudelft.sem.template.orders.services.OrderService;
 import nl.tudelft.sem.template.orders.services.VendorAdapter;
-import nl.tudelft.sem.template.orders.services.VendorService;
-import nl.tudelft.sem.template.orders.services.DishService;
-import nl.tudelft.sem.template.orders.services.CustomerService;
 import nl.tudelft.sem.template.orders.services.CustomerAdapter;
-
 import nl.tudelft.sem.template.model.CreateOrderRequest;
 import nl.tudelft.sem.template.model.Dish;
-import nl.tudelft.sem.template.orders.domain.ICustomerService;
-import nl.tudelft.sem.template.orders.domain.IDishService;
-import nl.tudelft.sem.template.orders.domain.IOrderService;
-import nl.tudelft.sem.template.orders.domain.IVendorService;
-import nl.tudelft.sem.template.orders.entities.Address;
-import nl.tudelft.sem.template.orders.entities.Status;
-import nl.tudelft.sem.template.orders.entities.Vendor;
 import nl.tudelft.sem.template.orders.external.CustomerDTO;
 import nl.tudelft.sem.template.orders.external.VendorDTO;
-import nl.tudelft.sem.template.orders.mappers.DishMapper;
-import nl.tudelft.sem.template.orders.mappers.VendorMapper;
-import nl.tudelft.sem.template.orders.services.CustomerAdapter;
-import nl.tudelft.sem.template.orders.services.VendorAdapter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -48,7 +33,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class CustomerController implements CustomerApi {
     private final transient VendorMapper vendorMapper;
-    private final transient DishMapper dishMapper;
     private final transient IVendorService vendorService;
     private final transient IDishService dishService;
     private final transient IOrderService orderService;
@@ -60,7 +44,6 @@ public class CustomerController implements CustomerApi {
      * Constructor for this controller
      *
      * @param vendorMapper    vendor mapper
-     * @param dishMapper      dish mapper
      * @param vendorService   vendor service
      * @param dishService     dish service
      * @param orderService    order service
@@ -68,11 +51,10 @@ public class CustomerController implements CustomerApi {
      * @param vendorAdapter   vendor adapter
      */
     @Autowired
-    public CustomerController(VendorMapper vendorMapper, DishMapper dishMapper, IVendorService vendorService,
+    public CustomerController(VendorMapper vendorMapper, IVendorService vendorService,
                               IDishService dishService, IOrderService orderService, ICustomerService customerService,
                               CustomerAdapter customerAdapter, VendorAdapter vendorAdapter) {
         this.vendorMapper = vendorMapper;
-        this.dishMapper = dishMapper;
         this.vendorService = vendorService;
         this.dishService = dishService;
         this.orderService = orderService;
@@ -149,7 +131,7 @@ public class CustomerController implements CustomerApi {
      */
     @Override
     public ResponseEntity<Order> createOrder(UUID customerId, CreateOrderRequest createOrderRequest) {
-        Integer vendorId = createOrderRequest.getVendorId();
+        UUID vendorId = createOrderRequest.getVendorId();
         Address address = createOrderRequest.getAddress();
 
         if (customerId == null || vendorId == null || address == null) {
@@ -170,7 +152,7 @@ public class CustomerController implements CustomerApi {
         order.setLocation(address);
         order.setStatus(Status.PENDING);
         order.setOrderTime(OffsetDateTime.now());
-        order.setVendorId(UUID.fromString(Integer.toString(vendorId))); // TODO change API for this to be UUID
+        order.setVendorId(vendorId);
         order.setCustomerId(customerId);
         Order savedOrder = orderService.save(order);
 
@@ -223,12 +205,9 @@ public class CustomerController implements CustomerApi {
         }
 
         // Get the vendor's dishes from the repository
-        List<DishEntity> vendorDishes = dishService.findAllByVendorId(order.getVendorId());
+        List<Dish> vendorDishes = dishService.findAllByVendorId(order.getVendorId());
 
-        // When filtering by allergens, move this to DishService
-        List<Dish> filteredDishes = vendorDishes.stream().map(dishMapper::toDTO).collect(Collectors.toList());
-
-        return ResponseEntity.ok(filteredDishes);
+        return ResponseEntity.ok(vendorDishes);
     }
 
 
@@ -264,14 +243,14 @@ public class CustomerController implements CustomerApi {
         }
 
         // Fetch dish
-        DishEntity dishEntity = dishService.findById(dishId);
-        if (dishEntity == null) {
+        Dish dish = dishService.findById(dishId);
+        if (dish == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
         // Add dish to the order
         for (int i = 0; i < updateDishQtyRequest.getQuantity(); i++) {
-            order.addDishesItem(dishEntity);
+            order.addDishesItem(dish);
         }
 
         // Recalculate total price
@@ -309,7 +288,7 @@ public class CustomerController implements CustomerApi {
         }
 
         // check if the customer exists
-        if (!customerAdapter.existsById(customerId)){
+        if (!customerAdapter.existsById(customerId)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
@@ -319,17 +298,17 @@ public class CustomerController implements CustomerApi {
         }
 
         // check if order belongs to the right customer
-        if (!customerId.equals(order.getCustomerId())){
+        if (!customerId.equals(order.getCustomerId())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // Unauthorized access
         }
 
         // check if the dish exists
-        if (dishService.findById(dishId) == null){
+        if (dishService.findById(dishId) == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
         // Check if the dish is part of the order
-        List<DishEntity> currentDishes = order.getDishes();
+        List<Dish> currentDishes = order.getDishes();
         boolean dishExists = dishService.isDishInOrder(currentDishes, dishId);
 
         if (!dishExists) {
@@ -337,7 +316,7 @@ public class CustomerController implements CustomerApi {
         }
 
         // Remove the dish from the order
-        List<DishEntity> updatedDishes = dishService.removeDishOrder(currentDishes, dishId);
+        List<Dish> updatedDishes = dishService.removeDishOrder(currentDishes, dishId);
 
         order.setDishes(updatedDishes);
 
@@ -390,8 +369,8 @@ public class CustomerController implements CustomerApi {
         }
 
         // Get the current list of dishes in the order
-        List<DishEntity> currentDishes = order.getDishes();
-        List<DishEntity> updatedDishes = new ArrayList<>();
+        List<Dish> currentDishes = order.getDishes();
+        List<Dish> updatedDishes = new ArrayList<>();
 
         // Add all dishes to the updated list, except for the one we want to change the quantity of
         currentDishes.stream()

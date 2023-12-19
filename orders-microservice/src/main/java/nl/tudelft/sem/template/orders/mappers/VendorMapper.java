@@ -3,7 +3,7 @@ package nl.tudelft.sem.template.orders.mappers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import nl.tudelft.sem.template.orders.entities.Vendor;
+import nl.tudelft.sem.template.model.Vendor;
 import nl.tudelft.sem.template.orders.external.VendorDTO;
 import org.springframework.stereotype.Component;
 

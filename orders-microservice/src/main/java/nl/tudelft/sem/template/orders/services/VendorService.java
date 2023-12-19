@@ -1,9 +1,9 @@
 package nl.tudelft.sem.template.orders.services;
 
+import nl.tudelft.sem.template.model.Address;
+import nl.tudelft.sem.template.model.Dish;
+import nl.tudelft.sem.template.model.Order;
 import nl.tudelft.sem.template.orders.domain.IVendorService;
-import nl.tudelft.sem.template.orders.entities.Address;
-import nl.tudelft.sem.template.orders.entities.DishEntity;
-import nl.tudelft.sem.template.orders.entities.Order;
 import nl.tudelft.sem.template.orders.external.PaymentMock;
 import nl.tudelft.sem.template.orders.external.VendorDTO;
 import nl.tudelft.sem.template.orders.repositories.DishRepository;
@@ -63,13 +63,13 @@ public class VendorService implements IVendorService {
      * @return the average price
      */
     public Double getAveragePrice(VendorDTO vendor) {
-        List<DishEntity> dishes = dishRepository.getDishesByVendorId(vendor.getVendorId());
+        List<Dish> dishes = dishRepository.getDishesByVendorId(vendor.getVendorId());
 
         if (dishes == null || dishes.isEmpty()) {
             return 0.0;
         }
 
-        double sum = dishes.stream().mapToDouble(DishEntity::getPrice).sum();
+        double sum = dishes.stream().mapToDouble(Dish::getPrice).sum();
 
         return sum / dishes.size();
     }

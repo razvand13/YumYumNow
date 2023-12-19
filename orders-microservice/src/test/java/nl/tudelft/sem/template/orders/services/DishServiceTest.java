@@ -1,10 +1,7 @@
 package nl.tudelft.sem.template.orders.services;
 
-import nl.tudelft.sem.template.orders.VendorNotFoundException;
-import nl.tudelft.sem.template.orders.entities.DishEntity;
-import nl.tudelft.sem.template.orders.entities.Vendor;
+import nl.tudelft.sem.template.model.Dish;
 import nl.tudelft.sem.template.orders.repositories.DishRepository;
-import nl.tudelft.sem.template.orders.repositories.VendorRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -20,14 +17,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 public class DishServiceTest {
 
     @Mock
     private DishRepository dishRepository;
-    @Mock
-    private VendorRepository vendorRepository;
+
     @InjectMocks
     private DishService dishService;
 
@@ -39,11 +34,11 @@ public class DishServiceTest {
     @Test
     public void testFindByIdValid() {
         UUID dishId = UUID.randomUUID();
-        DishEntity dish = new DishEntity();
+        Dish dish = new Dish();
         dish.setID(dishId);
         when(dishRepository.findById(dishId)).thenReturn(Optional.of(dish));
 
-        DishEntity result = dishService.findById(dishId);
+        Dish result = dishService.findById(dishId);
 
         assertThat(result).isNotNull();
         assertThat(result.getID()).isEqualTo(dishId);
@@ -54,7 +49,7 @@ public class DishServiceTest {
         UUID nonExistentDishId = UUID.randomUUID();
 
         when(dishRepository.findById(nonExistentDishId)).thenReturn(Optional.empty()); // Unsuccessful query
-        DishEntity dish = dishService.findById(nonExistentDishId);
+        Dish dish = dishService.findById(nonExistentDishId);
 
         assertThat(dish).isNull();
     }
@@ -62,11 +57,11 @@ public class DishServiceTest {
     @Test
     public void testFindAllByVendorIdValid() {
         UUID vendorId = UUID.randomUUID();
-        DishEntity dish = new DishEntity();
+        Dish dish = new Dish();
         dish.setID(UUID.randomUUID());
         when(dishRepository.getDishesByVendorId(vendorId)).thenReturn(Collections.singletonList(dish));
 
-        Iterable<DishEntity> result = dishService.findAllByVendorId(vendorId);
+        Iterable<Dish> result = dishService.findAllByVendorId(vendorId);
 
         assertThat(result).isNotNull();
         assertThat(result).hasSize(1);
@@ -77,42 +72,25 @@ public class DishServiceTest {
     public void testFindAllByVendorIdInvalid() {
         UUID nonExistentVendorId = UUID.randomUUID();
         UUID existentVendorId = UUID.randomUUID();
-        DishEntity dish = new DishEntity();
+        Dish dish = new Dish();
         when(dishRepository.getDishesByVendorId(existentVendorId)).thenReturn(Collections.singletonList(dish));
 
-        Iterable<DishEntity> result = dishService.findAllByVendorId(nonExistentVendorId);
+        Iterable<Dish> result = dishService.findAllByVendorId(nonExistentVendorId);
 
         assertThat(result).isEmpty();
     }
 
     @Test
-    void addDishWhenVendorExists() {
+    void addDish() {
         UUID vendorId = UUID.randomUUID();
-        DishEntity dish = new DishEntity();
-        Vendor vendor = new Vendor();
-        vendor.setID(vendorId);
+        Dish dish = new Dish();
 
-        when(vendorRepository.findById(vendorId)).thenReturn(Optional.of(vendor));
-        when(dishRepository.save(any(DishEntity.class))).thenReturn(dish);
+        when(dishRepository.save(any(Dish.class))).thenReturn(dish);
 
-        DishEntity savedDish = dishService.addDish(vendorId, dish);
+        Dish savedDish = dishService.addDish(vendorId, dish);
 
         assertThat(savedDish).isEqualTo(dish);
-        verify(vendorRepository).findById(vendorId);
-        verify(dishRepository).save(dish); // <- should be removed later
+        verify(dishRepository).save(dish);
     }
 
-    @Test
-    void addDishWhenVendorDoesNotExist() {
-        UUID vendorId = UUID.randomUUID();
-        DishEntity dish = new DishEntity();
-
-        when(vendorRepository.findById(vendorId)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> dishService.addDish(vendorId, dish))
-            .isInstanceOf(VendorNotFoundException.class);
-
-        verify(vendorRepository).findById(vendorId);
-        verifyNoInteractions(dishRepository);
-    }
 }

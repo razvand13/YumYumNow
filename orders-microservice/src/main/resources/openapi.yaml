@@ -4,7 +4,7 @@ info:
   version: 1.0.0
   description: API for handling orders in the YumYumNow application.
 servers:
-  - url: 'https://localhost:8082/orders'
+  - url: 'https://localhost:8082'
 tags:
   - name: Customer
     description: Operations available to customer users.
@@ -26,7 +26,8 @@ paths:
           name: orderId
           required: true
           schema:
-            type: integer
+            type: string
+            format: uuid
           examples:
             orderIdExample:
               value: "123e4567-e89b-12d3-a456-426614174000"  
@@ -85,7 +86,8 @@ paths:
               type: object
               properties:
                 vendorId:
-                  type: integer
+                  type: string
+                  format: uuid
                   description: The ID of the restaurant the customer is ordering from.
                 address:
                   $ref: '#/components/schemas/Address'
@@ -191,8 +193,6 @@ paths:
                   value:
                     - ID: "987e4567-e89b-12d3-a456-423144174001"
                       name: "NY pizza"
-                      description: "Best in somewhere"
-                      dishes: []
                       location:
                         houseNumber: 456
                         zip: "12346"
@@ -1316,17 +1316,20 @@ components:
   schemas:
     Order:
       type: object
-      x-class-extra-annotation: "@javax.persistence.Entity"
+      x-class-extra-annotation: '@javax.persistence.Entity @javax.persistence.Table(name = "customer_order")'
       properties:
         ID:
           type: string
           format: uuid
+          x-field-extra-annotation: '@javax.persistence.Id @javax.persistence.GeneratedValue(generator = "UUID") @org.hibernate.annotations.GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")'
         dishes:
           type: array
           items:
             $ref: '#/components/schemas/Dish'
+          x-field-extra-annotation: '@javax.persistence.OneToMany'
         location:
           $ref: '#/components/schemas/Address'
+          x-field-extra-annotation: '@javax.persistence.OneToMany'
         specialRequirements:
           type: string
         status:
@@ -1346,8 +1349,13 @@ components:
           format: uuid
 
     Address:
+      x-class-extra-annotation: '@javax.persistence.Entity @javax.persistence.Table(name = "customer_order")'
       type: object
       properties:
+        ID:
+          type: string
+          format: uuid
+          x-field-extra-annotation: '@javax.persistence.Id @javax.persistence.GeneratedValue(generator = "UUID") @org.hibernate.annotations.GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")'
         houseNumber:
           type: integer
         zip:
@@ -1361,23 +1369,24 @@ components:
 
     Vendor:
       type: object
-      x-class-extra-annotation: "@javax.persistence.Entity"
       properties:
         ID:
           type: string
           format: uuid
-        dishes:
-          type: array
-          items:
-            $ref: '#/components/schemas/Dish'
+        name:
+          type: string
+        location:
+          $ref: '#/components/schemas/Address'
+
 
     Dish:
       type: object
-      x-class-extra-annotation: "@javax.persistence.Entity"
+      x-class-extra-annotation: '@javax.persistence.Entity @javax.persistence.Table(name = "dish")'
       properties:
         ID:
           type: string
           format: uuid
+          x-field-extra-annotation: '@javax.persistence.Id @javax.persistence.GeneratedValue(generator = "UUID") @org.hibernate.annotations.GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")'
         name:
           type: string
         imageLink:
@@ -1389,10 +1398,12 @@ components:
           type: array
           items:
             type: string
+          x-field-extra-annotation: '@javax.persistence.ElementCollection'
         ingredients:
           type: array
           items:
             type: string
+          x-field-extra-annotation: '@javax.persistence.ElementCollection'
         description:
           type: string
         vendorId:

@@ -1,7 +1,7 @@
 package nl.tudelft.sem.template.orders.services;
 
+import nl.tudelft.sem.template.model.Address;
 import nl.tudelft.sem.template.orders.domain.ICustomerService;
-import nl.tudelft.sem.template.orders.entities.Address;
 import nl.tudelft.sem.template.orders.external.CustomerDTO;
 import org.springframework.stereotype.Service;
 
