@@ -9,6 +9,10 @@ import java.util.stream.Collectors;
 
 import nl.tudelft.sem.template.api.CustomerApi;
 import nl.tudelft.sem.template.model.UpdateDishQtyRequest;
+import nl.tudelft.sem.template.orders.domain.ICustomerService;
+import nl.tudelft.sem.template.orders.domain.IDishService;
+import nl.tudelft.sem.template.orders.domain.IOrderService;
+import nl.tudelft.sem.template.orders.domain.IVendorService;
 import nl.tudelft.sem.template.orders.entities.DishEntity;
 import nl.tudelft.sem.template.orders.entities.Order;
 import nl.tudelft.sem.template.orders.mappers.DishMapper;
@@ -22,12 +26,19 @@ import nl.tudelft.sem.template.orders.services.CustomerAdapter;
 
 import nl.tudelft.sem.template.model.CreateOrderRequest;
 import nl.tudelft.sem.template.model.Dish;
+import nl.tudelft.sem.template.orders.domain.ICustomerService;
+import nl.tudelft.sem.template.orders.domain.IDishService;
+import nl.tudelft.sem.template.orders.domain.IOrderService;
+import nl.tudelft.sem.template.orders.domain.IVendorService;
 import nl.tudelft.sem.template.orders.entities.Address;
 import nl.tudelft.sem.template.orders.entities.Status;
 import nl.tudelft.sem.template.orders.entities.Vendor;
 import nl.tudelft.sem.template.orders.external.CustomerDTO;
 import nl.tudelft.sem.template.orders.external.VendorDTO;
-
+import nl.tudelft.sem.template.orders.mappers.DishMapper;
+import nl.tudelft.sem.template.orders.mappers.VendorMapper;
+import nl.tudelft.sem.template.orders.services.CustomerAdapter;
+import nl.tudelft.sem.template.orders.services.VendorAdapter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -38,10 +49,10 @@ import org.springframework.web.bind.annotation.RestController;
 public class CustomerController implements CustomerApi {
     private final transient VendorMapper vendorMapper;
     private final transient DishMapper dishMapper;
-    private final transient VendorService vendorService;
-    private final transient DishService dishService;
-    private final transient OrderService orderService;
-    private final transient CustomerService customerService;
+    private final transient IVendorService vendorService;
+    private final transient IDishService dishService;
+    private final transient IOrderService orderService;
+    private final transient ICustomerService customerService;
     private final transient CustomerAdapter customerAdapter;
     private final transient VendorAdapter vendorAdapter;
 
@@ -57,8 +68,8 @@ public class CustomerController implements CustomerApi {
      * @param vendorAdapter   vendor adapter
      */
     @Autowired
-    public CustomerController(VendorMapper vendorMapper, DishMapper dishMapper, VendorService vendorService,
-                              DishService dishService, OrderService orderService, CustomerService customerService,
+    public CustomerController(VendorMapper vendorMapper, DishMapper dishMapper, IVendorService vendorService,
+                              IDishService dishService, IOrderService orderService, ICustomerService customerService,
                               CustomerAdapter customerAdapter, VendorAdapter vendorAdapter) {
         this.vendorMapper = vendorMapper;
         this.dishMapper = dishMapper;
@@ -161,9 +172,9 @@ public class CustomerController implements CustomerApi {
         order.setOrderTime(OffsetDateTime.now());
         order.setVendorId(UUID.fromString(Integer.toString(vendorId))); // TODO change API for this to be UUID
         order.setCustomerId(customerId);
-        orderService.save(order);
+        Order savedOrder = orderService.save(order);
 
-        return ResponseEntity.ok(order);
+        return ResponseEntity.ok(savedOrder);
     }
 
     /**
@@ -242,35 +253,29 @@ public class CustomerController implements CustomerApi {
     public ResponseEntity<Order> addDishToOrder(UUID customerId, UUID orderId,
                                                 UUID dishId, UpdateDishQtyRequest updateDishQtyRequest) {
         // Fetch order
-        Optional<Order> orderOptional = Optional.ofNullable(orderService.findById(orderId));
-        if (!orderOptional.isPresent()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        Order order = orderService.findById(orderId);
+        if (order == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
-
-        // Verify if the order belongs to the given customer
-        if (!customerAdapter.checkRoleById(customerId)) {
+        // Verify if the order belongs to the given customer and that it is a user making the modification
+        if (!customerAdapter.checkRoleById(customerId) && !customerId.equals(order.getCustomerId())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // Unauthorized access
         }
 
         // Fetch dish
-        Optional<DishEntity> dishOptional = Optional.ofNullable(dishService.findById(dishId));
-        if (!dishOptional.isPresent()) {
+        DishEntity dishEntity = dishService.findById(dishId);
+        if (dishEntity == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
-        Order order = orderOptional.get();
-
         // Add dish to the order
         for (int i = 0; i < updateDishQtyRequest.getQuantity(); i++) {
-            DishEntity dishEntity = dishOptional.get();
             order.addDishesItem(dishEntity);
         }
 
         // Recalculate total price
-        double newTotalPrice = order.getDishes().stream()
-                .mapToDouble(DishEntity::getPrice)
-                .sum();
+        double newTotalPrice = orderService.calculateOrderPrice(order.getDishes());
 
         order.setTotalPrice(newTotalPrice);
 
@@ -298,47 +303,46 @@ public class CustomerController implements CustomerApi {
     @Override
     public ResponseEntity<Order> removeDishFromOrder(UUID customerId, UUID orderId, UUID dishId) {
         // Fetch order
-        Optional<Order> orderOptional = Optional.ofNullable(orderService.findById(orderId));
-        if (!orderOptional.isPresent()) {
+        Order order = orderService.findById(orderId);
+        if (order == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
-
+        // check if the customer exists
         if (!customerAdapter.existsById(customerId)){
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
-
-        // Verify if the order belongs to the given customer
+        // verify that it is a user making the modification
         if (!customerAdapter.checkRoleById(customerId)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
+        // check if order belongs to the right customer
+        if (!customerId.equals(order.getCustomerId())){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // Unauthorized access
+        }
+
+        // check if the dish exists
         if (dishService.findById(dishId) == null){
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
-        Order order = orderOptional.get();
-
         // Check if the dish is part of the order
         List<DishEntity> currentDishes = order.getDishes();
-        boolean dishExists = currentDishes.stream().anyMatch(dish -> dish.getID().equals(dishId));
+        boolean dishExists = dishService.isDishInOrder(currentDishes, dishId);
 
         if (!dishExists) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build(); // Dish not found in order
         }
 
         // Remove the dish from the order
-        List<DishEntity> updatedDishes = currentDishes.stream()
-                .filter(dish -> !dish.getID().equals(dishId))
-                .collect(Collectors.toList());
+        List<DishEntity> updatedDishes = dishService.removeDishOrder(currentDishes, dishId);
 
         order.setDishes(updatedDishes);
 
         // Calculate new price of order
-        double newTotalPrice = updatedDishes.stream()
-                .mapToDouble(DishEntity::getPrice)
-                .sum();
+        double newTotalPrice = orderService.calculateOrderPrice(updatedDishes);
 
         order.setTotalPrice(newTotalPrice);
 
@@ -372,13 +376,18 @@ public class CustomerController implements CustomerApi {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
-        // Retrieve the order by ID and check if it exists and belongs to the given customer
+        // Retrieve the order by ID and check if it exists
         Optional<Order> orderOptional = Optional.ofNullable(orderService.findById(orderId));
-        if (!orderOptional.isPresent() || !orderOptional.get().getCustomerId().equals(customerId)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // Order not found or doesn't belong to customer
+        if (!orderOptional.isPresent()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
         Order order = orderOptional.get();
+
+        // check if order belongs to the right customer
+        if (!customerId.equals(order.getCustomerId())){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // Unauthorized access
+        }
 
         // Get the current list of dishes in the order
         List<DishEntity> currentDishes = order.getDishes();
@@ -399,9 +408,7 @@ public class CustomerController implements CustomerApi {
         order.setDishes(updatedDishes);
 
         // Recalculate the total price of the order
-        double newTotalPrice = updatedDishes.stream()
-                .mapToDouble(DishEntity::getPrice)
-                .sum();
+        double newTotalPrice = orderService.calculateOrderPrice(updatedDishes);
 
         // Update the total price of the order
         order.setTotalPrice(newTotalPrice);

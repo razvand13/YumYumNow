@@ -12,5 +12,8 @@ public interface IVendorService {
 
     Double getAveragePrice(VendorDTO vendor);
 
+    List<VendorDTO> filterVendors(List<VendorDTO> vendors, String name,
+                                  Integer minAvgPrice, Integer maxAvgPrice, Address customerLocation);
+
     List<Order> getVendorOrders(UUID vendorID);
 }
