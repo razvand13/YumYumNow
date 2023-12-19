@@ -9,6 +9,10 @@ import java.util.stream.Collectors;
 
 import nl.tudelft.sem.template.api.CustomerApi;
 import nl.tudelft.sem.template.model.UpdateDishQtyRequest;
+import nl.tudelft.sem.template.orders.domain.ICustomerService;
+import nl.tudelft.sem.template.orders.domain.IDishService;
+import nl.tudelft.sem.template.orders.domain.IOrderService;
+import nl.tudelft.sem.template.orders.domain.IVendorService;
 import nl.tudelft.sem.template.orders.entities.DishEntity;
 import nl.tudelft.sem.template.orders.entities.Order;
 import nl.tudelft.sem.template.orders.mappers.DishMapper;
@@ -38,10 +42,10 @@ import org.springframework.web.bind.annotation.RestController;
 public class CustomerController implements CustomerApi {
     private final transient VendorMapper vendorMapper;
     private final transient DishMapper dishMapper;
-    private final transient VendorService vendorService;
-    private final transient DishService dishService;
-    private final transient OrderService orderService;
-    private final transient CustomerService customerService;
+    private final transient IVendorService vendorService;
+    private final transient IDishService dishService;
+    private final transient IOrderService orderService;
+    private final transient ICustomerService customerService;
     private final transient CustomerAdapter customerAdapter;
     private final transient VendorAdapter vendorAdapter;
 

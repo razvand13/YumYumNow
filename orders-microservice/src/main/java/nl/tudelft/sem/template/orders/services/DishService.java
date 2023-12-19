@@ -64,10 +64,24 @@ public class DishService implements IDishService {
         return dishRepository.save(dish);
     }
 
+
+    /**
+     * Checks if a dish is in an order
+     * @param dishEntityList
+     * @param dishId
+     * @return
+     */
     public boolean isDishInOrder(List<DishEntity> dishEntityList, UUID dishId){
         return dishEntityList.stream().anyMatch(dish -> dish.getID().equals(dishId));
     }
 
+
+    /**
+     * removes a dish from an order
+     * @param dishEntityList
+     * @param dishId
+     * @return
+     */
     public List<DishEntity> removeDishOrder(List<DishEntity> dishEntityList, UUID dishId){
         return dishEntityList.stream()
                 .filter(dish -> !dish.getID().equals(dishId))
