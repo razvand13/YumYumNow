@@ -246,12 +246,10 @@ public class CustomerController implements CustomerApi {
     public ResponseEntity<Order> addDishToOrder(UUID customerId, UUID orderId,
                                                 UUID dishId, UpdateDishQtyRequest updateDishQtyRequest) {
         // Fetch order
-        Optional<Order> orderOptional = Optional.ofNullable(orderService.findById(orderId));
-        if (!orderOptional.isPresent()) {
+        Order order = orderService.findById(orderId);
+        if (order == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
-
-        Order order = orderOptional.get();
 
         // Verify if the order belongs to the given customer and that it is a user making the modification
         if (!customerAdapter.checkRoleById(customerId) && !customerId.equals(order.getCustomerId())) {
@@ -259,14 +257,13 @@ public class CustomerController implements CustomerApi {
         }
 
         // Fetch dish
-        Optional<DishEntity> dishOptional = Optional.ofNullable(dishService.findById(dishId));
-        if (!dishOptional.isPresent()) {
+        DishEntity dishEntity = dishService.findById(dishId);
+        if (dishEntity == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
         // Add dish to the order
         for (int i = 0; i < updateDishQtyRequest.getQuantity(); i++) {
-            DishEntity dishEntity = dishOptional.get();
             order.addDishesItem(dishEntity);
         }
 
@@ -301,8 +298,8 @@ public class CustomerController implements CustomerApi {
     @Override
     public ResponseEntity<Order> removeDishFromOrder(UUID customerId, UUID orderId, UUID dishId) {
         // Fetch order
-        Optional<Order> orderOptional = Optional.ofNullable(orderService.findById(orderId));
-        if (!orderOptional.isPresent()) {
+        Order order = orderService.findById(orderId);
+        if (order == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
@@ -315,8 +312,6 @@ public class CustomerController implements CustomerApi {
         if (!customerAdapter.checkRoleById(customerId)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-
-        Order order = orderOptional.get();
 
         // check if order belongs to the right customer
         if (!customerId.equals(order.getCustomerId())){
