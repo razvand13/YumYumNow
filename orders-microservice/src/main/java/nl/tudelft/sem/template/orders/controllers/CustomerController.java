@@ -3,10 +3,27 @@ package nl.tudelft.sem.template.orders.controllers;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import nl.tudelft.sem.template.api.CustomerApi;
+import nl.tudelft.sem.template.model.UpdateDishQtyRequest;
+import nl.tudelft.sem.template.orders.domain.ICustomerService;
+import nl.tudelft.sem.template.orders.domain.IDishService;
+import nl.tudelft.sem.template.orders.domain.IOrderService;
+import nl.tudelft.sem.template.orders.domain.IVendorService;
+import nl.tudelft.sem.template.orders.entities.DishEntity;
+import nl.tudelft.sem.template.orders.entities.Order;
+import nl.tudelft.sem.template.orders.mappers.DishMapper;
+import nl.tudelft.sem.template.orders.mappers.VendorMapper;
+import nl.tudelft.sem.template.orders.services.OrderService;
+import nl.tudelft.sem.template.orders.services.VendorAdapter;
+import nl.tudelft.sem.template.orders.services.VendorService;
+import nl.tudelft.sem.template.orders.services.DishService;
+import nl.tudelft.sem.template.orders.services.CustomerService;
+import nl.tudelft.sem.template.orders.services.CustomerAdapter;
+
 import nl.tudelft.sem.template.model.CreateOrderRequest;
 import nl.tudelft.sem.template.model.Dish;
 import nl.tudelft.sem.template.orders.domain.ICustomerService;
@@ -14,8 +31,6 @@ import nl.tudelft.sem.template.orders.domain.IDishService;
 import nl.tudelft.sem.template.orders.domain.IOrderService;
 import nl.tudelft.sem.template.orders.domain.IVendorService;
 import nl.tudelft.sem.template.orders.entities.Address;
-import nl.tudelft.sem.template.orders.entities.DishEntity;
-import nl.tudelft.sem.template.orders.entities.Order;
 import nl.tudelft.sem.template.orders.entities.Status;
 import nl.tudelft.sem.template.orders.entities.Vendor;
 import nl.tudelft.sem.template.orders.external.CustomerDTO;
@@ -28,6 +43,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
+
 
 @RestController
 public class CustomerController implements CustomerApi {
@@ -43,13 +59,13 @@ public class CustomerController implements CustomerApi {
     /**
      * Constructor for this controller
      *
-     * @param vendorMapper vendor mapper
-     * @param dishMapper dish mapper
-     * @param vendorService vendor service
-     * @param dishService dish service
-     * @param orderService order service
+     * @param vendorMapper    vendor mapper
+     * @param dishMapper      dish mapper
+     * @param vendorService   vendor service
+     * @param dishService     dish service
+     * @param orderService    order service
      * @param customerAdapter customer adapter
-     * @param vendorAdapter vendor adapter
+     * @param vendorAdapter   vendor adapter
      */
     @Autowired
     public CustomerController(VendorMapper vendorMapper, DishMapper dishMapper, IVendorService vendorService,
@@ -214,4 +230,195 @@ public class CustomerController implements CustomerApi {
 
         return ResponseEntity.ok(filteredDishes);
     }
+
+
+
+
+    /**
+     * POST /customer/{customerId}/order/{orderId}/dish/{dishId} : Add dish to order
+     * Adds the specified dish to the order.
+     *
+     * @param customerId           (required)
+     * @param orderId              (required)
+     * @param dishId               (required)
+     * @param updateDishQtyRequest (required)
+     * @return Dish added successfully, updated order returned. (status code 200)
+     * or Bad Request - Dish not added to order. (status code 400)
+     * or Unauthorized - Order does not belong to user/dish does not belong to
+     * current vendor/user is not a customer. (status code 401)
+     * or Not Found - Dish, order or customer not found. (status code 404)
+     * or Internal Server Error - An unexpected error occurred on the server. (status code 500)
+     */
+    @Override
+    public ResponseEntity<Order> addDishToOrder(UUID customerId, UUID orderId,
+                                                UUID dishId, UpdateDishQtyRequest updateDishQtyRequest) {
+        // Fetch order
+        Order order = orderService.findById(orderId);
+        if (order == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        // Verify if the order belongs to the given customer and that it is a user making the modification
+        if (!customerAdapter.checkRoleById(customerId) && !customerId.equals(order.getCustomerId())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // Unauthorized access
+        }
+
+        // Fetch dish
+        DishEntity dishEntity = dishService.findById(dishId);
+        if (dishEntity == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        // Add dish to the order
+        for (int i = 0; i < updateDishQtyRequest.getQuantity(); i++) {
+            order.addDishesItem(dishEntity);
+        }
+
+        // Recalculate total price
+        double newTotalPrice = orderService.calculateOrderPrice(order.getDishes());
+
+        order.setTotalPrice(newTotalPrice);
+
+        // Save the updated order
+        Order updatedOrder = orderService.save(order);
+
+        return ResponseEntity.ok(updatedOrder);
+    }
+
+
+    /**
+     * DELETE /customer/{customerId}/order/{orderId}/dish/{dishId} : Remove dish from order
+     * Removes the specified dish from the order.
+     *
+     * @param customerId  (required)
+     * @param orderId     (required)
+     * @param dishId      (required)
+     * @return Dish removed successfully, updated order returned. (status code 200)
+     * or Bad Request - Dish not removed from order. (status code 400)
+     * or Unauthorized - Order does not belong to user/dish does not belong to
+     * current vendor/user is not a customer. (status code 401)
+     * or Not Found - Dish, order, or customer not found. (status code 404)
+     * or Internal Server Error - An unexpected error occurred on the server. (status code 500)
+     */
+    @Override
+    public ResponseEntity<Order> removeDishFromOrder(UUID customerId, UUID orderId, UUID dishId) {
+        // Fetch order
+        Order order = orderService.findById(orderId);
+        if (order == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        // check if the customer exists
+        if (!customerAdapter.existsById(customerId)){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        // verify that it is a user making the modification
+        if (!customerAdapter.checkRoleById(customerId)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        // check if order belongs to the right customer
+        if (!customerId.equals(order.getCustomerId())){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // Unauthorized access
+        }
+
+        // check if the dish exists
+        if (dishService.findById(dishId) == null){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        // Check if the dish is part of the order
+        List<DishEntity> currentDishes = order.getDishes();
+        boolean dishExists = dishService.isDishInOrder(currentDishes, dishId);
+
+        if (!dishExists) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build(); // Dish not found in order
+        }
+
+        // Remove the dish from the order
+        List<DishEntity> updatedDishes = dishService.removeDishOrder(currentDishes, dishId);
+
+        order.setDishes(updatedDishes);
+
+        // Calculate new price of order
+        double newTotalPrice = orderService.calculateOrderPrice(updatedDishes);
+
+        order.setTotalPrice(newTotalPrice);
+
+        // Save the updated order
+        Order updatedOrder = orderService.save(order);
+
+        return ResponseEntity.ok(updatedOrder);
+    }
+
+
+    /**
+     * PUT /customer/{customerId}/order/{orderId}/dish/{dishId} : Update dish quantity in order
+     * Updates the quantity of the specified dish in the order. If the quantity is 0, the dish is removed.
+     *
+     * @param customerId           (required)
+     * @param orderId              (required)
+     * @param dishId               (required)
+     * @param updateDishQtyRequest (required)
+     * @return Dish quantity updated successfully, updated order returned. (status code 200)
+     * or Bad Request - Invalid quantity provided. (status code 400)
+     * or Unauthorized - Order does not belong to user/dish does not belong to
+     * current vendor/user is not a customer. (status code 401)
+     * or Not Found - Dish, order, or customer not found. (status code 404)
+     * or Internal Server Error - An unexpected error occurred on the server. (status code 500)
+     */
+    @Override
+    public ResponseEntity<Order> updateDishQty(UUID customerId, UUID orderId,
+                                               UUID dishId, UpdateDishQtyRequest updateDishQtyRequest) {
+        // Validate the requested quantity - it should not be negative
+        if (updateDishQtyRequest.getQuantity() < 0) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+
+        // Retrieve the order by ID and check if it exists
+        Optional<Order> orderOptional = Optional.ofNullable(orderService.findById(orderId));
+        if (!orderOptional.isPresent()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        Order order = orderOptional.get();
+
+        // check if order belongs to the right customer
+        if (!customerId.equals(order.getCustomerId())){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // Unauthorized access
+        }
+
+        // Get the current list of dishes in the order
+        List<DishEntity> currentDishes = order.getDishes();
+        List<DishEntity> updatedDishes = new ArrayList<>();
+
+        // Add all dishes to the updated list, except for the one we want to change the quantity of
+        currentDishes.stream()
+                .filter(dish -> !dish.getID().equals(dishId))
+                .forEach(updatedDishes::add);
+
+        // Now add the specified dish in the desired quantity
+        currentDishes.stream()
+                .filter(dish -> dish.getID().equals(dishId))
+                .limit(updateDishQtyRequest.getQuantity())
+                .forEach(updatedDishes::add);
+
+        // Set the updated list of dishes in the order
+        order.setDishes(updatedDishes);
+
+        // Recalculate the total price of the order
+        double newTotalPrice = orderService.calculateOrderPrice(updatedDishes);
+
+        // Update the total price of the order
+        order.setTotalPrice(newTotalPrice);
+
+        // Save the order with the updated list of dishes
+        Order updatedOrder = orderService.save(order);
+
+        // Return the updated order
+        return ResponseEntity.ok(updatedOrder);
+    }
+
 }
+

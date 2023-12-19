@@ -25,6 +25,7 @@ public class DishMapper {
      * @param dishDTO the dish DTO
      * @return the dish entity
      */
+
     public DishEntity toEntity(Dish dishDTO) {
         DishEntity dish = new DishEntity();
         dish.setID(dishDTO.getID());

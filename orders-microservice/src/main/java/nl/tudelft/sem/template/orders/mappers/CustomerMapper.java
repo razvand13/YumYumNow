@@ -18,7 +18,8 @@ public class CustomerMapper {
      */
     public CustomerDTO toDTO(String responseBody) {
         try {
-            return OBJECT_MAPPER.readValue(responseBody, new TypeReference<CustomerDTO>() {});
+            return OBJECT_MAPPER.readValue(responseBody, new TypeReference<CustomerDTO>() {
+            });
         } catch (JsonProcessingException e) {
             e.printStackTrace();
             throw new RuntimeException(e);

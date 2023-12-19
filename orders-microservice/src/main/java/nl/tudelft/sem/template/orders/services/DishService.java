@@ -1,17 +1,17 @@
 package nl.tudelft.sem.template.orders.services;
 
+import nl.tudelft.sem.template.model.Dish;
 import nl.tudelft.sem.template.orders.domain.IDishService;
 import nl.tudelft.sem.template.orders.entities.DishEntity;
 import nl.tudelft.sem.template.orders.entities.Vendor;
-
 import nl.tudelft.sem.template.orders.repositories.DishRepository;
 import nl.tudelft.sem.template.orders.repositories.VendorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import java.util.List;
 
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class DishService implements IDishService {
@@ -47,6 +47,9 @@ public class DishService implements IDishService {
         return dishRepository.getDishesByVendorId(vendorId);
     }
 
+
+
+
     /**
      * Adds a dish to the menu of a vendor.
      *
@@ -60,4 +63,29 @@ public class DishService implements IDishService {
         vendorRepository.save(vendor); // <- should be removed
         return dishRepository.save(dish);
     }
+
+
+    /**
+     * Checks if a dish is in an order
+     * @param dishEntityList
+     * @param dishId
+     * @return
+     */
+    public boolean isDishInOrder(List<DishEntity> dishEntityList, UUID dishId){
+        return dishEntityList.stream().anyMatch(dish -> dish.getID().equals(dishId));
+    }
+
+
+    /**
+     * removes a dish from an order
+     * @param dishEntityList
+     * @param dishId
+     * @return
+     */
+    public List<DishEntity> removeDishOrder(List<DishEntity> dishEntityList, UUID dishId){
+        return dishEntityList.stream()
+                .filter(dish -> !dish.getID().equals(dishId))
+                .collect(Collectors.toList());
+    }
 }
+
