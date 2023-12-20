@@ -22,6 +22,10 @@ public class OrderService implements IOrderService {
     public Order findById(UUID orderId) {
         return orderRepository.findById(orderId).orElse(null);
     }
+    @Override
+    public List<Order> findAll() {
+        return orderRepository.findAll();
+    }
 
     public Order save(Order order) {
         return orderRepository.save(order);
