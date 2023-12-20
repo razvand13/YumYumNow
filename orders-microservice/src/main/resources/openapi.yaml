@@ -1329,7 +1329,6 @@ components:
           x-field-extra-annotation: '@javax.persistence.OneToMany'
         location:
           $ref: '#/components/schemas/Address'
-          x-field-extra-annotation: '@javax.persistence.OneToMany'
         specialRequirements:
           type: string
         status:
@@ -1349,13 +1348,9 @@ components:
           format: uuid
 
     Address:
-      x-class-extra-annotation: '@javax.persistence.Entity @javax.persistence.Table(name = "customer_order")'
+      x-class-extra-annotation: '@javax.persistence.Embeddable'
       type: object
       properties:
-        ID:
-          type: string
-          format: uuid
-          x-field-extra-annotation: '@javax.persistence.Id @javax.persistence.GeneratedValue(generator = "UUID") @org.hibernate.annotations.GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")'
         houseNumber:
           type: integer
         zip:
