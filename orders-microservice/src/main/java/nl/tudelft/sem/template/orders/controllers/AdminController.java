@@ -25,7 +25,18 @@ public class AdminController implements AdminApi {
         this.vendorAdapter = vendorAdapter;
     }
 
-    //get all orders
+    /**
+     * GET /admin/{adminId}/orders : View all orders
+     * Allows an admin to view all orders in the system.
+     *
+     * @param adminId The UUID of the admin. (required)
+     * @return List of all orders. (status code 200)
+     *         or Bad Request - Invalid admin UUID. (status code 400)
+     *         or Unauthorized - User is not an admin. (status code 403)
+     *         or Not Found - Admin not found. (status code 404)
+     *         or Internal Server Error - An unexpected error occurred on the server. (status code 500)
+     */
+
     @Override
     public ResponseEntity<List<Order>> adminGetAllOrders(UUID adminId) {
         if (adminId == null) {
@@ -50,7 +61,18 @@ public class AdminController implements AdminApi {
         }
     }
 
-    //get specific order to see rating
+    /**
+     * GET /admin/{adminId}/order/{orderId} : Get a specific order
+     * Allows an admin to retrieve a specific order for review or other administrative purposes.
+     *
+     * @param adminId The UUID of the admin. (required)
+     * @param orderId The UUID of the order to retrieve. (required)
+     * @return The requested order. (status code 200)
+     *         or Bad Request - Invalid admin or order UUID. (status code 400)
+     *         or Unauthorized - User is not an admin. (status code 403)
+     *         or Not Found - Admin or order not found. (status code 404)
+     *         or Internal Server Error - An unexpected error occurred on the server. (status code 500)
+     */
     @Override
     public ResponseEntity<Order> adminGetOrder(UUID adminId, UUID orderId) {
         if (adminId == null || orderId == null) {
@@ -79,7 +101,19 @@ public class AdminController implements AdminApi {
     }
 
 
-    // update a specific order
+    /**
+     * PUT /admin/{adminId}/order/{orderId} : Modify a specific order
+     * Allows an admin to modify any attribute of a specific order.
+     *
+     * @param adminId      The UUID of the admin. (required)
+     * @param orderId      The UUID of the order to update. (required)
+     * @param updatedOrder The updated order details. (required)
+     * @return The updated order. (status code 200)
+     *         or Bad Request - Invalid admin or order UUID, or invalid order details. (status code 400)
+     *         or Unauthorized - User is not an admin. (status code 403)
+     *         or Not Found - Admin or order not found. (status code 404)
+     *         or Internal Server Error - An unexpected error occurred on the server. (status code 500)
+     */
     @Override
     public ResponseEntity<Order> adminUpdateOrder(UUID adminId, UUID orderId, Order updatedOrder) {
         if (adminId == null || orderId == null) {
@@ -109,7 +143,18 @@ public class AdminController implements AdminApi {
         }
     }
 
-    // delete order
+    /**
+     * DELETE /admin/{adminId}/order/{orderId} : Remove an order
+     * Allows an admin to remove any order from the system.
+     *
+     * @param adminId The UUID of the admin. (required)
+     * @param orderId The UUID of the order to be removed. (required)
+     * @return Confirmation of order deletion. (status code 200)
+     *         or Bad Request - Invalid admin or order UUID. (status code 400)
+     *         or Unauthorized - User is not an admin. (status code 403)
+     *         or Not Found - Admin or order not found. (status code 404)
+     *         or Internal Server Error - An unexpected error occurred on the server. (status code 500)
+     */
     @Override
     public ResponseEntity<Void> adminRemoveOrder(UUID adminId, UUID orderId) {
         if (adminId == null || orderId == null) {
