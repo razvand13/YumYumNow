@@ -78,4 +78,34 @@ public class AdminController implements AdminApi {
         }
     }
 
+
+    // update a specific order
+    @Override
+    public ResponseEntity<Order> adminUpdateOrder(UUID adminId, UUID orderId, Order updatedOrder) {
+        if (adminId == null || orderId == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+
+        //verify that user is admin
+        if (!vendorAdapter.checkRoleById(adminId)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        // verify that admin exists
+        if (!vendorAdapter.existsById(adminId)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        try {
+            Order existingOrder = orderService.findById(orderId);
+            if (existingOrder == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+
+            Order savedOrder = orderService.save(updatedOrder);
+            return ResponseEntity.ok(savedOrder);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }
