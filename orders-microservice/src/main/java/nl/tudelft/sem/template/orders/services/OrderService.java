@@ -22,7 +22,6 @@ public class OrderService implements IOrderService {
     public Order findById(UUID orderId) {
         return orderRepository.findById(orderId).orElse(null);
     }
-    @Override
     public List<Order> findAll() {
         return orderRepository.findAll();
     }
@@ -31,9 +30,14 @@ public class OrderService implements IOrderService {
         return orderRepository.save(order);
     }
 
+    public void delete(UUID orderId) {
+        orderRepository.deleteById(orderId);
+    }
+
     public double calculateOrderPrice(List<DishEntity> dishEntityList){
         return dishEntityList.stream()
                 .mapToDouble(DishEntity::getPrice)
                 .sum();
     }
+
 }
