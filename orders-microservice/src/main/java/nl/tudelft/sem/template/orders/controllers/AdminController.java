@@ -24,6 +24,8 @@ public class AdminController implements AdminApi {
         this.orderService = orderService;
         this.vendorAdapter = vendorAdapter;
     }
+
+    //get all orders
     @Override
     public ResponseEntity<List<Order>> adminGetAllOrders(UUID adminId) {
         if (adminId == null) {
@@ -47,4 +49,33 @@ public class AdminController implements AdminApi {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    //get specific order to see rating
+    @Override
+    public ResponseEntity<Order> adminGetOrder(UUID adminId, UUID orderId) {
+        if (adminId == null || orderId == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+
+        //verify that user is admin
+        if (!vendorAdapter.checkRoleById(adminId)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        // verify that admin exists
+        if (!vendorAdapter.existsById(adminId)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        try {
+            Order order = orderService.findById(orderId);
+            if (order == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+            return ResponseEntity.ok(order);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
 }
