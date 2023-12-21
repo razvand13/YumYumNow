@@ -1288,7 +1288,8 @@ paths:
       tags:
         - Vendor
       summary: Get analytics for a vendor
-      description: getVendorAnalytics
+      operationId: getVendorAnalytics
+      description: Calculate and return the analytics for a vendor. See the Analytics schema below for details.
       parameters:
         - name : vendorId
           in: path
@@ -1325,7 +1326,7 @@ components:
         dishes:
           type: array
           items:
-            $ref: '#/components/schemas/Dish'
+            $ref: '#/components/schemas/OrderedDish'
           x-field-extra-annotation: '@javax.persistence.OneToMany'
         location:
           $ref: '#/components/schemas/Address'
@@ -1404,6 +1405,22 @@ components:
         vendorId:
           type: string
           format: uuid
+
+    OrderedDish:
+      type: object
+      x-class-extra-annotation: '@javax.persistence.Entity @javax.persistence.Table(name = "ordered_dish")'
+      properties:
+        id:
+          type: string
+          format: uuid
+          x-field-extra-annotation: '@javax.persistence.Id @javax.persistence.GeneratedValue(generator = "UUID") @org.hibernate.annotations.GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")'
+        dish:
+          allOf:
+            - $ref: '#/components/schemas/Dish'
+          x-field-extra-annotation: '@javax.persistence.ManyToOne'
+        quantity:
+          type: integer
+          default: 0
 
     Status:
       type: string
