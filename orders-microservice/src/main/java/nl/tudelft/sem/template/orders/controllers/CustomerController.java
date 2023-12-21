@@ -13,6 +13,7 @@ import nl.tudelft.sem.template.model.Order;
 import nl.tudelft.sem.template.model.Status;
 import nl.tudelft.sem.template.model.UpdateDishQtyRequest;
 import nl.tudelft.sem.template.model.Vendor;
+import nl.tudelft.sem.template.model.OrderedDish;
 import nl.tudelft.sem.template.orders.domain.ICustomerService;
 import nl.tudelft.sem.template.orders.domain.IDishService;
 import nl.tudelft.sem.template.orders.domain.IOrderService;
@@ -242,16 +243,25 @@ public class CustomerController implements CustomerApi {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // Unauthorized access
         }
 
-        // Fetch dish
-        Dish dish = dishService.findById(dishId);
-        if (dish == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        Dish dishToAdd = dishService.findById(dishId);
+        if (dishToAdd == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build(); // Dish not found
         }
 
-        // Add dish to the order
-        for (int i = 0; i < updateDishQtyRequest.getQuantity(); i++) {
-            order.addDishesItem(dish);
+        Optional<OrderedDish> existingOrderedDish = orderService.orderedDishInOrder(order, dishId);
+
+        if (existingOrderedDish.isPresent()) {
+            // Dish is already in the order, update the quantity
+            OrderedDish orderedDish = existingOrderedDish.get();
+            orderedDish.setQuantity(orderedDish.getQuantity() + updateDishQtyRequest.getQuantity());
+        } else {
+            // Dish is not in the order, add it as a new OrderedDish
+            OrderedDish newOrderedDish = new OrderedDish();
+            newOrderedDish.setDish(dishToAdd);
+            newOrderedDish.setQuantity(updateDishQtyRequest.getQuantity());
+            order.addDishesItem(newOrderedDish);
         }
+
 
         // Recalculate total price
         double newTotalPrice = orderService.calculateOrderPrice(order.getDishes());
@@ -308,20 +318,22 @@ public class CustomerController implements CustomerApi {
         }
 
         // Check if the dish is part of the order
-        List<Dish> currentDishes = order.getDishes();
-        boolean dishExists = dishService.isDishInOrder(currentDishes, dishId);
+        List<OrderedDish> orderedDishes = order.getDishes();
+        Optional<OrderedDish> dishToRemove = orderedDishes.stream()
+                .filter(orderedDish -> orderedDish.getDish().getID().equals(dishId))
+                .findFirst();
 
-        if (!dishExists) {
+        if (!dishToRemove.isPresent()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build(); // Dish not found in order
         }
 
         // Remove the dish from the order
-        List<Dish> updatedDishes = dishService.removeDishOrder(currentDishes, dishId);
+        orderedDishes.remove(dishToRemove.get());
 
-        order.setDishes(updatedDishes);
+        order.setDishes(orderedDishes);
 
         // Calculate new price of order
-        double newTotalPrice = orderService.calculateOrderPrice(updatedDishes);
+        double newTotalPrice = orderService.calculateOrderPrice(orderedDishes);
 
         order.setTotalPrice(newTotalPrice);
 
@@ -329,6 +341,7 @@ public class CustomerController implements CustomerApi {
         Order updatedOrder = orderService.save(order);
 
         return ResponseEntity.ok(updatedOrder);
+
     }
 
 
@@ -368,34 +381,27 @@ public class CustomerController implements CustomerApi {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // Unauthorized access
         }
 
-        // Get the current list of dishes in the order
-        List<Dish> currentDishes = order.getDishes();
-        List<Dish> updatedDishes = new ArrayList<>();
+        // Get the current list of ordered dishes in the order
+        List<OrderedDish> orderedDishes = order.getDishes();
 
-        // Add all dishes to the updated list, except for the one we want to change the quantity of
-        currentDishes.stream()
-                .filter(dish -> !dish.getID().equals(dishId))
-                .forEach(updatedDishes::add);
+        // Find the OrderedDish that matches the dishId, and update its quantity
+        orderedDishes.stream()
+                .filter(orderedDish -> orderedDish.getDish().getID().equals(dishId))
+                .findFirst()
+                .ifPresent(orderedDish -> orderedDish.setQuantity(updateDishQtyRequest.getQuantity()));
 
-        // Now add the specified dish in the desired quantity
-        currentDishes.stream()
-                .filter(dish -> dish.getID().equals(dishId))
-                .limit(updateDishQtyRequest.getQuantity())
-                .forEach(updatedDishes::add);
-
-        // Set the updated list of dishes in the order
-        order.setDishes(updatedDishes);
+        // Set the updated list of ordered dishes in the order
+        order.setDishes(orderedDishes);
 
         // Recalculate the total price of the order
-        double newTotalPrice = orderService.calculateOrderPrice(updatedDishes);
+        double newTotalPrice = orderService.calculateOrderPrice(orderedDishes);
 
         // Update the total price of the order
         order.setTotalPrice(newTotalPrice);
 
-        // Save the order with the updated list of dishes
+        // Save the order with the updated list of ordered dishes
         Order updatedOrder = orderService.save(order);
 
-        // Return the updated order
         return ResponseEntity.ok(updatedOrder);
     }
 
