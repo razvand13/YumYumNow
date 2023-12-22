@@ -249,19 +249,25 @@ paths:
                     ID: "987e4567-e89b-12d3-a456-423144174001"
                     dishes: 
                       - ID: "ccf1f2d7-8f7f-4044-9a30-16790a432977"
-                        name: "Pizza Margherita"
-                        imageLink: "http://example.com/images/pizza.jpg"
-                        price: 12.50
-                        allergens: ["Gluten", "Dairy"]
-                        ingredients: ["Flour", "Tomatoes", "Mozzarella", "Basil", "Olive Oil"]
-                        description: "Best pizza in Europe"
+                        dish:
+                          ID: "eef1f2d7-8f7f-4044-9a30-16790a432977"
+                          name: "Pizza Margherita"
+                          imageLink: "http://example.com/images/pizza.jpg"
+                          price: 12.50
+                          allergens: ["Gluten", "Dairy"]
+                          ingredients: ["Flour", "Tomatoes", "Mozzarella", "Basil", "Olive Oil"]
+                          description: "Best pizza in Europe"
+                        quantity: 1
                       - ID: "3154bd7c-a7a9-4005-9dec-7980fb249976"
-                        name: "Caesar Salad"
-                        imageLink: "http://example.com/images/salad.jpg"
-                        price: 10.00
-                        allergens: ["Eggs", "Fish"]
-                        ingredients: ["Lettuce", "Croutons", "Parmesan Cheese", "Chicken", "Caesar Dressing"]
-                        description: "Traditional Caesar Salad"
+                        dish:
+                          ID: "3334bd7c-a7a9-4005-9dec-7980fb249976"
+                          name: "Caesar Salad"
+                          imageLink: "http://example.com/images/salad.jpg"
+                          price: 10.00
+                          allergens: ["Eggs", "Fish"]
+                          ingredients: ["Lettuce", "Croutons", "Parmesan Cheese", "Chicken", "Caesar Dressing"]
+                          description: "Traditional Caesar Salad"
+                        quantity: 1
                     location:
                       houseNumber: 456
                       zip: "12346"
@@ -386,18 +392,21 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Dish'
+                $ref: '#/components/schemas/OrderedDish'
               examples:
                 example1:
                   summary: Example dish
                   value:
-                    ID: "ccf1f2d7-8f7f-4044-9a30-16790a432977"
-                    name: "Margherita Pizza"
-                    imageLink: "http://example.com/images/margherita.jpg"
-                    price: 12.50
-                    allergens: ["Gluten", "Dairy"]
-                    ingredients: ["Flour", "Tomatoes", "Mozzarella", "Basil", "Olive Oil"]
-                    description: "Best pizza in Delft!"  
+                    ID: "eef1f2d7-8f7f-4044-9a30-16790a432979"
+                    dish:
+                      ID: "ccf1f2d7-8f7f-4044-9a30-16790a432977"
+                      name: "Margherita Pizza"
+                      imageLink: "http://example.com/images/margherita.jpg"
+                      price: 12.50
+                      allergens: ["Gluten", "Dairy"]
+                      ingredients: ["Flour", "Tomatoes", "Mozzarella", "Basil", "Olive Oil"]
+                      description: "Best pizza in Delft!"
+                    quantity: 2
         '400':
           description: Bad Request - Invalid request parameters.
         '401':
@@ -953,15 +962,15 @@ paths:
             schema:
               $ref: '#/components/schemas/Dish'
             examples:
-                example1:
-                  summary: Example dish
-                  value:
-                    name: "Margherita Pizza"
-                    imageLink: "http://example.com/images/margherita.jpg"
-                    price: 12.50
-                    allergens: ["Gluten", "Dairy"]
-                    ingredients: ["Flour", "Tomatoes", "Mozzarella", "Basil", "Olive Oil"]
-                    description: "Best pizza in Delft!"
+              example1:
+                summary: Example dish
+                value:
+                  name: "Margherita Pizza"
+                  imageLink: "http://example.com/images/margherita.jpg"
+                  price: 12.50
+                  allergens: ["Gluten", "Dairy"]
+                  ingredients: ["Flour", "Tomatoes", "Mozzarella", "Basil", "Olive Oil"]
+                  description: "Best pizza in Delft!"
       responses:
         '200':
           description: New dish has been added to the vendor menu
