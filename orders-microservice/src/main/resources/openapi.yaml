@@ -1327,7 +1327,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/OrderedDish'
-          x-field-extra-annotation: '@javax.persistence.OneToMany'
+          x-field-extra-annotation: '@javax.persistence.OneToMany(cascade=javax.persistence.CascadeType.ALL)'
         location:
           $ref: '#/components/schemas/Address'
         specialRequirements:
