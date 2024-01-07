@@ -1,6 +1,6 @@
 package nl.tudelft.sem.template.orders.mappers;
 
-import nl.tudelft.sem.template.orders.entities.Vendor;
+import nl.tudelft.sem.template.model.Vendor;
 import nl.tudelft.sem.template.orders.external.VendorDTO;
 import org.junit.jupiter.api.Test;
 

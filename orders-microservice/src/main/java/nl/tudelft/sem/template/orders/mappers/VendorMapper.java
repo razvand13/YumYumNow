@@ -3,7 +3,7 @@ package nl.tudelft.sem.template.orders.mappers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import nl.tudelft.sem.template.orders.entities.Vendor;
+import nl.tudelft.sem.template.model.Vendor;
 import nl.tudelft.sem.template.orders.external.VendorDTO;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +22,8 @@ public class VendorMapper {
     public Vendor toEntity(VendorDTO vendorDTO) {
         Vendor vendor = new Vendor();
         vendor.setID(vendorDTO.getVendorId());
+        vendor.setName(vendorDTO.getName());
+        vendor.setLocation(vendorDTO.getLocation());
 
         return vendor;
     }
@@ -35,6 +37,8 @@ public class VendorMapper {
     public VendorDTO toDTO(Vendor vendor) {
         VendorDTO vendorDTO = new VendorDTO();
         vendorDTO.setVendorId(vendor.getID());
+        vendorDTO.setName(vendor.getName());
+        vendorDTO.setLocation(vendor.getLocation());
 
         return vendorDTO;
     }

@@ -1,7 +1,7 @@
 package nl.tudelft.sem.template.orders.domain;
 
-import nl.tudelft.sem.template.orders.entities.Address;
-import nl.tudelft.sem.template.orders.entities.Order;
+import nl.tudelft.sem.template.model.Address;
+import nl.tudelft.sem.template.model.Order;
 import nl.tudelft.sem.template.orders.external.VendorDTO;
 
 import java.util.List;

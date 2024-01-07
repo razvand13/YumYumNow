@@ -1,8 +1,7 @@
 package nl.tudelft.sem.template.orders.services;
 
-import nl.tudelft.sem.template.orders.entities.Order;
+import nl.tudelft.sem.template.model.Order;
 import nl.tudelft.sem.template.orders.repositories.OrderRepository;
-import nl.tudelft.sem.template.orders.services.OrderService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
