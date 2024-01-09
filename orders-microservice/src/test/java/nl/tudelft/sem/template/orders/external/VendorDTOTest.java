@@ -12,6 +12,9 @@ public class VendorDTOTest {
 
     private VendorDTO vendor;
 
+    /**
+     * Sets up some commonly used parameters
+     */
     @BeforeEach
     public void setUp() {
         UUID vendorId = UUID.randomUUID();
