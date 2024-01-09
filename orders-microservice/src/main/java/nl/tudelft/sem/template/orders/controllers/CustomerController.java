@@ -405,5 +405,151 @@ public class CustomerController implements CustomerApi {
         return ResponseEntity.ok(updatedOrder);
     }
 
+    /**
+     * GET /customer/{customerId}/order/{orderId} : Get all details of the order for a customer (updated price as well)
+     * Get all the details of a specific order for a customer based on the order id
+     *
+     * @param customerId  (required)
+     * @param orderId  (required)
+     * @return Details of the specified order (status code 200)
+     *         or Bad Request - Invalid request parameters. (status code 400)
+     *         or Unauthorized - User is not a customer/order does not belong to user. (status code 401)
+     *         or Order or customer not found. (status code 404)
+     *         or Internal Server Error - An unexpected error occurred. (status code 500)
+     */
+    @Override
+    public ResponseEntity<Order> getOrder(UUID customerId, UUID orderId) {
+        // Validate input
+        if (customerId == null || orderId == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+
+        // Check if the customer exists
+        if (!customerAdapter.existsById(customerId)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        // Authorize that the customer is making the request
+        if (!customerAdapter.checkRoleById(customerId)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        // Fetch the order from the database
+        Order order = orderService.findById(orderId);
+        if (order == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        // Check if the order belongs to the requesting customer
+        if (!order.getCustomerId().equals(customerId)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        // Recalculate the total price in case of updates
+        double updatedPrice = orderService.calculateOrderPrice(order.getDishes());
+        order.setTotalPrice(updatedPrice);
+
+        // Return the order details
+        return ResponseEntity.ok(order);
+    }
+
+    /**
+     * GET /customer/{customerId}/history : Get list of previous orders
+     * Returns a list of previous orders for the specified user.
+     *
+     * @param customerId  (required)
+     * @return List of previous orders. (status code 200)
+     *         or Bad Request - Invalid request parameters. (status code 400)
+     *         or Unauthorized - Not a customer user. (status code 401)
+     *         or Not Found - User does not exist. (status code 404)
+     *         or Internal Server Error - An unexpected error occured on the server. (status code 500)
+     */
+    @Override
+    public ResponseEntity<List<Order>> getPersonalOrderHistory(UUID customerId) {
+        // Validate customerId
+        if (customerId == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+
+        // Check if the customer exists
+        if (!customerAdapter.existsById(customerId)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        // Authorize that the customer is making the request
+        if (!customerAdapter.checkRoleById(customerId)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        // Fetch the list of previous orders for the customer
+        List<Order> orders = orderService.findOrdersByCustomerId(customerId);
+        if (orders.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        // Return the list of orders
+        return ResponseEntity.ok(orders);
+    }
+
+    /**
+     * POST /customer/{customerId}/reorder/{orderId} : Reorder based on a previous order
+     * Creates a new order with identical contents as a previous order.
+     *
+     * @param customerId  (required)
+     * @param orderId  (required)
+     * @param address  (optional)
+     * @return Successfully created duplicate order. (status code 200)
+     *         or Bad Request - Invalid request parameters. (status code 400)
+     *         or Unauthorized - order does not belong to customer/user is not a customer. (status code 401)
+     *         or Forbidden - Reordering this order is not allowed (discontinued items). (status code 403)
+     *         or Not Found - Order/customer does not exist. (status code 404)
+     *         or Internal Server Error - An unexpected error occurred on the server. (status code 500)
+     */
+    @Override
+    public ResponseEntity<Order> reorder(UUID customerId, UUID orderId, Address address) {
+        // Validate input
+        if (customerId == null || orderId == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+
+        // Check if the customer exists
+        if (!customerAdapter.existsById(customerId)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        // Authorize customer
+        if (!customerAdapter.checkRoleById(customerId)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        // Fetch the previous order
+        Order previousOrder = orderService.findById(orderId);
+        if (previousOrder == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        // Check if the order belongs to the customer
+        if (!previousOrder.getCustomerId().equals(customerId)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        // Create a new order with identical contents
+        Order newOrder = new Order();
+        newOrder.setCustomerId(customerId);
+        newOrder.setVendorId(previousOrder.getVendorId());
+        newOrder.setDishes(new ArrayList<>(previousOrder.getDishes()));
+        newOrder.setOrderTime(OffsetDateTime.now());
+        newOrder.setStatus(Status.PENDING);
+        newOrder.setLocation(address != null ? address : previousOrder.getLocation());
+
+        // Save the new order
+        Order savedOrder = orderService.save(newOrder);
+
+        return ResponseEntity.ok(savedOrder);
+    }
+
+
+
+
 }
 

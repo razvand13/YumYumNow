@@ -53,4 +53,9 @@ public class OrderService implements IOrderService {
                 .filter(orderedDish -> orderedDish.getDish().getID().equals(dishId))
                 .findFirst();
     }
+
+    public List<Order> findOrdersByCustomerId(UUID customerId) {
+        // This method fetches orders from the repository using the customerId
+        return orderRepository.findByCustomerId(customerId);
+    }
 }
