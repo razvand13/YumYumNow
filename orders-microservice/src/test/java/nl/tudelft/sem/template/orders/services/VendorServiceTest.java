@@ -136,8 +136,10 @@ class VendorServiceTest {
         vendorLocation2.setLongitude(52.0);
         vendorLocation2.setLatitude(4.0);
 
-        VendorDTO vendor1 = new VendorDTO(UUID.randomUUID(), "Vendor 1", false, "vendor1@example.com", true, vendorLocation1);
-        VendorDTO vendor2 = new VendorDTO(UUID.randomUUID(), "Rodnev 2", false, "vendor2@example.com", true, vendorLocation2);
+        VendorDTO vendor1 = new VendorDTO(UUID.randomUUID(), "Vendor 1", false, "vendor1@example.com", true,
+                vendorLocation1);
+        VendorDTO vendor2 = new VendorDTO(UUID.randomUUID(), "Rodnev 2", false, "vendor2@example.com", true,
+                vendorLocation2);
 
         List<VendorDTO> vendors = List.of(vendor1, vendor2);
 
@@ -151,8 +153,6 @@ class VendorServiceTest {
         vendorLocation.setLongitude(52.0);
         vendorLocation.setLatitude(4.0);
 
-        VendorDTO vendor = new VendorDTO(UUID.randomUUID(), "Vendor", false, "vendor@example.com", true, vendorLocation);
-
 
         Dish dish1 = new Dish();
         dish1.setPrice(10.0);
@@ -162,6 +162,8 @@ class VendorServiceTest {
         dish3.setPrice(30.0);
 
         List<Dish> dishes = Arrays.asList(dish1, dish2, dish3);
+
+        VendorDTO vendor = new VendorDTO(UUID.randomUUID(), "Vendor", false, "vendor@example.com", true, vendorLocation);
 
         when(dishRepository.getDishesByVendorId(vendor.getVendorId())).thenReturn(dishes);
 

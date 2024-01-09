@@ -30,6 +30,12 @@ public class OrderService implements IOrderService {
         return orderRepository.save(order);
     }
 
+    /**
+     * Calculates total price of an order
+     *
+     * @param orderedDishes list of dishes to use to calculate price
+     * @return calculated price
+     */
     public double calculateOrderPrice(List<OrderedDish> orderedDishes) {
         double totalPrice = 0.0;
 
@@ -43,13 +49,15 @@ public class OrderService implements IOrderService {
         return totalPrice;
     }
 
-    public Optional<OrderedDish> orderedDishInOrder(Order order, UUID dishId){
+    /**
+     * Returns OrderedDish corresponding to provided dish ID
+     *
+     * @param order Order to check for OrderedDish
+     * @param dishId id of Dish
+     * @return OrderedDish with dish having provided id, or empty
+     */
+    public Optional<OrderedDish> orderedDishInOrder(Order order, UUID dishId) {
         return order.getDishes().stream()
-                .filter(orderedDish -> orderedDish.getDish().getID().equals(dishId))
-                .findFirst();
-    }
-    public Optional<OrderedDish> removeDishOrder(List<OrderedDish> orderedDishes, UUID dishId) {
-        return orderedDishes.stream()
                 .filter(orderedDish -> orderedDish.getDish().getID().equals(dishId))
                 .findFirst();
     }
