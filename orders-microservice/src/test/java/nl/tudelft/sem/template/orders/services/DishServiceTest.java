@@ -13,7 +13,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -91,6 +91,56 @@ public class DishServiceTest {
 
         assertThat(savedDish).isEqualTo(dish);
         verify(dishRepository).save(dish);
+    }
+
+    @Test
+    void removeDishWhenDishNotFound() {
+        UUID vendorId = UUID.randomUUID();
+        UUID dishId = UUID.randomUUID();
+
+        when(dishRepository.findById(dishId)).thenReturn(Optional.empty());
+
+        boolean result = dishService.removeDish(vendorId, dishId);
+
+        assertThat(result).isFalse();
+        verify(dishRepository).findById(dishId);
+    }
+
+    @Test
+    void removeDishWhenDishBelongsToAnotherVendor() {
+
+        UUID anotherVendorId = UUID.randomUUID();
+        UUID dishId = UUID.randomUUID();
+        Dish dish = new Dish();
+        dish.setID(dishId);
+        dish.setVendorId(anotherVendorId);
+
+        when(dishRepository.findById(dishId)).thenReturn(Optional.of(dish));
+
+        UUID vendorId = UUID.randomUUID();
+        boolean result = dishService.removeDish(vendorId, dishId);
+
+        assertThat(result).isFalse();
+        verify(dishRepository).findById(dishId);
+        verify(dishRepository, never()).delete(any(Dish.class));
+    }
+
+    @Test
+    void removeDishSuccessful() {
+        UUID vendorId = UUID.randomUUID();
+        UUID dishId = UUID.randomUUID();
+        Dish dish = new Dish();
+        dish.setID(dishId);
+        dish.setVendorId(vendorId);
+
+        when(dishRepository.findById(dishId)).thenReturn(Optional.of(dish));
+
+        boolean result = dishService.removeDish(vendorId, dishId);
+
+        assertThat(result).isTrue();
+        verify(dishRepository).findById(dishId);
+        verify(dishRepository).save(dish);
+        assertThat(dish.getIsDeleted()).isTrue();
     }
 
 }

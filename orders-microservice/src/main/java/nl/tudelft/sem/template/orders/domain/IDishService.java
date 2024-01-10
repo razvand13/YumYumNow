@@ -12,6 +12,8 @@ public interface IDishService {
 
     Dish addDish(UUID vendorId, Dish dish);
 
+    boolean removeDish(UUID vendorId, UUID dishId);
+
     boolean isDishInOrder(List<Dish> dishEntityList, UUID dishId);
 
     List<Dish> removeDishOrder(List<Dish> dishEntityList, UUID dishId);

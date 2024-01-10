@@ -30,7 +30,7 @@ public class VendorController implements VendorApi {
      *
      * @param vendorAdapter the vendor adapter
      * @param dishService   the dish service
-     * @param dishMapper    the dish mapper
+     * @param orderService  the order service
      * @param vendorService the vendor service
      */
     @Autowired
@@ -71,6 +71,46 @@ public class VendorController implements VendorApi {
         } catch (IllegalArgumentException e) {
             // Bad request from service
             return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * DELETE /vendor/{vendorId}/dish/{dishId} : Delete a dish from the menu
+     *
+     * @param vendorId (required)
+     * @param dishId   (required)
+     * @return Dish removed successfully from the menu. (status code 200)
+     *      or Bad Request - Dish not deleted. (status code 400)
+     *      or Unauthorized - User is not a vendor/dish does not belong to vendor. (status code 401)
+     *      or Not Found - Dish or vendor not found. (status code 404)
+     *      or Internal Server Error - An unexpected error occurred. (status code 500)
+     */
+    @Override
+    public ResponseEntity<Void> removeDishFromMenu(UUID vendorId, UUID dishId) {
+        if (vendorId == null || dishId == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+
+        if (!vendorAdapter.checkRoleById(vendorId)) {
+            // Unauthorized - ID of a customer/courier/admin
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        if (!vendorAdapter.existsById(vendorId)) {
+            // Vendor id not found
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        try {
+            boolean isRemoved = dishService.removeDish(vendorId, dishId);
+            if (isRemoved) {
+                return ResponseEntity.ok().build();
+            } else {
+                // Dish not found or not removed for some reason
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
