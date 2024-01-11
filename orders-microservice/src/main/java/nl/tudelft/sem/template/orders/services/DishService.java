@@ -95,10 +95,10 @@ public class DishService implements IDishService {
 
     /**
      * Checks if a dish is in an order
-
-     * @param dishEntityList the list of dishes
-     * @param dishId the id of the dish
-     * @return true if the dish is in the order, false otherwise
+     *
+     * @param dishEntityList List of dishes to check
+     * @param dishId Id of dish to look for
+     * @return true iff dish with id dishId is in the list
      */
     public boolean isDishInOrder(List<Dish> dishEntityList, UUID dishId) {
         return dishEntityList.stream().anyMatch(dish -> dish.getID().equals(dishId));
@@ -107,10 +107,10 @@ public class DishService implements IDishService {
 
     /**
      * removes a dish from an order
-
-     * @param dishEntityList the list of dishes
-     * @param dishId the id of the dish to be removed
-     * @return the list of dishes without the dish
+     *
+     * @param dishEntityList List of dishes to modify
+     * @param dishId id of dish to remove
+     * @return modified dish list
      */
     public List<Dish> removeDishOrder(List<Dish> dishEntityList, UUID dishId) {
         return dishEntityList.stream()

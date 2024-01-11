@@ -30,7 +30,6 @@ public class VendorController implements VendorApi {
      *
      * @param vendorAdapter the vendor adapter
      * @param dishService   the dish service
-     * @param orderService  the order service
      * @param vendorService the vendor service
      */
     @Autowired
