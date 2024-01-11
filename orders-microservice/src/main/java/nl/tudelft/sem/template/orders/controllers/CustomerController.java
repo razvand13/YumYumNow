@@ -89,14 +89,14 @@ public class CustomerController implements CustomerApi {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
-        // Check that user exists
-        if (!customerAdapter.existsById(customerId)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
-
         // Authorize customer
         if (!customerAdapter.checkRoleById(customerId)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        // Check if the customer exists
+        if (!customerAdapter.existsById(customerId)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
         // Get the customer's delivery location
@@ -139,14 +139,14 @@ public class CustomerController implements CustomerApi {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
-        // Check that user exists
-        if (!customerAdapter.existsById(customerId)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
-
         // Authorize customer
         if (!customerAdapter.checkRoleById(customerId)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        // Check if the customer exists
+        if (!customerAdapter.existsById(customerId)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
         Order order = new Order();
@@ -179,14 +179,14 @@ public class CustomerController implements CustomerApi {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
-        // Check that user exists
-        if (!customerAdapter.existsById(customerId)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
-
         // Authorize customer
         if (!customerAdapter.checkRoleById(customerId)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        // Check if the customer exists
+        if (!customerAdapter.existsById(customerId)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
         // Get order from repository, check if order exists
@@ -297,14 +297,14 @@ public class CustomerController implements CustomerApi {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
-        // check if the customer exists
-        if (!customerAdapter.existsById(customerId)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
-
-        // verify that it is a user making the modification
+        // Authorize customer
         if (!customerAdapter.checkRoleById(customerId)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        // Check if the customer exists
+        if (!customerAdapter.existsById(customerId)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
         // check if order belongs to the right customer
@@ -459,14 +459,14 @@ public class CustomerController implements CustomerApi {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
+        // Authorize customer
+        if (!customerAdapter.checkRoleById(customerId)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
         // Check if the customer exists
         if (!customerAdapter.existsById(customerId)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
-
-        // Authorize that the customer is making the request
-        if (!customerAdapter.checkRoleById(customerId)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         // Fetch the list of previous orders for the customer
@@ -500,14 +500,14 @@ public class CustomerController implements CustomerApi {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
-        // Check if the customer exists
-        if (!customerAdapter.existsById(customerId)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
-
         // Authorize customer
         if (!customerAdapter.checkRoleById(customerId)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        // Check if the customer exists
+        if (!customerAdapter.existsById(customerId)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
         // Fetch the previous order
