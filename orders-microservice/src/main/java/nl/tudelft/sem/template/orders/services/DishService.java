@@ -23,10 +23,9 @@ public class DishService implements IDishService {
      * Find dish by ID
      *
      * @param dishId id of the dish
-     * @return dish
-     * @throws IllegalArgumentException if there is no dish with the specified ID
+     * @return the dish
      */
-    public Dish findById(UUID dishId) {
+    public Dish findByIdNotDeleted(UUID dishId) {
         return dishRepository.findById(dishId)
             .filter(dish -> !dish.getIsDeleted())
             .orElse(null);

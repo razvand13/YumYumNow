@@ -242,7 +242,7 @@ public class CustomerController implements CustomerApi {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // Unauthorized access
         }
 
-        Dish dishToAdd = dishService.findById(dishId);
+        Dish dishToAdd = dishService.findByIdNotDeleted(dishId);
         if (dishToAdd == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build(); // Dish not found
         }
@@ -312,7 +312,7 @@ public class CustomerController implements CustomerApi {
         }
 
         // check if the dish exists
-        if (dishService.findById(dishId) == null) {
+        if (dishService.findByIdNotDeleted(dishId) == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 

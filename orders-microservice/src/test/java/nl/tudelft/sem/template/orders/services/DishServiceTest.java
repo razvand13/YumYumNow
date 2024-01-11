@@ -38,7 +38,7 @@ public class DishServiceTest {
         dish.setID(dishId);
         when(dishRepository.findById(dishId)).thenReturn(Optional.of(dish));
 
-        Dish result = dishService.findById(dishId);
+        Dish result = dishService.findByIdNotDeleted(dishId);
 
         assertThat(result).isNotNull();
         assertThat(result.getID()).isEqualTo(dishId);
@@ -49,7 +49,7 @@ public class DishServiceTest {
         UUID nonExistentDishId = UUID.randomUUID();
 
         when(dishRepository.findById(nonExistentDishId)).thenReturn(Optional.empty()); // Unsuccessful query
-        Dish dish = dishService.findById(nonExistentDishId);
+        Dish dish = dishService.findByIdNotDeleted(nonExistentDishId);
 
         assertThat(dish).isNull();
     }

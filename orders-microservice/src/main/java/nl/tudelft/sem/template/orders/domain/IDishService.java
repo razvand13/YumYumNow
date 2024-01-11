@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface IDishService {
-    Dish findById(UUID dishId);
+    Dish findByIdNotDeleted(UUID dishId);
 
     List<Dish> findAllByVendorIdNotDeleted(UUID vendorId);
 
