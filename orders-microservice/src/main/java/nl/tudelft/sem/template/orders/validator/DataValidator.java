@@ -27,12 +27,12 @@ import java.util.List;
 public class DataValidator extends BaseValidator {
 
     @Autowired
-    private IOrderService orderService;
+    private transient IOrderService orderService;
     @Autowired
-    private IDishService dishService;
+    private transient IDishService dishService;
     @Autowired
-    private VendorAdapter vendorAdapter;
-    private final List<DataValidationField> fields;
+    private transient VendorAdapter vendorAdapter;
+    private final transient List<DataValidationField> fields;
 
     /**
      * Construct a new DataValidator. Pass in the field types that you want the validator to check.
@@ -50,6 +50,10 @@ public class DataValidator extends BaseValidator {
         this.orderService = orderService;
         this.dishService = dishService;
         this.vendorAdapter = vendorAdapter;
+    }
+
+    public DataValidator() {
+        this.fields = new ArrayList<>();
     }
 
     /**

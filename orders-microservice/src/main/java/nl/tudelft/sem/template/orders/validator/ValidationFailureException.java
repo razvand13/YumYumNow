@@ -5,6 +5,8 @@ import org.springframework.http.HttpStatus;
 public class ValidationFailureException extends RuntimeException {
     private final HttpStatus failureStatus;
 
+    static final long serialVersionUID = -3387516993124229948L;
+
     /**
      * Construct a ValidationFailureException with default status
      */

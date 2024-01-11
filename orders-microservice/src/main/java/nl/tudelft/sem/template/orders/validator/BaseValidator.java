@@ -1,7 +1,7 @@
 package nl.tudelft.sem.template.orders.validator;
 
 public abstract class BaseValidator implements Validator {
-    private Validator next;
+    private transient Validator next;
 
     public void setNext(Validator v) {
         this.next = v;

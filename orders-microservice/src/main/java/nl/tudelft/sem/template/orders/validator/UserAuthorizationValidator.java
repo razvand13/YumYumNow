@@ -31,13 +31,13 @@ import org.springframework.stereotype.Component;
 @Component
 public class UserAuthorizationValidator extends BaseValidator {
     @Autowired
-    private CustomerAdapter customerAdapter;
+    private transient CustomerAdapter customerAdapter;
     @Autowired
-    private VendorAdapter vendorAdapter;
+    private transient VendorAdapter vendorAdapter;
     @Autowired
-    private IOrderService orderService;
+    private transient IOrderService orderService;
     @Autowired
-    private IDishService dishService;
+    private transient IDishService dishService;
 
     public UserAuthorizationValidator() {
     }
