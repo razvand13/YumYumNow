@@ -433,7 +433,7 @@ public class CustomerController implements CustomerApi {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
-        if (order.getCustomerId() != customerId) {
+        if (!order.getCustomerId().equals(customerId)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
@@ -472,21 +472,15 @@ public class CustomerController implements CustomerApi {
 
         Order order = orderResponseEntity.getBody();
         List<OrderedDish> dishes = order.getDishes();
-        OrderedDish foundDish = null;
 
         for (OrderedDish orderedDish : dishes) {
             if (dish.equals(orderedDish.getDish())) {
-                foundDish = orderedDish;
-                break;
+                return ResponseEntity.ok(orderedDish);
             }
         }
 
         // Dish exists in the database, but it does not belong to this order
-        if (foundDish == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        return ResponseEntity.ok(foundDish);
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
 }
 

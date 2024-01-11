@@ -18,7 +18,7 @@ public class VendorMapperTest {
     private Address address;
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         address = new Address();
         address.setHouseNumber(1);
         address.setLatitude(50.0);

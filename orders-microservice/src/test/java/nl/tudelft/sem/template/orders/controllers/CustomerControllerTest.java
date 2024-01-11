@@ -1,6 +1,8 @@
 package nl.tudelft.sem.template.orders.controllers;
 
-import nl.tudelft.sem.template.model.*;
+import nl.tudelft.sem.template.model.OrderedDish;
+import nl.tudelft.sem.template.model.Order;
+import nl.tudelft.sem.template.model.Dish;
 import nl.tudelft.sem.template.orders.domain.ICustomerService;
 import nl.tudelft.sem.template.orders.domain.IDishService;
 import nl.tudelft.sem.template.orders.domain.IOrderService;
@@ -15,10 +17,12 @@ import org.mockito.Mock;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class CustomerControllerTest {
 
@@ -152,7 +156,8 @@ class CustomerControllerTest {
 
     @Test
     void getDishFromOrderBadRequest() {
-        ResponseEntity<OrderedDish> responseEntity = customerController.getDishFromOrder(customerId, UUID.randomUUID(), null);
+        ResponseEntity<OrderedDish> responseEntity =
+                customerController.getDishFromOrder(customerId, UUID.randomUUID(), null);
 
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
@@ -206,11 +211,11 @@ class CustomerControllerTest {
         UUID anotherDishId = UUID.randomUUID();
         dish.setID(anotherDishId);
 
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
-        when(customerAdapter.existsById(customerId)).thenReturn(true);
+        when(dishService.findById(anotherDishId)).thenReturn(anotherDish);
         when(orderService.findById(orderId)).thenReturn(order);
         when(dishService.findById(dishId)).thenReturn(dish);
-        when(dishService.findById(anotherDishId)).thenReturn(anotherDish);
+        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
+        when(customerAdapter.existsById(customerId)).thenReturn(true);
 
         ResponseEntity<OrderedDish> responseEntity =
                 customerController.getDishFromOrder(customerId, orderId, anotherDishId);
