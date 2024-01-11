@@ -54,7 +54,7 @@ public class AdminController implements AdminApi {
         }
 
         try {
-            List<nl.tudelft.sem.template.orders.entities.Order> orders = orderService.findAll();
+            List<Order> orders = orderService.findAll();
             return ResponseEntity.ok(orders);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
