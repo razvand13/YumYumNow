@@ -1,18 +1,18 @@
 package nl.tudelft.sem.template.orders.domain;
 
-import nl.tudelft.sem.template.orders.entities.DishEntity;
+import nl.tudelft.sem.template.model.Dish;
 
 import java.util.List;
 import java.util.UUID;
 
 public interface IDishService {
-    DishEntity findById(UUID dishId);
+    Dish findById(UUID dishId);
 
-    List<DishEntity> findAllByVendorId(UUID vendorId);
+    List<Dish> findAllByVendorId(UUID vendorId);
 
-    DishEntity addDish(UUID vendorId, DishEntity dish);
+    Dish addDish(UUID vendorId, Dish dish);
 
-    boolean isDishInOrder(List<DishEntity> dishEntityList, UUID dishId);
+    boolean isDishInOrder(List<Dish> dishEntityList, UUID dishId);
 
-    List<DishEntity> removeDishOrder(List<DishEntity> dishEntityList, UUID dishId);
+    List<Dish> removeDishOrder(List<Dish> dishEntityList, UUID dishId);
 }

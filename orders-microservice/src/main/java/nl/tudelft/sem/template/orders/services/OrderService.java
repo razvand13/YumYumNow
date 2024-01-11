@@ -1,13 +1,16 @@
 package nl.tudelft.sem.template.orders.services;
 
+import nl.tudelft.sem.template.model.Dish;
+import nl.tudelft.sem.template.model.Order;
+import nl.tudelft.sem.template.model.OrderedDish;
 import nl.tudelft.sem.template.orders.domain.IOrderService;
-import nl.tudelft.sem.template.orders.entities.DishEntity;
-import nl.tudelft.sem.template.orders.entities.Order;
 import nl.tudelft.sem.template.orders.repositories.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.validation.Valid;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -36,15 +39,36 @@ public class OrderService implements IOrderService {
     }
 
     /**
-     * Calculates price of the order based ond the list of dishes provided
+     * Calculates total price of an order
      *
-     * @param dishEntityList list of dishes
-     * @return double - price of order
+     * @param orderedDishes list of dishes to use to calculate price
+     * @return calculated price
      */
-    public double calculateOrderPrice(List<DishEntity> dishEntityList) {
-        return dishEntityList.stream()
-                .mapToDouble(DishEntity::getPrice)
-                .sum();
+    public double calculateOrderPrice(List<OrderedDish> orderedDishes) {
+        double totalPrice = 0.0;
+
+        for (OrderedDish orderedDish : orderedDishes) {
+            Dish dish = orderedDish.getDish();
+            int quantity = orderedDish.getQuantity();
+            double price = dish.getPrice();
+            totalPrice += price * quantity;
+        }
+
+        return totalPrice;
+    }
+
+    /**
+     * Returns OrderedDish corresponding to provided dish ID
+     *
+     * @param order Order to check for OrderedDish
+     * @param dishId id of Dish
+     * @return OrderedDish with dish having provided id, or empty
+     */
+    public Optional<OrderedDish> orderedDishInOrder(Order order, UUID dishId) {
+        return order.getDishes().stream()
+                .filter(orderedDish -> orderedDish.getDish().getID().equals(dishId))
+                .findFirst();
+>>>>>>> orders-microservice/src/main/java/nl/tudelft/sem/template/orders/services/OrderService.java
     }
 
 }

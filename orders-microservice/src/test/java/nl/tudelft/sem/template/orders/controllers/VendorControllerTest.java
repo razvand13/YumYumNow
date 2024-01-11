@@ -1,10 +1,8 @@
 package nl.tudelft.sem.template.orders.controllers;
 
 import nl.tudelft.sem.template.model.Dish;
+import nl.tudelft.sem.template.model.Order;
 import nl.tudelft.sem.template.orders.VendorNotFoundException;
-import nl.tudelft.sem.template.orders.entities.DishEntity;
-import nl.tudelft.sem.template.orders.entities.Order;
-import nl.tudelft.sem.template.orders.mappers.DishMapper;
 import nl.tudelft.sem.template.orders.repositories.OrderRepository;
 import nl.tudelft.sem.template.orders.services.DishService;
 import nl.tudelft.sem.template.orders.services.OrderService;
@@ -30,7 +28,6 @@ class VendorControllerTest {
 
     private VendorAdapter vendorAdapter;
     private DishService dishService;
-    private DishMapper dishMapper;
     private VendorController vendorController;
     private OrderService orderService;
     private VendorService vendorService;
@@ -42,10 +39,9 @@ class VendorControllerTest {
     void setUp() {
         vendorAdapter = mock(VendorAdapter.class);
         dishService = mock(DishService.class);
-        dishMapper = mock(DishMapper.class);
         orderService = mock(OrderService.class);
         vendorService = mock(VendorService.class);
-        vendorController = new VendorController(vendorAdapter, dishService, dishMapper, orderService, vendorService);
+        vendorController = new VendorController(vendorAdapter, dishService, orderService, vendorService);
 
         orderRepository = mock(OrderRepository.class);
 
@@ -63,7 +59,6 @@ class VendorControllerTest {
 
         verifyNoInteractions(vendorAdapter);
         verifyNoInteractions(dishService);
-        verifyNoInteractions(dishMapper);
     }
 
     @Test
@@ -77,7 +72,6 @@ class VendorControllerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
         verify(vendorAdapter).checkRoleById(vendorId);
         verifyNoInteractions(dishService);
-        verifyNoInteractions(dishMapper);
     }
 
     @Test
@@ -93,20 +87,17 @@ class VendorControllerTest {
         verify(vendorAdapter).checkRoleById(vendorId);
         verify(vendorAdapter).existsById(vendorId);
         verifyNoInteractions(dishService);
-        verifyNoInteractions(dishMapper);
     }
 
     @Test
     void addDishToMenuSuccessful() {
         Dish dish = new Dish();
-        DishEntity dishEntity = new DishEntity();
-        DishEntity addedDishEntity = new DishEntity();
+        Dish dishEntity = new Dish();
+        Dish addedDishEntity = new Dish();
 
         when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
         when(vendorAdapter.existsById(vendorId)).thenReturn(true);
-        when(dishMapper.toEntity(dish)).thenReturn(dishEntity);
         when(dishService.addDish(vendorId, dishEntity)).thenReturn(addedDishEntity);
-        when(dishMapper.toDTO(addedDishEntity)).thenReturn(dish);
 
         ResponseEntity<Dish> response = vendorController.addDishToMenu(vendorId, dish);
 
@@ -114,21 +105,18 @@ class VendorControllerTest {
         assertThat(response.getBody()).isEqualTo(dish);
         verify(vendorAdapter).checkRoleById(vendorId);
         verify(vendorAdapter).existsById(vendorId);
-        verify(dishMapper).toEntity(dish);
         verify(dishService).addDish(vendorId, dishEntity);
-        verify(dishMapper).toDTO(addedDishEntity);
+
     }
 
     @Test
     void addDishToMenuVendorNotFound() {
         UUID nonExistentVendorId = UUID.randomUUID();
         Dish dish = new Dish();
-        DishEntity dishEntity = new DishEntity();
 
         when(vendorAdapter.checkRoleById(any(UUID.class))).thenReturn(true);
         when(vendorAdapter.existsById(any(UUID.class))).thenReturn(true);
-        when(dishMapper.toEntity(any(Dish.class))).thenReturn(dishEntity);
-        when(dishService.addDish(any(UUID.class), any(DishEntity.class)))
+        when(dishService.addDish(any(UUID.class), any(Dish.class)))
             .thenThrow(new VendorNotFoundException());
 
         ResponseEntity<Dish> response = vendorController.addDishToMenu(nonExistentVendorId, dish);
@@ -138,24 +126,22 @@ class VendorControllerTest {
         // Verify interactions
         verify(vendorAdapter).checkRoleById(nonExistentVendorId);
         verify(vendorAdapter).existsById(nonExistentVendorId);
-        verify(dishMapper).toEntity(dish);
-        verify(dishService).addDish(nonExistentVendorId, dishEntity);
+        verify(dishService).addDish(nonExistentVendorId, dish);
     }
 
     @Test
     void addDishToMenuBadRequest() {
         Dish dish = new Dish();
-        DishEntity dishEntity = new DishEntity();
+        Dish dishEntity = new Dish();
 
         when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
         when(vendorAdapter.existsById(vendorId)).thenReturn(true);
-        when(dishMapper.toEntity(dish)).thenReturn(dishEntity);
         when(dishService.addDish(vendorId, dishEntity)).thenThrow(new IllegalArgumentException());
 
         ResponseEntity<Dish> response = vendorController.addDishToMenu(vendorId, dish);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        verify(dishService).addDish(vendorId, dishEntity);
+        verify(dishService).addDish(vendorId, dish);
     }
 
     @Test
@@ -164,12 +150,10 @@ class VendorControllerTest {
 
         when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
         when(vendorAdapter.existsById(vendorId)).thenReturn(true);
-        when(dishMapper.toEntity(dish)).thenThrow(new RuntimeException());
-
+        when(dishService.addDish(vendorId, dish)).thenThrow(new RuntimeException());
         ResponseEntity<Dish> response = vendorController.addDishToMenu(vendorId, dish);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-        verify(dishMapper).toEntity(dish);
     }
 
     @Test

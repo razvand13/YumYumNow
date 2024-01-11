@@ -2,17 +2,12 @@ package nl.tudelft.sem.template.orders.controllers;
 
 import nl.tudelft.sem.template.api.VendorApi;
 import nl.tudelft.sem.template.model.Dish;
+import nl.tudelft.sem.template.model.Order;
 import nl.tudelft.sem.template.orders.VendorNotFoundException;
 import nl.tudelft.sem.template.orders.domain.IDishService;
 import nl.tudelft.sem.template.orders.domain.IOrderService;
 import nl.tudelft.sem.template.orders.domain.IVendorService;
-import nl.tudelft.sem.template.orders.entities.DishEntity;
-import nl.tudelft.sem.template.orders.entities.Order;
-import nl.tudelft.sem.template.orders.mappers.DishMapper;
-import nl.tudelft.sem.template.orders.services.DishService;
-import nl.tudelft.sem.template.orders.services.OrderService;
 import nl.tudelft.sem.template.orders.services.VendorAdapter;
-import nl.tudelft.sem.template.orders.services.VendorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,7 +22,6 @@ public class VendorController implements VendorApi {
 
     private final transient VendorAdapter vendorAdapter;
     private final transient IDishService dishService;
-    private final transient DishMapper dishMapper;
     private final transient IOrderService orderService;
     private final transient IVendorService vendorService;
 
@@ -36,15 +30,13 @@ public class VendorController implements VendorApi {
      *
      * @param vendorAdapter the vendor adapter
      * @param dishService   the dish service
-     * @param dishMapper    the dish mapper
      * @param vendorService the vendor service
      */
     @Autowired
-    public VendorController(VendorAdapter vendorAdapter, IDishService dishService, DishMapper dishMapper,
+    public VendorController(VendorAdapter vendorAdapter, IDishService dishService,
                             IOrderService orderService, IVendorService vendorService) {
         this.vendorAdapter = vendorAdapter;
         this.dishService = dishService;
-        this.dishMapper = dishMapper;
         this.orderService = orderService;
         this.vendorService = vendorService;
     }
@@ -70,10 +62,9 @@ public class VendorController implements VendorApi {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
         try {
-            DishEntity dishEntity = dishMapper.toEntity(dish);
-            DishEntity addedDish = dishService.addDish(vendorId, dishEntity);
-            Dish addedDishDTO = dishMapper.toDTO(addedDish);
-            return ResponseEntity.ok(addedDishDTO);
+
+            Dish addedDish = dishService.addDish(vendorId, dish);
+            return ResponseEntity.ok(addedDish);
         } catch (VendorNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         } catch (IllegalArgumentException e) {

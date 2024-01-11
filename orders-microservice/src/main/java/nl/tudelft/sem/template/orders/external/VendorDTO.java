@@ -4,7 +4,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import nl.tudelft.sem.template.orders.entities.Address;
+import nl.tudelft.sem.template.model.Address;
 import java.util.UUID;
 
 @Getter

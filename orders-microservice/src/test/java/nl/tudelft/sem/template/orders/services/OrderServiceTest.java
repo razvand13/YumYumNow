@@ -1,8 +1,7 @@
 package nl.tudelft.sem.template.orders.services;
 
-import nl.tudelft.sem.template.orders.entities.Order;
+import nl.tudelft.sem.template.model.Order;
 import nl.tudelft.sem.template.orders.repositories.OrderRepository;
-import nl.tudelft.sem.template.orders.services.OrderService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -34,13 +33,14 @@ class OrderServiceTest {
 
     @Test
     void testFindByIdValid() {
-        UUID orderId = UUID.randomUUID();
         Order order = new Order();
 
         // Add some random attributes
         order.setVendorId(UUID.randomUUID());
         order.setOrderTime(OffsetDateTime.now());
         order.setTotalPrice(25.5);
+
+        UUID orderId = UUID.randomUUID();
 
         when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
 

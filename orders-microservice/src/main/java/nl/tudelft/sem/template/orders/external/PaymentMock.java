@@ -1,6 +1,6 @@
 package nl.tudelft.sem.template.orders.external;
 
-import nl.tudelft.sem.template.orders.entities.PayOrderRequest;
+import nl.tudelft.sem.template.model.PayOrderRequest;
 import org.springframework.stereotype.Component;
 
 import java.util.HashSet;

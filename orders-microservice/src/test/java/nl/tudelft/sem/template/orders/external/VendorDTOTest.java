@@ -1,6 +1,6 @@
 package nl.tudelft.sem.template.orders.external;
 
-import nl.tudelft.sem.template.orders.entities.Address;
+import nl.tudelft.sem.template.model.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -12,6 +12,9 @@ public class VendorDTOTest {
 
     private VendorDTO vendor;
 
+    /**
+     * Sets up some commonly used parameters
+     */
     @BeforeEach
     public void setUp() {
         UUID vendorId = UUID.randomUUID();

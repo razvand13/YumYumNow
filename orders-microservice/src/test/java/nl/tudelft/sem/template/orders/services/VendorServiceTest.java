@@ -1,8 +1,8 @@
 package nl.tudelft.sem.template.orders.services;
 
-import nl.tudelft.sem.template.orders.entities.Address;
-import nl.tudelft.sem.template.orders.entities.DishEntity;
-import nl.tudelft.sem.template.orders.entities.Order;
+import nl.tudelft.sem.template.model.Address;
+import nl.tudelft.sem.template.model.Dish;
+import nl.tudelft.sem.template.model.Order;
 import nl.tudelft.sem.template.orders.external.PaymentMock;
 import nl.tudelft.sem.template.orders.external.VendorDTO;
 import nl.tudelft.sem.template.orders.repositories.DishRepository;
@@ -98,14 +98,14 @@ class VendorServiceTest {
         VendorDTO vendor = new VendorDTO();
         vendor.setVendorId(UUID.randomUUID());
 
-        DishEntity dish1 = new DishEntity();
+        Dish dish1 = new Dish();
         dish1.setPrice(10.0);
-        DishEntity dish2 = new DishEntity();
+        Dish dish2 = new Dish();
         dish2.setPrice(20.0);
-        DishEntity dish3 = new DishEntity();
+        Dish dish3 = new Dish();
         dish3.setPrice(30.0);
 
-        List<DishEntity> dishes = Arrays.asList(dish1, dish2, dish3);
+        List<Dish> dishes = Arrays.asList(dish1, dish2, dish3);
 
         when(dishRepository.getDishesByVendorId(vendor.getVendorId())).thenReturn(dishes);
 
@@ -136,8 +136,10 @@ class VendorServiceTest {
         vendorLocation2.setLongitude(52.0);
         vendorLocation2.setLatitude(4.0);
 
-        VendorDTO vendor1 = new VendorDTO(UUID.randomUUID(), "Vendor 1", false, "vendor1@example.com", true, vendorLocation1);
-        VendorDTO vendor2 = new VendorDTO(UUID.randomUUID(), "Rodnev 2", false, "vendor2@example.com", true, vendorLocation2);
+        VendorDTO vendor1 = new VendorDTO(UUID.randomUUID(), "Vendor 1", false, "vendor1@example.com", true,
+                vendorLocation1);
+        VendorDTO vendor2 = new VendorDTO(UUID.randomUUID(), "Rodnev 2", false, "vendor2@example.com", true,
+                vendorLocation2);
 
         List<VendorDTO> vendors = List.of(vendor1, vendor2);
 
@@ -151,17 +153,17 @@ class VendorServiceTest {
         vendorLocation.setLongitude(52.0);
         vendorLocation.setLatitude(4.0);
 
-        VendorDTO vendor = new VendorDTO(UUID.randomUUID(), "Vendor", false, "vendor@example.com", true, vendorLocation);
 
-
-        DishEntity dish1 = new DishEntity();
+        Dish dish1 = new Dish();
         dish1.setPrice(10.0);
-        DishEntity dish2 = new DishEntity();
+        Dish dish2 = new Dish();
         dish2.setPrice(20.0);
-        DishEntity dish3 = new DishEntity();
+        Dish dish3 = new Dish();
         dish3.setPrice(30.0);
 
-        List<DishEntity> dishes = Arrays.asList(dish1, dish2, dish3);
+        List<Dish> dishes = Arrays.asList(dish1, dish2, dish3);
+
+        VendorDTO vendor = new VendorDTO(UUID.randomUUID(), "Vendor", false, "vendor@example.com", true, vendorLocation);
 
         when(dishRepository.getDishesByVendorId(vendor.getVendorId())).thenReturn(dishes);
 
