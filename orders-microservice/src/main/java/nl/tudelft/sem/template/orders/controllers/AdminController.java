@@ -3,7 +3,7 @@ package nl.tudelft.sem.template.orders.controllers;
 import nl.tudelft.sem.template.api.AdminApi;
 import nl.tudelft.sem.template.orders.domain.IOrderService;
 import nl.tudelft.sem.template.orders.entities.Order;
-import nl.tudelft.sem.template.orders.services.VendorAdapter;
+import nl.tudelft.sem.template.orders.services.AdminAdapter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,12 +17,12 @@ public class AdminController implements AdminApi {
 
 
     private final transient IOrderService orderService;
-    private final transient VendorAdapter vendorAdapter;
+    private final transient AdminAdapter adminAdapter;
 
     @Autowired
-    public AdminController(IOrderService orderService, VendorAdapter vendorAdapter) {
+    public AdminController(IOrderService orderService, AdminAdapter adminAdapter) {
         this.orderService = orderService;
-        this.vendorAdapter = vendorAdapter;
+        this.adminAdapter = adminAdapter;
     }
 
     /**
@@ -44,12 +44,12 @@ public class AdminController implements AdminApi {
         }
 
         //verify that user is admin
-        if (!vendorAdapter.checkRoleById(adminId)) {
+        if (!adminAdapter.isAdminById(adminId)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         // verify that admin exists
-        if (!vendorAdapter.existsById(adminId)) {
+        if (!adminAdapter.existsById(adminId)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
@@ -80,12 +80,12 @@ public class AdminController implements AdminApi {
         }
 
         //verify that user is admin
-        if (!vendorAdapter.checkRoleById(adminId)) {
+        if (!adminAdapter.isAdminById(adminId)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         // verify that admin exists
-        if (!vendorAdapter.existsById(adminId)) {
+        if (!adminAdapter.existsById(adminId)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
@@ -121,12 +121,12 @@ public class AdminController implements AdminApi {
         }
 
         //verify that user is admin
-        if (!vendorAdapter.checkRoleById(adminId)) {
+        if (!adminAdapter.isAdminById(adminId)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         // verify that admin exists
-        if (!vendorAdapter.existsById(adminId)) {
+        if (!adminAdapter.existsById(adminId)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
@@ -162,12 +162,12 @@ public class AdminController implements AdminApi {
         }
 
         //verify that user is admin
-        if (!vendorAdapter.checkRoleById(adminId)) {
+        if (!adminAdapter.isAdminById(adminId)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         // verify that admin exists
-        if (!vendorAdapter.existsById(adminId)) {
+        if (!adminAdapter.existsById(adminId)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
