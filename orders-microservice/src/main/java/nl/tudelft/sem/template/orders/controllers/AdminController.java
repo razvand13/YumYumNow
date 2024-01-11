@@ -2,7 +2,7 @@ package nl.tudelft.sem.template.orders.controllers;
 
 import nl.tudelft.sem.template.api.AdminApi;
 import nl.tudelft.sem.template.orders.domain.IOrderService;
-import nl.tudelft.sem.template.orders.entities.Order;
+import nl.tudelft.sem.template.model.Order;
 import nl.tudelft.sem.template.orders.services.AdminAdapter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

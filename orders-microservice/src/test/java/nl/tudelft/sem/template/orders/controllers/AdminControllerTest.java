@@ -1,6 +1,6 @@
 package nl.tudelft.sem.template.orders.controllers;
 
-import nl.tudelft.sem.template.orders.entities.Order;
+import nl.tudelft.sem.template.model.Order;
 import nl.tudelft.sem.template.orders.services.AdminAdapter;
 import nl.tudelft.sem.template.orders.services.OrderService;
 import org.junit.jupiter.api.BeforeEach;
