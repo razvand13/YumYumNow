@@ -1,6 +1,7 @@
 package nl.tudelft.sem.template.orders.services;
 
 import org.springframework.stereotype.Component;
+
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -43,20 +44,24 @@ public class AdminAdapter {
      * @param userId the id of the user
      * @return true if the user is an admin, false otherwise
      */
-    public boolean isAdminById(UUID userId) {
-        // If the user has a role other than admin, they are not an admin
-        if (isRole(userId, "/customers/") || isRole(userId, "/couriers/")) {
+    public boolean checkRoleById(UUID userId) {
+        if (isRole(userId, "/customers/")) {
             return false;
         }
-        // If the user is registered as an admin, they are an admin
-        return isRole(userId, "/admins/");
+        if (isRole(userId, "/couriers/")) {
+            return false;
+        }
+        if (isRole(userId, "/vendors/")) {
+            return false;
+        }
+        return true;
     }
 
     /**
      * Helper method. Queries the Users microservice for the specified ID, using a certain path.
      *
      * @param userId user id
-     * @param path path
+     * @param path   path
      * @return true if the status code is 200
      */
     private boolean isRole(UUID userId, String path) {

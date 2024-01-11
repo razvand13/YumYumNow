@@ -44,7 +44,7 @@ public class AdminController implements AdminApi {
         }
 
         //verify that user is admin
-        if (!adminAdapter.isAdminById(adminId)) {
+        if (!adminAdapter.checkRoleById(adminId)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
@@ -80,7 +80,7 @@ public class AdminController implements AdminApi {
         }
 
         //verify that user is admin
-        if (!adminAdapter.isAdminById(adminId)) {
+        if (!adminAdapter.checkRoleById(adminId)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
@@ -121,7 +121,7 @@ public class AdminController implements AdminApi {
         }
 
         //verify that user is admin
-        if (!adminAdapter.isAdminById(adminId)) {
+        if (!adminAdapter.checkRoleById(adminId)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
@@ -162,7 +162,7 @@ public class AdminController implements AdminApi {
         }
 
         //verify that user is admin
-        if (!adminAdapter.isAdminById(adminId)) {
+        if (!adminAdapter.checkRoleById(adminId)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
