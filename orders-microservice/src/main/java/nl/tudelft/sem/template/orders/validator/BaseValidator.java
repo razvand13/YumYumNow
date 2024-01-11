@@ -1,17 +1,17 @@
 package nl.tudelft.sem.template.orders.validator;
 
-public abstract class BaseValidator {
+public abstract class BaseValidator implements Validator {
     private Validator next;
 
     public void setNext(Validator v) {
         this.next = v;
     }
 
-    protected boolean handle() throws ValidationFailureException {
+    protected boolean checkNext(ValidatorRequest request) throws ValidationFailureException {
         if (next == null) {
             return true;
         }
 
-        return next.handle();
+        return next.handle(request);
     }
 }
