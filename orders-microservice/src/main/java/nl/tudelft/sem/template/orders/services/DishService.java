@@ -77,6 +77,22 @@ public class DishService implements IDishService {
         return false;
     }
 
+    @Override
+    public Dish updateDish(UUID dishId, Dish updatedDish) {
+        Dish existingDish = dishRepository.findById(dishId)
+            .filter(dish -> !dish.getIsDeleted())
+            .orElseThrow(() -> new IllegalArgumentException("Dish not found or deleted"));
+
+        existingDish.setName(updatedDish.getName());
+        existingDish.setIngredients(updatedDish.getIngredients());
+        existingDish.setDescription(updatedDish.getDescription());
+        existingDish.setImageLink(updatedDish.getImageLink());
+        existingDish.setPrice(updatedDish.getPrice());
+        existingDish.setAllergens(updatedDish.getAllergens());
+
+        return dishRepository.save(existingDish);
+    }
+
     /**
      * Checks if a dish is in an order
 

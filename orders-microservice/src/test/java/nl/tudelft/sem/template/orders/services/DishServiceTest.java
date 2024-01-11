@@ -13,6 +13,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
@@ -143,4 +144,53 @@ public class DishServiceTest {
         assertThat(dish.getIsDeleted()).isTrue();
     }
 
+    @Test
+    void updateDishNotFound() {
+        UUID dishId = UUID.randomUUID();
+        Dish updatedDish = new Dish();
+
+        when(dishRepository.findById(dishId)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class, () -> dishService.updateDish(dishId, updatedDish));
+
+        verify(dishRepository).findById(dishId);
+        verify(dishRepository, never()).save(any(Dish.class));
+    }
+
+    @Test
+    void updateDishAlreadyDeleted() {
+        UUID dishId = UUID.randomUUID();
+        Dish existingDish = new Dish();
+        existingDish.setID(dishId);
+        existingDish.setIsDeleted(true);
+
+        Dish updatedDish = new Dish();
+
+        when(dishRepository.findById(dishId)).thenReturn(Optional.of(existingDish));
+
+        assertThrows(IllegalArgumentException.class, () -> dishService.updateDish(dishId, updatedDish));
+
+        verify(dishRepository).findById(dishId);
+        verify(dishRepository, never()).save(any(Dish.class));
+    }
+
+    @Test
+    void updateDishSuccessful() {
+        UUID dishId = UUID.randomUUID();
+        Dish existingDish = new Dish();
+        existingDish.setID(dishId);
+        existingDish.setIsDeleted(false);
+
+        Dish updatedDish = new Dish();
+        updatedDish.setName("Updated Name");
+
+        when(dishRepository.findById(dishId)).thenReturn(Optional.of(existingDish));
+        when(dishRepository.save(any(Dish.class))).thenReturn(updatedDish);
+
+        Dish result = dishService.updateDish(dishId, updatedDish);
+
+        assertThat(result).isEqualTo(updatedDish);
+        verify(dishRepository).findById(dishId);
+        verify(dishRepository).save(any(Dish.class));
+    }
 }

@@ -117,6 +117,42 @@ public class VendorController implements VendorApi {
     }
 
     /**
+     * PUT /vendor/{vendorId}/dish/{dishId} : Update details of a dish
+     *
+     * @param vendorId (required)
+     * @param dishId   (required)
+     * @param dish     (required)
+     * @return Dish details updated successfully. (status code 200)
+     *      or Bad Request - Incorrect dish details format or missing required fields. (status code 400)
+     *      or Unauthorized - User is not a vendor/dish does not belong to vendor. (status code 401)
+     *      or Not Found - Dish or vendor not found. (status code 404)
+     *      or Internal Server Error - An unexpected error occurred. (status code 500)
+     */
+    @Override
+    public ResponseEntity<Dish> updateDishDetails(UUID vendorId, UUID dishId, Dish dish) {
+        if (vendorId == null || dishId == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+
+        if (!vendorAdapter.checkRoleById(vendorId)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        if (!vendorAdapter.existsById(vendorId)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        try {
+            Dish updatedDish = dishService.updateDish(dishId, dish);
+            return ResponseEntity.ok(updatedDish);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
      * GET /vendor/{vendorId}/orders/{orderId} : Get details of a specific order
      * (including how much money is earned and special requirements)
      *
