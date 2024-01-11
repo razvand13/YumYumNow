@@ -42,6 +42,17 @@ public class UserAuthorizationValidator extends BaseValidator {
     public UserAuthorizationValidator() {
     }
 
+    /**
+     * Constructor to manually set fields for testing
+     */
+    public UserAuthorizationValidator(CustomerAdapter customerAdapter, VendorAdapter vendorAdapter,
+                                      IOrderService orderService, IDishService dishService) {
+        this.customerAdapter = customerAdapter;
+        this.vendorAdapter = vendorAdapter;
+        this.orderService = orderService;
+        this.dishService = dishService;
+    }
+
     @Override
     public boolean handle(ValidatorRequest request) throws ValidationFailureException {
         switch (request.getUserType()) {
@@ -87,6 +98,6 @@ public class UserAuthorizationValidator extends BaseValidator {
                 throw new ValidationFailureException();
         }
 
-        return true;
+        return super.checkNext(request);
     }
 }
