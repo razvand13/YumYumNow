@@ -412,11 +412,11 @@ public class CustomerController implements CustomerApi {
      * @param customerId (required)
      * @param orderId    (required)
      * @return Details of the specified order (status code 200)
-     * or Bad Request - Invalid request parameters. (status code 400)
-     * or Unauthorized - User is not a customer/order does not belong to user. (status code 401)
-     * or Order or customer not found. (status code 404)
-     * or Internal Server Error - An unexpected error occurred. (status code 500)
-     */
+     *      or Bad Request - Invalid request parameters. (status code 400)
+     *      or Unauthorized - User is not a customer/order does not belong to user. (status code 401)
+     *      or Order or customer not found. (status code 404)
+     *      or Internal Server Error - An unexpected error occurred. (status code 500)
+     * */
     @Override
     public ResponseEntity<Order> getOrder(UUID customerId, UUID orderId) {
         if (customerId == null || orderId == null) {
@@ -427,17 +427,66 @@ public class CustomerController implements CustomerApi {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        if (!customerAdapter.existsById(customerId) || orderService.findById(orderId) == null) {
+        Order order = orderService.findById(orderId);
+
+        if (!customerAdapter.existsById(customerId) || order == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
-
-        Order order = orderService.findById(orderId);
 
         if (order.getCustomerId() != customerId) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         return ResponseEntity.ok(order);
+    }
+
+    /**
+     * GET /customer/{customerId}/order/{orderId}/dish/{dishId} : Get details of a dish inside an order
+     * Gets the details of a dish based on its id
+     *
+     * @param customerId (required)
+     * @param orderId    (required)
+     * @param dishId     (required)
+     * @return Details of the specified dish in the order. (status code 200)
+     *      or Bad Request - Invalid request parameters. (status code 400)
+     *      or Unauthorized - Order does not belong to the user / dish does not belong to order
+     *                       / user is not a customer. (status code 401)
+     *      or Not Found - Dish, order, or customer not found. (status code 404)
+     *      or Internal Server Error - An unexpected error occurred. (status code 500)
+     */
+    @Override
+    public ResponseEntity<OrderedDish> getDishFromOrder(UUID customerId, UUID orderId, UUID dishId) {
+        if (dishId == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+
+        ResponseEntity<Order> orderResponseEntity = getOrder(customerId, orderId);
+        if (orderResponseEntity.getStatusCode() != HttpStatus.OK) { // for authorization
+            return ResponseEntity.status(orderResponseEntity.getStatusCode()).build();
+        }
+
+        Dish dish = dishService.findById(dishId);
+        if (dish == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        Order order = orderResponseEntity.getBody();
+        List<OrderedDish> dishes = order.getDishes();
+        OrderedDish foundDish = null;
+
+        for (OrderedDish orderedDish : dishes) {
+            if (dish.equals(orderedDish.getDish())) {
+                foundDish = orderedDish;
+                break;
+            }
+        }
+
+        // Dish exists in the database, but it does not belong to this order
+        if (foundDish == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        return ResponseEntity.ok(foundDish);
     }
 }
 

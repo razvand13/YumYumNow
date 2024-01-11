@@ -27,10 +27,10 @@ public class OrderController implements OrderApi {
      * @param orderId                  (required)
      * @param updateOrderStatusRequest (required)
      * @return Order status updated successfully. (status code 200)
-     * or Bad request - Invalid status or request format. (status code 400)
-     * or Unauthorized - User is not authorized to update order status. (status code 401)
-     * or Not Found - Order ID does not exist. (status code 404)
-     * or Internal Server Error - An unexpected error occurred. (status code 500)
+     *      or Bad request - Invalid status or request format. (status code 400)
+     *      or Unauthorized - User is not authorized to update order status. (status code 401)
+     *      or Not Found - Order ID does not exist. (status code 404)
+     *      or Internal Server Error - An unexpected error occurred. (status code 500)
      */
     @Override
     public ResponseEntity<Order> updateOrderStatus(UUID orderId, UpdateOrderStatusRequest updateOrderStatusRequest) {

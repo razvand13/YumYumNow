@@ -52,21 +52,21 @@ class OrderControllerTest {
     }
 
     @Test
-    void updateOrderStatusBadRequest1() {
+    void updateOrderStatusBadRequestId() {
         ResponseEntity<Order> responseEntity = orderController.updateOrderStatus(null, updateOrderStatusRequest);
 
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
     @Test
-    void updateOrderStatusBadRequest2() {
+    void updateOrderStatusBadRequestStatusUpdateOrderStatus() {
         ResponseEntity<Order> responseEntity = orderController.updateOrderStatus(orderId, null);
 
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
     @Test
-    void updateOrderStatusBadRequest3() {
+    void updateOrderStatusBadRequestStatus() {
         updateOrderStatusRequest.setStatus(null);
         ResponseEntity<Order> responseEntity = orderController.updateOrderStatus(null, updateOrderStatusRequest);
 
