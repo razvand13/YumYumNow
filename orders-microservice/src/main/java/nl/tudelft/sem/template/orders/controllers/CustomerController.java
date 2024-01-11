@@ -409,49 +409,37 @@ public class CustomerController implements CustomerApi {
      * GET /customer/{customerId}/order/{orderId} : Get all details of the order for a customer (updated price as well)
      * Get all the details of a specific order for a customer based on the order id
      *
-     * @param customerId  (required)
-     * @param orderId  (required)
+     * @param customerId (required)
+     * @param orderId    (required)
      * @return Details of the specified order (status code 200)
-     *         or Bad Request - Invalid request parameters. (status code 400)
-     *         or Unauthorized - User is not a customer/order does not belong to user. (status code 401)
-     *         or Order or customer not found. (status code 404)
-     *         or Internal Server Error - An unexpected error occurred. (status code 500)
+     * or Bad Request - Invalid request parameters. (status code 400)
+     * or Unauthorized - User is not a customer/order does not belong to user. (status code 401)
+     * or Order or customer not found. (status code 404)
+     * or Internal Server Error - An unexpected error occurred. (status code 500)
      */
     @Override
     public ResponseEntity<Order> getOrder(UUID customerId, UUID orderId) {
-        // Validate input
         if (customerId == null || orderId == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
-        // Check if the customer exists
-        if (!customerAdapter.existsById(customerId)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
-
-        // Authorize that the customer is making the request
         if (!customerAdapter.checkRoleById(customerId)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        // Fetch the order from the database
-        Order order = orderService.findById(orderId);
-        if (order == null) {
+        if (!customerAdapter.existsById(customerId) || orderService.findById(orderId) == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
-        // Check if the order belongs to the requesting customer
-        if (!order.getCustomerId().equals(customerId)) {
+        Order order = orderService.findById(orderId);
+
+        if (order.getCustomerId() != customerId) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        // Recalculate the total price in case of updates
-        double updatedPrice = orderService.calculateOrderPrice(order.getDishes());
-        order.setTotalPrice(updatedPrice);
-
-        // Return the order details
         return ResponseEntity.ok(order);
     }
+
 
     /**
      * GET /customer/{customerId}/history : Get list of previous orders
