@@ -295,7 +295,7 @@ class VendorControllerTest {
 
         when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
         when(vendorAdapter.existsById(vendorId)).thenReturn(true);
-        when(dishService.updateDish(dishId, dish)).thenThrow(new IllegalArgumentException("Dish not found or deleted"));
+        when(dishService.updateDish(dishId, dish)).thenReturn(null);
 
         ResponseEntity<Dish> response = vendorController.updateDishDetails(vendorId, dishId, dish);
 

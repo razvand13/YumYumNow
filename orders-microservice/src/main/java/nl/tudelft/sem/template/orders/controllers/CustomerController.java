@@ -1,7 +1,6 @@
 package nl.tudelft.sem.template.orders.controllers;
 
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -206,7 +205,7 @@ public class CustomerController implements CustomerApi {
         }
 
         // Get the vendor's dishes from the repository
-        List<Dish> vendorDishes = dishService.findAllByVendorId(order.getVendorId());
+        List<Dish> vendorDishes = dishService.findAllByVendorIdNotDeleted(order.getVendorId());
 
         return ResponseEntity.ok(vendorDishes);
     }

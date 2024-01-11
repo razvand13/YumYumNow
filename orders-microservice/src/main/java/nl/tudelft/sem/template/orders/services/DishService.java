@@ -38,7 +38,7 @@ public class DishService implements IDishService {
      * @param vendorId id of the vendor
      * @return the vendor's dishes
      */
-    public List<Dish> findAllByVendorId(UUID vendorId) {
+    public List<Dish> findAllByVendorIdNotDeleted(UUID vendorId) {
         return dishRepository.getDishesByVendorId(vendorId)
             .stream()
             .filter(dish -> !dish.getIsDeleted())
@@ -81,7 +81,11 @@ public class DishService implements IDishService {
     public Dish updateDish(UUID dishId, Dish updatedDish) {
         Dish existingDish = dishRepository.findById(dishId)
             .filter(dish -> !dish.getIsDeleted())
-            .orElseThrow(() -> new IllegalArgumentException("Dish not found or deleted"));
+            .orElse(null);
+
+        if (existingDish == null) {
+            return null;
+        }
 
         existingDish.setName(updatedDish.getName());
         existingDish.setIngredients(updatedDish.getIngredients());

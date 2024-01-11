@@ -143,9 +143,12 @@ public class VendorController implements VendorApi {
 
         try {
             Dish updatedDish = dishService.updateDish(dishId, dish);
+
+            if (updatedDish == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+
             return ResponseEntity.ok(updatedDish);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }

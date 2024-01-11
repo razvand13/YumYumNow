@@ -8,7 +8,7 @@ import java.util.UUID;
 public interface IDishService {
     Dish findById(UUID dishId);
 
-    List<Dish> findAllByVendorId(UUID vendorId);
+    List<Dish> findAllByVendorIdNotDeleted(UUID vendorId);
 
     Dish addDish(UUID vendorId, Dish dish);
 
