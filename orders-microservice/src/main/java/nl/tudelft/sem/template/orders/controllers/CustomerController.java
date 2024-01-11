@@ -405,5 +405,39 @@ public class CustomerController implements CustomerApi {
         return ResponseEntity.ok(updatedOrder);
     }
 
+    /**
+     * GET /customer/{customerId}/order/{orderId} : Get all details of the order for a customer (updated price as well)
+     * Get all the details of a specific order for a customer based on the order id
+     *
+     * @param customerId (required)
+     * @param orderId    (required)
+     * @return Details of the specified order (status code 200)
+     * or Bad Request - Invalid request parameters. (status code 400)
+     * or Unauthorized - User is not a customer/order does not belong to user. (status code 401)
+     * or Order or customer not found. (status code 404)
+     * or Internal Server Error - An unexpected error occurred. (status code 500)
+     */
+    @Override
+    public ResponseEntity<Order> getOrder(UUID customerId, UUID orderId) {
+        if (customerId == null || orderId == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+
+        if (!customerAdapter.checkRoleById(customerId)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        if (!customerAdapter.existsById(customerId) || orderService.findById(orderId) == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        Order order = orderService.findById(orderId);
+
+        if (order.getCustomerId() != customerId) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        return ResponseEntity.ok(order);
+    }
 }
 
