@@ -4,20 +4,25 @@ import nl.tudelft.sem.template.api.OrderApi;
 import nl.tudelft.sem.template.model.Order;
 import nl.tudelft.sem.template.model.UpdateOrderStatusRequest;
 import nl.tudelft.sem.template.orders.domain.IOrderService;
+import nl.tudelft.sem.template.orders.validator.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
 public class OrderController implements OrderApi {
     private final transient IOrderService orderService;
+    private final transient ApplicationContext applicationContext;
 
     @Autowired
-    public OrderController(IOrderService orderService) {
+    public OrderController(IOrderService orderService, ApplicationContext applicationContext) {
         this.orderService = orderService;
+        this.applicationContext = applicationContext;
     }
 
     /**
@@ -33,19 +38,32 @@ public class OrderController implements OrderApi {
      */
     @Override
     public ResponseEntity<Order> updateOrderStatus(UUID orderId, UpdateOrderStatusRequest updateOrderStatusRequest) {
-        if (orderId == null || updateOrderStatusRequest == null || updateOrderStatusRequest.getStatus() == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
-
         /*
         Every user is authorized to change order status, assuming there is no malicious intent.
         This makes it possible for the Delivery Microservice to change order status freely.
          */
 
+        if (orderId == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+
         Order order = orderService.findById(orderId);
 
         if (order == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        //Chain of responsibility validation
+        //Get Validators
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class,
+                List.of(DataValidationField.UPDATEORDERSTATUSREQUEST));
+        //Create and fill validation request
+        ValidatorRequest request = new ValidatorRequest();
+        request.setUpdateOrderStatusRequest(updateOrderStatusRequest);
+        try {
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
         }
 
         order.setStatus(updateOrderStatusRequest.getStatus());

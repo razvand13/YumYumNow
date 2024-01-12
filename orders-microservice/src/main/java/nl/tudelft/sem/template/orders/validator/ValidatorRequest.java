@@ -2,6 +2,7 @@ package nl.tudelft.sem.template.orders.validator;
 
 import nl.tudelft.sem.template.model.CreateOrderRequest;
 import nl.tudelft.sem.template.model.UpdateDishQtyRequest;
+import nl.tudelft.sem.template.model.UpdateOrderStatusRequest;
 
 import java.util.UUID;
 
@@ -12,6 +13,7 @@ public class ValidatorRequest {
     private UUID dishUUID;
     private UpdateDishQtyRequest updateDishQtyRequest;
     private CreateOrderRequest createOrderRequest;
+    private UpdateOrderStatusRequest updateOrderStatusRequest;
 
     public ValidatorRequest() {
 
@@ -28,13 +30,15 @@ public class ValidatorRequest {
      * @param createOrderRequest CreateOrderRequest of the request, if present
      */
     public ValidatorRequest(UUID userUUID, UserType userType, UUID orderUUID, UUID dishUUID,
-                            UpdateDishQtyRequest updateDishQtyRequest, CreateOrderRequest createOrderRequest) {
+                            UpdateDishQtyRequest updateDishQtyRequest, CreateOrderRequest createOrderRequest,
+                            UpdateOrderStatusRequest updateOrderStatusRequest) {
         this.userUUID = userUUID;
         this.userType = userType;
         this.orderUUID = orderUUID;
         this.dishUUID = dishUUID;
         this.updateDishQtyRequest = updateDishQtyRequest;
         this.createOrderRequest = createOrderRequest;
+        this.updateOrderStatusRequest = updateOrderStatusRequest;
     }
 
     public UUID getUserUUID() {
@@ -71,6 +75,14 @@ public class ValidatorRequest {
 
     public UpdateDishQtyRequest getUpdateDishQtyRequest() {
         return updateDishQtyRequest;
+    }
+
+    public UpdateOrderStatusRequest getUpdateOrderStatusRequest() {
+        return updateOrderStatusRequest;
+    }
+
+    public void setUpdateOrderStatusRequest(UpdateOrderStatusRequest updateOrderStatusRequest) {
+        this.updateOrderStatusRequest = updateOrderStatusRequest;
     }
 
     public void setUpdateDishQtyRequest(UpdateDishQtyRequest updateDishQtyRequest) {
