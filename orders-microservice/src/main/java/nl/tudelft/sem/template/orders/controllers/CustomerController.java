@@ -223,11 +223,11 @@ public class CustomerController implements CustomerApi {
      * @param dishId               (required)
      * @param updateDishQtyRequest (required)
      * @return Dish added successfully, updated order returned. (status code 200)
-     * or Bad Request - Dish not added to order. (status code 400)
-     * or Unauthorized - Order does not belong to user/dish does not belong to
-     * current vendor/user is not a customer. (status code 401)
-     * or Not Found - Dish, order or customer not found. (status code 404)
-     * or Internal Server Error - An unexpected error occurred on the server. (status code 500)
+     *     or Bad Request - Dish not added to order. (status code 400)
+     *     or Unauthorized - Order does not belong to user/dish does not belong to
+     *     current vendor/user is not a customer. (status code 401)
+     *     or Not Found - Dish, order or customer not found. (status code 404)
+     *     or Internal Server Error - An unexpected error occurred on the server. (status code 500)
      */
     @Override
     public ResponseEntity<Order> addDishToOrder(UUID customerId, UUID orderId,
@@ -283,11 +283,11 @@ public class CustomerController implements CustomerApi {
      * @param orderId     (required)
      * @param dishId      (required)
      * @return Dish removed successfully, updated order returned. (status code 200)
-     * or Bad Request - Dish not removed from order. (status code 400)
-     * or Unauthorized - Order does not belong to user/dish does not belong to
-     * current vendor/user is not a customer. (status code 401)
-     * or Not Found - Dish, order, or customer not found. (status code 404)
-     * or Internal Server Error - An unexpected error occurred on the server. (status code 500)
+     *     or Bad Request - Dish not removed from order. (status code 400)
+     *     or Unauthorized - Order does not belong to user/dish does not belong to
+     *     current vendor/user is not a customer. (status code 401)
+     *     or Not Found - Dish, order, or customer not found. (status code 404)
+     *     or Internal Server Error - An unexpected error occurred on the server. (status code 500)
      */
     @Override
     public ResponseEntity<Order> removeDishFromOrder(UUID customerId, UUID orderId, UUID dishId) {
@@ -354,11 +354,11 @@ public class CustomerController implements CustomerApi {
      * @param dishId               (required)
      * @param updateDishQtyRequest (required)
      * @return Dish quantity updated successfully, updated order returned. (status code 200)
-     * or Bad Request - Invalid quantity provided. (status code 400)
-     * or Unauthorized - Order does not belong to user/dish does not belong to
-     * current vendor/user is not a customer. (status code 401)
-     * or Not Found - Dish, order, or customer not found. (status code 404)
-     * or Internal Server Error - An unexpected error occurred on the server. (status code 500)
+     *     or Bad Request - Invalid quantity provided. (status code 400)
+     *     or Unauthorized - Order does not belong to user/dish does not belong to
+     *     current vendor/user is not a customer. (status code 401)
+     *     or Not Found - Dish, order, or customer not found. (status code 404)
+     *     or Internal Server Error - An unexpected error occurred on the server. (status code 500)
      */
     @Override
     public ResponseEntity<Order> updateDishQty(UUID customerId, UUID orderId,
@@ -377,7 +377,7 @@ public class CustomerController implements CustomerApi {
         Order order = orderOptional.get();
 
         // check if order belongs to the right customer
-        if (!customerId.equals(order.getCustomerId())){
+        if (!customerId.equals(order.getCustomerId())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // Unauthorized access
         }
 

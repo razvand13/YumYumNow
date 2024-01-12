@@ -34,13 +34,14 @@ class OrderServiceTest {
 
     @Test
     void testFindByIdValid() {
-        UUID orderId = UUID.randomUUID();
         Order order = new Order();
 
         // Add some random attributes
         order.setVendorId(UUID.randomUUID());
         order.setOrderTime(OffsetDateTime.now());
         order.setTotalPrice(25.5);
+
+        UUID orderId = UUID.randomUUID();
 
         when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
 

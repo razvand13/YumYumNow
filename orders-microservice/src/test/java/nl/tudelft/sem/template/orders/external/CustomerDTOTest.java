@@ -13,6 +13,9 @@ public class CustomerDTOTest {
 
     private CustomerDTO customer;
 
+    /**
+     * Sets up some commonly used parameters
+     */
     @BeforeEach
     public void setUp() {
         String customerId = "123";

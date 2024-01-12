@@ -55,22 +55,24 @@ public class DishService implements IDishService {
 
     /**
      * Checks if a dish is in an order
-     * @param dishEntityList
-     * @param dishId
-     * @return
+     *
+     * @param dishEntityList List of dishes to check
+     * @param dishId Id of dish to look for
+     * @return true iff dish with id dishId is in the list
      */
-    public boolean isDishInOrder(List<Dish> dishEntityList, UUID dishId){
+    public boolean isDishInOrder(List<Dish> dishEntityList, UUID dishId) {
         return dishEntityList.stream().anyMatch(dish -> dish.getID().equals(dishId));
     }
 
 
     /**
      * removes a dish from an order
-     * @param dishEntityList
-     * @param dishId
-     * @return
+     *
+     * @param dishEntityList List of dishes to modify
+     * @param dishId id of dish to remove
+     * @return modified dish list
      */
-    public List<Dish> removeDishOrder(List<Dish> dishEntityList, UUID dishId){
+    public List<Dish> removeDishOrder(List<Dish> dishEntityList, UUID dishId) {
         return dishEntityList.stream()
                 .filter(dish -> !dish.getID().equals(dishId))
                 .collect(Collectors.toList());
