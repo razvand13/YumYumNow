@@ -412,10 +412,10 @@ public class CustomerController implements CustomerApi {
      * @param customerId (required)
      * @param orderId    (required)
      * @return Details of the specified order (status code 200)
-     * or Bad Request - Invalid request parameters. (status code 400)
-     * or Unauthorized - User is not a customer/order does not belong to user. (status code 401)
-     * or Order or customer not found. (status code 404)
-     * or Internal Server Error - An unexpected error occurred. (status code 500)
+     *     or Bad Request - Invalid request parameters. (status code 400)
+     *     or Unauthorized - User is not a customer/order does not belong to user. (status code 401)
+     *     or Order or customer not found. (status code 404)
+     *     or Internal Server Error - An unexpected error occurred. (status code 500)
      */
     @Override
     public ResponseEntity<Order> getOrder(UUID customerId, UUID orderId) {
