@@ -67,7 +67,7 @@ public class UserAuthorizationValidator extends BaseValidator {
                 }
                 //If orderUUID specified, check that order belongs to customer
                 if (request.getOrderUUID() != null && !orderService.findById(request.getOrderUUID())
-                        .getID().equals(request.getUserUUID())) {
+                        .getCustomerId().equals(request.getUserUUID())) {
                     throw new ValidationFailureException(HttpStatus.UNAUTHORIZED);
                 }
                 break;
