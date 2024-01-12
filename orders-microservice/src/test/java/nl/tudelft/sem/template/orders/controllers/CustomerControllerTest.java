@@ -1,6 +1,13 @@
 package nl.tudelft.sem.template.orders.controllers;
 
-import nl.tudelft.sem.template.model.*;
+
+import nl.tudelft.sem.template.model.Vendor;
+import nl.tudelft.sem.template.model.Dish;
+import nl.tudelft.sem.template.model.Order;
+import nl.tudelft.sem.template.model.Address;
+import nl.tudelft.sem.template.model.UpdateDishQtyRequest;
+import nl.tudelft.sem.template.model.OrderedDish;
+import nl.tudelft.sem.template.model.Status;
 import nl.tudelft.sem.template.orders.domain.ICustomerService;
 import nl.tudelft.sem.template.orders.domain.IDishService;
 import nl.tudelft.sem.template.orders.domain.IOrderService;
@@ -190,7 +197,8 @@ class CustomerControllerTest {
     void addDishToOrderOrderNotFound() {
         when(orderService.findById(orderId)).thenReturn(null);
 
-        ResponseEntity<Order> response = customerController.addDishToOrder(customerId, orderId, dishId, new UpdateDishQtyRequest());
+        ResponseEntity<Order> response = customerController.
+                addDishToOrder(customerId, orderId, dishId, new UpdateDishQtyRequest());
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
@@ -201,7 +209,8 @@ class CustomerControllerTest {
         when(orderService.findById(orderId)).thenReturn(order);
         when(customerAdapter.checkRoleById(customerId)).thenReturn(false);
 
-        ResponseEntity<Order> response = customerController.addDishToOrder(customerId, orderId, dishId, new UpdateDishQtyRequest());
+        ResponseEntity<Order> response = customerController.
+                addDishToOrder(customerId, orderId, dishId, new UpdateDishQtyRequest());
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
@@ -214,7 +223,8 @@ class CustomerControllerTest {
         when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
         when(dishService.findById(dishId)).thenReturn(null);
 
-        ResponseEntity<Order> response = customerController.addDishToOrder(customerId, orderId, dishId, new UpdateDishQtyRequest());
+        ResponseEntity<Order> response = customerController.
+                addDishToOrder(customerId, orderId, dishId, new UpdateDishQtyRequest());
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
@@ -247,7 +257,8 @@ class CustomerControllerTest {
         UpdateDishQtyRequest updateDishQtyRequest = new UpdateDishQtyRequest();
         updateDishQtyRequest.setQuantity(2);
 
-        ResponseEntity<Order> response = customerController.addDishToOrder(customerId, orderId, dishId, updateDishQtyRequest);
+        ResponseEntity<Order> response = customerController.
+                addDishToOrder(customerId, orderId, dishId, updateDishQtyRequest);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody().getDishes().size()).isEqualTo(1);
@@ -279,7 +290,8 @@ class CustomerControllerTest {
 
         order.setDishes(orderedDishes);
 
-        ResponseEntity<Order> response = customerController.addDishToOrder(customerId, orderId, dishId, updateDishQtyRequest);
+        ResponseEntity<Order> response = customerController.
+                addDishToOrder(customerId, orderId, dishId, updateDishQtyRequest);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody().getDishes().size()).isEqualTo(2);
@@ -376,7 +388,8 @@ class CustomerControllerTest {
         UpdateDishQtyRequest updateDishQtyRequest = new UpdateDishQtyRequest();
         updateDishQtyRequest.setQuantity(-1);
 
-        ResponseEntity<Order> response = customerController.updateDishQty(customerId, orderId, dishId, updateDishQtyRequest);
+        ResponseEntity<Order> response = customerController.
+                updateDishQty(customerId, orderId, dishId, updateDishQtyRequest);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
@@ -388,7 +401,8 @@ class CustomerControllerTest {
         UpdateDishQtyRequest updateDishQtyRequest = new UpdateDishQtyRequest();
         updateDishQtyRequest.setQuantity(1); // Set a valid quantity
 
-        ResponseEntity<Order> response = customerController.updateDishQty(customerId, orderId, dishId, updateDishQtyRequest);
+        ResponseEntity<Order> response = customerController.
+                updateDishQty(customerId, orderId, dishId, updateDishQtyRequest);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
@@ -402,7 +416,8 @@ class CustomerControllerTest {
         UpdateDishQtyRequest updateDishQtyRequest = new UpdateDishQtyRequest();
         updateDishQtyRequest.setQuantity(1);
 
-        ResponseEntity<Order> response = customerController.updateDishQty(customerId, orderId, dishId, updateDishQtyRequest);
+        ResponseEntity<Order> response = customerController.
+                updateDishQty(customerId, orderId, dishId, updateDishQtyRequest);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
@@ -429,7 +444,8 @@ class CustomerControllerTest {
         UpdateDishQtyRequest updateDishQtyRequest = new UpdateDishQtyRequest();
         updateDishQtyRequest.setQuantity(2);
 
-        ResponseEntity<Order> response = customerController.updateDishQty(customerId, orderId, dishId, updateDishQtyRequest);
+        ResponseEntity<Order> response = customerController.
+                updateDishQty(customerId, orderId, dishId, updateDishQtyRequest);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody().getDishes().get(0).getQuantity()).isEqualTo(2);
