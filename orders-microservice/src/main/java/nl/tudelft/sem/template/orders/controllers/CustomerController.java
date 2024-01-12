@@ -111,11 +111,6 @@ public class CustomerController implements CustomerApi {
             return ResponseEntity.status(e.getFailureStatus()).build();
         }
 
-        // Check if the customer exists
-        if (!customerAdapter.existsById(customerId)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
-
         // Get the customer's delivery location
         CustomerDTO customer = customerAdapter.requestCustomer(customerId);
         Address customerLocation = customerService.getDeliveryLocation(customer);
@@ -171,11 +166,6 @@ public class CustomerController implements CustomerApi {
         UUID vendorId = createOrderRequest.getVendorId();
         Address address = createOrderRequest.getAddress();
 
-
-        // Check if the customer exists
-        if (!customerAdapter.existsById(customerId)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
 
         Order order = new Order();
         order.setLocation(address);
