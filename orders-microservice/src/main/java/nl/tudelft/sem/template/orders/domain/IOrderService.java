@@ -11,8 +11,12 @@ import java.util.UUID;
 public interface IOrderService {
     Order findById(UUID orderId);
 
+    List<Order> findAll();
+
     Order save(Order order);
 
+    void delete(UUID orderId);
+    
     public double calculateOrderPrice(List<OrderedDish> orderedDishes);
 
     Optional<OrderedDish> orderedDishInOrder(Order order, UUID dishId);

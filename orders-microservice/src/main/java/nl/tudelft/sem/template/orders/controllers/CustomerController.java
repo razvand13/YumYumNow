@@ -25,7 +25,14 @@ import nl.tudelft.sem.template.model.CreateOrderRequest;
 import nl.tudelft.sem.template.model.Dish;
 import nl.tudelft.sem.template.orders.external.CustomerDTO;
 import nl.tudelft.sem.template.orders.external.VendorDTO;
+import nl.tudelft.sem.template.orders.validator.DataValidationField;
+import nl.tudelft.sem.template.orders.validator.DataValidator;
+import nl.tudelft.sem.template.orders.validator.UserAuthorizationValidator;
+import nl.tudelft.sem.template.orders.validator.UserType;
+import nl.tudelft.sem.template.orders.validator.ValidationFailureException;
+import nl.tudelft.sem.template.orders.validator.ValidatorRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -40,6 +47,7 @@ public class CustomerController implements CustomerApi {
     private final transient ICustomerService customerService;
     private final transient CustomerAdapter customerAdapter;
     private final transient VendorAdapter vendorAdapter;
+    private final transient ApplicationContext applicationContext;
 
     /**
      * Constructor for this controller
@@ -54,7 +62,8 @@ public class CustomerController implements CustomerApi {
     @Autowired
     public CustomerController(VendorMapper vendorMapper, IVendorService vendorService,
                               IDishService dishService, IOrderService orderService, ICustomerService customerService,
-                              CustomerAdapter customerAdapter, VendorAdapter vendorAdapter) {
+                              CustomerAdapter customerAdapter, VendorAdapter vendorAdapter,
+                              ApplicationContext applicationContext) {
         this.vendorMapper = vendorMapper;
         this.vendorService = vendorService;
         this.dishService = dishService;
@@ -62,6 +71,7 @@ public class CustomerController implements CustomerApi {
         this.customerService = customerService;
         this.customerAdapter = customerAdapter;
         this.vendorAdapter = vendorAdapter;
+        this.applicationContext = applicationContext;
     }
 
     /**
@@ -85,13 +95,20 @@ public class CustomerController implements CustomerApi {
     @Override
     public ResponseEntity<List<Vendor>> getVendors(UUID customerId, String name,
                                                    Integer minAvgPrice, Integer maxAvgPrice) {
-        if (customerId == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
-
-        // Authorize customer
-        if (!customerAdapter.checkRoleById(customerId)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        //Chain of responsibility validation
+        //Get Validators
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class, List.of(DataValidationField.USER));
+        UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
+        //Set validation chain
+        dataValidator.setNext(userAuthorizationValidator);
+        //Create and fill validation request
+        ValidatorRequest request = new ValidatorRequest();
+        request.setUserUUID(customerId);
+        request.setUserType(UserType.CUSTOMER);
+        try {
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
         }
 
         // Check if the customer exists
@@ -132,17 +149,28 @@ public class CustomerController implements CustomerApi {
      */
     @Override
     public ResponseEntity<Order> createOrder(UUID customerId, CreateOrderRequest createOrderRequest) {
+        //Chain of responsibility validation
+        //Get Validators
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class,
+                List.of(DataValidationField.USER, DataValidationField.CREATEORDERREQUEST));
+        UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
+        //Set validation chain
+        dataValidator.setNext(userAuthorizationValidator);
+        //Create and fill validation request
+        ValidatorRequest request = new ValidatorRequest();
+        request.setUserUUID(customerId);
+        request.setUserType(UserType.CUSTOMER);
+        request.setCreateOrderRequest(createOrderRequest);
+        try {
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
+        }
+
+
         UUID vendorId = createOrderRequest.getVendorId();
         Address address = createOrderRequest.getAddress();
 
-        if (customerId == null || vendorId == null || address == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
-
-        // Authorize customer
-        if (!customerAdapter.checkRoleById(customerId)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
 
         // Check if the customer exists
         if (!customerAdapter.existsById(customerId)) {
@@ -175,35 +203,25 @@ public class CustomerController implements CustomerApi {
      */
     @Override
     public ResponseEntity<List<Dish>> getVendorDishes(UUID customerId, UUID orderId) {
-        if (customerId == null || orderId == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        //Chain of responsibility validation
+        //Get Validators
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class,
+                List.of(DataValidationField.USER, DataValidationField.ORDER));
+        UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
+        //Set validation chain
+        dataValidator.setNext(userAuthorizationValidator);
+        //Create and fill validation request
+        ValidatorRequest request = new ValidatorRequest();
+        request.setUserUUID(customerId);
+        request.setUserType(UserType.CUSTOMER);
+        request.setOrderUUID(orderId);
+        try {
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
         }
 
-        // Authorize customer
-        if (!customerAdapter.checkRoleById(customerId)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        // Check if the customer exists
-        if (!customerAdapter.existsById(customerId)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
-
-        // Get order from repository, check if order exists
         Order order = orderService.findById(orderId);
-        if (order == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
-
-        // Check that order has customerId and vendorId inside
-        if (order.getCustomerId() == null || order.getVendorId() == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
-
-        // Check that order belongs to this customer
-        if (!order.getCustomerId().equals(customerId)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
 
         // Get the vendor's dishes from the repository
         List<Dish> vendorDishes = dishService.findAllByVendorId(order.getVendorId());
@@ -232,21 +250,27 @@ public class CustomerController implements CustomerApi {
     @Override
     public ResponseEntity<Order> addDishToOrder(UUID customerId, UUID orderId,
                                                 UUID dishId, UpdateDishQtyRequest updateDishQtyRequest) {
+        //Chain of responsibility validation
+        //Get Validators
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class,
+                List.of(DataValidationField.USER, DataValidationField.DISH,
+                        DataValidationField.ORDER, DataValidationField.UPDATEDISHQTYREQUEST));
+        UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
+        //Set validation chain
+        dataValidator.setNext(userAuthorizationValidator);
+        //Create and fill validation request
+        ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER, orderId, dishId,
+                updateDishQtyRequest, null);
+        try {
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
+        }
+
         // Fetch order
         Order order = orderService.findById(orderId);
-        if (order == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
-
-        // Verify if the order belongs to the given customer and that it is a user making the modification
-        if (!customerAdapter.checkRoleById(customerId) && !customerId.equals(order.getCustomerId())) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // Unauthorized access
-        }
 
         Dish dishToAdd = dishService.findById(dishId);
-        if (dishToAdd == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build(); // Dish not found
-        }
 
         Optional<OrderedDish> existingOrderedDish = orderService.orderedDishInOrder(order, dishId);
 
@@ -291,31 +315,26 @@ public class CustomerController implements CustomerApi {
      */
     @Override
     public ResponseEntity<Order> removeDishFromOrder(UUID customerId, UUID orderId, UUID dishId) {
-        // Fetch order
+        //Chain of responsibility validation
+        //Get Validators
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class,
+                List.of(DataValidationField.USER, DataValidationField.ORDER, DataValidationField.DISH));
+        UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
+        //Set validation chain
+        dataValidator.setNext(userAuthorizationValidator);
+        //Create and fill validation request
+        ValidatorRequest request = new ValidatorRequest();
+        request.setUserUUID(customerId);
+        request.setUserType(UserType.CUSTOMER);
+        request.setOrderUUID(orderId);
+        request.setDishUUID(dishId);
+        try {
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
+        }
+
         Order order = orderService.findById(orderId);
-        if (order == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
-
-        // Authorize customer
-        if (!customerAdapter.checkRoleById(customerId)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        // Check if the customer exists
-        if (!customerAdapter.existsById(customerId)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
-
-        // check if order belongs to the right customer
-        if (!customerId.equals(order.getCustomerId())) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // Unauthorized access
-        }
-
-        // check if the dish exists
-        if (dishService.findById(dishId) == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
 
         // Check if the dish is part of the order
         List<OrderedDish> orderedDishes = order.getDishes();
@@ -363,23 +382,24 @@ public class CustomerController implements CustomerApi {
     @Override
     public ResponseEntity<Order> updateDishQty(UUID customerId, UUID orderId,
                                                UUID dishId, UpdateDishQtyRequest updateDishQtyRequest) {
-        // Validate the requested quantity - it should not be negative
-        if (updateDishQtyRequest.getQuantity() < 0) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        //Chain of responsibility validation
+        //Get Validators
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class,
+                List.of(DataValidationField.USER, DataValidationField.ORDER,
+                        DataValidationField.DISH, DataValidationField.UPDATEDISHQTYREQUEST));
+        UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
+        //Set validation chain
+        dataValidator.setNext(userAuthorizationValidator);
+        //Create and fill validation request
+        ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER,
+                orderId, dishId, updateDishQtyRequest, null);
+        try {
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
         }
 
-        // Retrieve the order by ID and check if it exists
-        Optional<Order> orderOptional = Optional.ofNullable(orderService.findById(orderId));
-        if (!orderOptional.isPresent()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
-
-        Order order = orderOptional.get();
-
-        // check if order belongs to the right customer
-        if (!customerId.equals(order.getCustomerId())) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // Unauthorized access
-        }
+        Order order = orderService.findById(orderId);
 
         // Get the current list of ordered dishes in the order
         List<OrderedDish> orderedDishes = order.getDishes();
