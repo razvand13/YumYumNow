@@ -433,7 +433,7 @@ public class CustomerController implements CustomerApi {
 
         Order order = orderService.findById(orderId);
 
-        if (order.getCustomerId() != customerId) {
+        if (!order.getCustomerId().equals(customerId)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
