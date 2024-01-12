@@ -464,19 +464,19 @@ public class CustomerController implements CustomerApi {
      */
     @Override
     public ResponseEntity<List<Order>> getPersonalOrderHistory(UUID customerId) {
-        // Validate customerId
-        if (customerId == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
-
-        // Authorize customer
-        if (!customerAdapter.checkRoleById(customerId)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        // Check if the customer exists
-        if (!customerAdapter.existsById(customerId)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        // Chain of responsibility validation
+        // Get Validators
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class,
+                List.of(DataValidationField.USER));
+        UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
+        // Set validation chain
+        dataValidator.setNext(userAuthorizationValidator);
+        // Create and fill validation request
+        ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER, null, null, null, null);
+        try {
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
         }
 
         // Fetch the list of previous orders for the customer
@@ -505,31 +505,23 @@ public class CustomerController implements CustomerApi {
      */
     @Override
     public ResponseEntity<Order> reorder(UUID customerId, UUID orderId, Address address) {
-        // Validate input
-        if (customerId == null || orderId == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
-
-        // Authorize customer
-        if (!customerAdapter.checkRoleById(customerId)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        // Check if the customer exists
-        if (!customerAdapter.existsById(customerId)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        // Chain of responsibility validation
+        // Get Validators
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class,
+                List.of(DataValidationField.USER, DataValidationField.ORDER));
+        UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
+        // Set validation chain
+        dataValidator.setNext(userAuthorizationValidator);
+        // Create and fill validation request
+        ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER, orderId, null, null, null);
+        try {
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
         }
 
         // Fetch the previous order
         Order previousOrder = orderService.findById(orderId);
-        if (previousOrder == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
-
-        // Check if the order belongs to the customer
-        if (!previousOrder.getCustomerId().equals(customerId)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
 
         // Create a new order with identical contents
         Order newOrder = new Order();
@@ -545,6 +537,7 @@ public class CustomerController implements CustomerApi {
 
         return ResponseEntity.ok(savedOrder);
     }
+
 
 
 
