@@ -17,7 +17,9 @@ import nl.tudelft.sem.template.orders.external.VendorDTO;
 import nl.tudelft.sem.template.orders.mappers.VendorMapper;
 import nl.tudelft.sem.template.orders.services.CustomerAdapter;
 import nl.tudelft.sem.template.orders.services.VendorAdapter;
-import nl.tudelft.sem.template.orders.validator.*;
+import nl.tudelft.sem.template.orders.validator.DataValidator;
+import nl.tudelft.sem.template.orders.validator.DataValidationField;
+import nl.tudelft.sem.template.orders.validator.UserAuthorizationValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -37,7 +39,11 @@ import java.util.ArrayList;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyList;
 
 
 class CustomerControllerTest {
@@ -292,7 +298,8 @@ class CustomerControllerTest {
     void addDishToOrderDishExists() {
         DataValidator mockDataValidator = mock(DataValidator.class);
         UserAuthorizationValidator mockUserAuthorizationValidator = mock(UserAuthorizationValidator.class);
-        when(applicationContext.getBean(eq(DataValidator.class), eq(List.of(DataValidationField.USER, DataValidationField.DISH,
+        when(applicationContext.getBean(eq(DataValidator.class),
+                eq(List.of(DataValidationField.USER, DataValidationField.DISH,
                 DataValidationField.ORDER, DataValidationField.UPDATEDISHQTYREQUEST)))).thenReturn(mockDataValidator);
         when(applicationContext.getBean(UserAuthorizationValidator.class)).thenReturn(mockUserAuthorizationValidator);
         UpdateDishQtyRequest updateDishQtyRequest = new UpdateDishQtyRequest();
@@ -305,7 +312,8 @@ class CustomerControllerTest {
         when(dishService.findById(dishId)).thenReturn(new Dish());
         when(orderService.orderedDishInOrder(mockOrder, dishId)).thenReturn(Optional.of(existingOrderedDish));
 
-        ResponseEntity<Order> response = customerController.addDishToOrder(customerId, orderId, dishId, updateDishQtyRequest);
+        ResponseEntity<Order> response = customerController
+                .addDishToOrder(customerId, orderId, dishId, updateDishQtyRequest);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(existingOrderedDish.getQuantity()).isEqualTo(3);
@@ -316,7 +324,8 @@ class CustomerControllerTest {
     void addDishToOrderDishNotExists() {
         DataValidator mockDataValidator = mock(DataValidator.class);
         UserAuthorizationValidator mockUserAuthorizationValidator = mock(UserAuthorizationValidator.class);
-        when(applicationContext.getBean(eq(DataValidator.class), eq(List.of(DataValidationField.USER, DataValidationField.DISH,
+        when(applicationContext.getBean(eq(DataValidator.class),
+                eq(List.of(DataValidationField.USER, DataValidationField.DISH,
                 DataValidationField.ORDER, DataValidationField.UPDATEDISHQTYREQUEST)))).thenReturn(mockDataValidator);
         when(applicationContext.getBean(UserAuthorizationValidator.class)).thenReturn(mockUserAuthorizationValidator);
         UpdateDishQtyRequest updateDishQtyRequest = new UpdateDishQtyRequest();
@@ -328,7 +337,8 @@ class CustomerControllerTest {
         when(dishService.findById(dishId)).thenReturn(newDish);
         when(orderService.orderedDishInOrder(mockOrder, dishId)).thenReturn(Optional.empty());
 
-        ResponseEntity<Order> response = customerController.addDishToOrder(customerId, orderId, dishId, updateDishQtyRequest);
+        ResponseEntity<Order> response = customerController
+                .addDishToOrder(customerId, orderId, dishId, updateDishQtyRequest);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
@@ -356,7 +366,8 @@ class CustomerControllerTest {
     void removeDishFromOrderSuccess() {
         DataValidator mockDataValidator = mock(DataValidator.class);
         UserAuthorizationValidator mockUserAuthorizationValidator = mock(UserAuthorizationValidator.class);
-        when(applicationContext.getBean(eq(DataValidator.class), eq(List.of(DataValidationField.USER, DataValidationField.ORDER, DataValidationField.DISH))))
+        when(applicationContext.getBean(eq(DataValidator.class),
+                eq(List.of(DataValidationField.USER, DataValidationField.ORDER, DataValidationField.DISH))))
                 .thenReturn(mockDataValidator);
         when(applicationContext.getBean(UserAuthorizationValidator.class)).thenReturn(mockUserAuthorizationValidator);
 
@@ -380,7 +391,8 @@ class CustomerControllerTest {
     void removeDishFromOrderDishNotFound() {
         DataValidator mockDataValidator = mock(DataValidator.class);
         UserAuthorizationValidator mockUserAuthorizationValidator = mock(UserAuthorizationValidator.class);
-        when(applicationContext.getBean(eq(DataValidator.class), eq(List.of(DataValidationField.USER, DataValidationField.ORDER, DataValidationField.DISH))))
+        when(applicationContext.getBean(eq(DataValidator.class),
+                eq(List.of(DataValidationField.USER, DataValidationField.ORDER, DataValidationField.DISH))))
                 .thenReturn(mockDataValidator);
         when(applicationContext.getBean(UserAuthorizationValidator.class)).thenReturn(mockUserAuthorizationValidator);
 
@@ -439,7 +451,8 @@ class CustomerControllerTest {
         when(orderService.findById(orderId)).thenReturn(mockOrder);
         when(orderService.calculateOrderPrice(anyList())).thenReturn(100.0);
 
-        ResponseEntity<Order> response = customerController.updateDishQty(customerId, orderId, dishId, updateDishQtyRequest);
+        ResponseEntity<Order> response = customerController
+                .updateDishQty(customerId, orderId, dishId, updateDishQtyRequest);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(existingOrderedDish.getQuantity()).isEqualTo(3);
@@ -462,7 +475,8 @@ class CustomerControllerTest {
         when(orderService.findById(orderId)).thenReturn(mockOrder);
         when(orderService.calculateOrderPrice(anyList())).thenReturn(100.0);
 
-        ResponseEntity<Order> response = customerController.updateDishQty(customerId, orderId, UUID.randomUUID(), updateDishQtyRequest);
+        ResponseEntity<Order> response = customerController
+                .updateDishQty(customerId, orderId, UUID.randomUUID(), updateDishQtyRequest);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(mockOrder.getDishes()).isEmpty();
