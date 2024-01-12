@@ -10,17 +10,23 @@ import nl.tudelft.sem.template.orders.domain.IVendorService;
 import nl.tudelft.sem.template.orders.mappers.VendorMapper;
 import nl.tudelft.sem.template.orders.services.CustomerAdapter;
 import nl.tudelft.sem.template.orders.services.VendorAdapter;
+import nl.tudelft.sem.template.orders.validator.DataValidationField;
+import nl.tudelft.sem.template.orders.validator.DataValidator;
+import nl.tudelft.sem.template.orders.validator.UserAuthorizationValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -41,12 +47,16 @@ class CustomerControllerTest {
     @Mock
     private VendorAdapter vendorAdapter;
 
+    @Mock
+    private ApplicationContext applicationContext;
+
     @InjectMocks
     private CustomerController customerController;
 
     private UUID customerId;
     private UUID orderId;
     private UUID dishId;
+    private Order order;
 
     @BeforeEach
     void setup() {
@@ -57,23 +67,62 @@ class CustomerControllerTest {
         customerService = mock(ICustomerService.class);
         customerAdapter = mock(CustomerAdapter.class);
         vendorAdapter = mock(VendorAdapter.class);
+        applicationContext = mock(ApplicationContext.class);
+
+        // getVendors
+        when(applicationContext.getBean(eq(DataValidator.class),
+                eq(List.of(DataValidationField.USER))))
+                .thenReturn(new DataValidator(List.of(DataValidationField.USER),
+                        orderService, dishService, vendorAdapter));
+
+        // createOrder
+        when(applicationContext.getBean(eq(DataValidator.class),
+                eq(List.of(DataValidationField.USER, DataValidationField.CREATEORDERREQUEST))))
+                .thenReturn(new DataValidator(List.of(DataValidationField.USER, DataValidationField.CREATEORDERREQUEST),
+                        orderService, dishService, vendorAdapter));
+
+        // getVendorDishes & getOrder
+        when(applicationContext.getBean(eq(DataValidator.class),
+                eq(List.of(DataValidationField.USER, DataValidationField.ORDER))))
+                .thenReturn(new DataValidator(List.of(DataValidationField.USER, DataValidationField.ORDER),
+                        orderService, dishService, vendorAdapter));
+
+        // TODO addDishToOrder
+
+        // TODO removeDishFromOrder
+
+        // TODO updateDishQty
+
+        // getDishFromOrder
+        when(applicationContext.getBean(eq(DataValidator.class),
+                eq(List.of(DataValidationField.USER, DataValidationField.ORDER, DataValidationField.DISH))))
+                .thenReturn(new DataValidator(
+                        List.of(DataValidationField.USER, DataValidationField.ORDER, DataValidationField.DISH),
+                        orderService, dishService, vendorAdapter));
+
+
+        when(applicationContext.getBean(UserAuthorizationValidator.class))
+                .thenReturn(new UserAuthorizationValidator(customerAdapter, vendorAdapter, orderService, dishService));
 
         customerController = new CustomerController(vendorMapper, vendorService, dishService, orderService,
-                customerService, customerAdapter, vendorAdapter);
+                customerService, customerAdapter, vendorAdapter, applicationContext);
 
         customerId = UUID.randomUUID();
         orderId = UUID.randomUUID();
         dishId = UUID.randomUUID();
+        order = new Order();
+        order.setID(orderId);
+        order.setCustomerId(customerId);
+        order.setVendorId(UUID.randomUUID());
+
+        when(orderService.findById(orderId)).thenReturn(order);
+        when(dishService.findById(dishId)).thenReturn(new Dish());
     }
 
     @Test
     void getOrderSuccess() {
         when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
         when(customerAdapter.existsById(customerId)).thenReturn(true);
-
-        Order order = new Order();
-        order.setCustomerId(customerId);
-        when(orderService.findById(orderId)).thenReturn(order);
 
         ResponseEntity<Order> responseEntity = customerController.getOrder(customerId, orderId);
 
@@ -124,11 +173,7 @@ class CustomerControllerTest {
         when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
         when(customerAdapter.existsById(customerId)).thenReturn(true);
 
-        Order order = new Order();
-        order.setCustomerId(anotherCustomerId);
-        when(orderService.findById(orderId)).thenReturn(order);
-
-        ResponseEntity<Order> responseEntity = customerController.getOrder(customerId, orderId);
+        ResponseEntity<Order> responseEntity = customerController.getOrder(anotherCustomerId, orderId);
 
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
@@ -137,8 +182,6 @@ class CustomerControllerTest {
     void getDishFromOrderSuccess() {
         Dish dish = new Dish();
         dish.setID(dishId);
-        Order order = new Order();
-        order.setCustomerId(customerId);
         OrderedDish orderedDish = new OrderedDish();
         orderedDish.setDish(dish);
         order.setDishes(Collections.singletonList(orderedDish));
@@ -155,11 +198,11 @@ class CustomerControllerTest {
     }
 
     @Test
-    void getDishFromOrderBadRequest() {
+    void getDishFromOrderNotFound() {
         ResponseEntity<OrderedDish> responseEntity =
                 customerController.getDishFromOrder(customerId, UUID.randomUUID(), null);
 
-        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
     @Test
@@ -173,9 +216,6 @@ class CustomerControllerTest {
 
     @Test
     void getDishFromOrderNotFoundDish() {
-        Order order = new Order();
-        order.setCustomerId(customerId);
-
         when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
         when(customerAdapter.existsById(customerId)).thenReturn(true);
         when(orderService.findById(orderId)).thenReturn(order);
@@ -202,8 +242,6 @@ class CustomerControllerTest {
         Dish dish = new Dish();
         dish.setID(dishId);
         dish.setName("Chicken Tikka Masala");
-        Order order = new Order();
-        order.setCustomerId(customerId);
         OrderedDish orderedDish = new OrderedDish();
         orderedDish.setDish(dish);
         order.setDishes(Collections.singletonList(orderedDish));
@@ -212,7 +250,6 @@ class CustomerControllerTest {
         dish.setID(anotherDishId);
 
         when(dishService.findById(anotherDishId)).thenReturn(anotherDish);
-        when(orderService.findById(orderId)).thenReturn(order);
         when(dishService.findById(dishId)).thenReturn(dish);
         when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
         when(customerAdapter.existsById(customerId)).thenReturn(true);
@@ -228,13 +265,10 @@ class CustomerControllerTest {
         Dish dish = new Dish();
         dish.setID(dishId);
         dish.setName("Chicken Tikka Masala");
-        Order order = new Order();
-        order.setCustomerId(customerId);
         order.setDishes(Collections.emptyList());
 
         when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
         when(customerAdapter.existsById(customerId)).thenReturn(true);
-        when(orderService.findById(orderId)).thenReturn(order);
         when(dishService.findById(dishId)).thenReturn(dish);
 
         ResponseEntity<OrderedDish> responseEntity =
