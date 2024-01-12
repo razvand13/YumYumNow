@@ -17,10 +17,13 @@ import nl.tudelft.sem.template.orders.external.VendorDTO;
 import nl.tudelft.sem.template.orders.mappers.VendorMapper;
 import nl.tudelft.sem.template.orders.services.CustomerAdapter;
 import nl.tudelft.sem.template.orders.services.VendorAdapter;
+import nl.tudelft.sem.template.orders.validator.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -33,9 +36,8 @@ import java.util.ArrayList;
 
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
 
 class CustomerControllerTest {
@@ -54,13 +56,17 @@ class CustomerControllerTest {
     private CustomerAdapter customerAdapter;
     @Mock
     private VendorAdapter vendorAdapter;
-
+    @Mock
+    private DataValidator dataValidator;
+    @Mock
+    ApplicationContext applicationContext;
     @InjectMocks
     private CustomerController customerController;
 
     private UUID customerId;
     private UUID orderId;
     private UUID dishId;
+    private Order order;
 
     @BeforeEach
     void setup() {
@@ -71,13 +77,82 @@ class CustomerControllerTest {
         customerService = mock(ICustomerService.class);
         customerAdapter = mock(CustomerAdapter.class);
         vendorAdapter = mock(VendorAdapter.class);
+        applicationContext = mock(ApplicationContext.class);
+        dataValidator = mock(DataValidator.class);
+
+        when(applicationContext.getBean(eq(DataValidator.class), anyList()))
+                .thenReturn(dataValidator);
+
+        // getVendors
+        when(applicationContext.getBean(eq(DataValidator.class),
+                eq(List.of(DataValidationField.USER))))
+                .thenReturn(new DataValidator(List.of(DataValidationField.USER),
+                        orderService, dishService, vendorAdapter));
+
+        // createOrder
+        when(applicationContext.getBean(eq(DataValidator.class),
+                eq(List.of(DataValidationField.USER, DataValidationField.CREATEORDERREQUEST))))
+                .thenReturn(new DataValidator(List.of(DataValidationField.USER, DataValidationField.CREATEORDERREQUEST),
+                        orderService, dishService, vendorAdapter));
+
+        // getVendorDishes & getOrder
+        when(applicationContext.getBean(eq(DataValidator.class),
+                eq(List.of(DataValidationField.USER, DataValidationField.ORDER))))
+                .thenReturn(new DataValidator(List.of(DataValidationField.USER, DataValidationField.ORDER),
+                        orderService, dishService, vendorAdapter));
+
+        // addDishToOrder
+        when(applicationContext.getBean(eq(DataValidator.class),
+                eq(List.of(DataValidationField.USER, DataValidationField.DISH,
+                        DataValidationField.ORDER, DataValidationField.UPDATEDISHQTYREQUEST))))
+                .thenReturn(new DataValidator(
+                        List.of(DataValidationField.USER, DataValidationField.DISH,
+                                DataValidationField.ORDER, DataValidationField.UPDATEDISHQTYREQUEST),
+                        orderService, dishService, vendorAdapter));
+
+
+        // removeDishFromOrder
+        when(applicationContext.getBean(eq(DataValidator.class),
+                eq(List.of(DataValidationField.USER, DataValidationField.ORDER, DataValidationField.DISH))))
+                .thenReturn(new DataValidator(
+                        List.of(DataValidationField.USER, DataValidationField.ORDER, DataValidationField.DISH),
+                        orderService, dishService, vendorAdapter));
+
+
+        // updateDishQty
+        when(applicationContext.getBean(eq(DataValidator.class),
+                eq(List.of(DataValidationField.USER, DataValidationField.ORDER,
+                        DataValidationField.DISH, DataValidationField.UPDATEDISHQTYREQUEST))))
+                .thenReturn(new DataValidator(
+                        List.of(DataValidationField.USER, DataValidationField.ORDER,
+                                DataValidationField.DISH, DataValidationField.UPDATEDISHQTYREQUEST),
+                        orderService, dishService, vendorAdapter));
+
+
+        // getDishFromOrder
+        when(applicationContext.getBean(eq(DataValidator.class),
+                eq(List.of(DataValidationField.USER, DataValidationField.ORDER, DataValidationField.DISH))))
+                .thenReturn(new DataValidator(
+                        List.of(DataValidationField.USER, DataValidationField.ORDER, DataValidationField.DISH),
+                        orderService, dishService, vendorAdapter));
+
+
+        when(applicationContext.getBean(UserAuthorizationValidator.class))
+                .thenReturn(new UserAuthorizationValidator(customerAdapter, vendorAdapter, orderService, dishService));
 
         customerController = new CustomerController(vendorMapper, vendorService, dishService, orderService,
-                customerService, customerAdapter, vendorAdapter);
+                customerService, customerAdapter, vendorAdapter, applicationContext);
 
         customerId = UUID.randomUUID();
         orderId = UUID.randomUUID();
         dishId = UUID.randomUUID();
+        order = new Order();
+        order.setID(orderId);
+        order.setCustomerId(customerId);
+        order.setVendorId(UUID.randomUUID());
+
+        when(orderService.findById(orderId)).thenReturn(order);
+        when(dishService.findById(dishId)).thenReturn(new Dish());
     }
 
     @Test
@@ -168,20 +243,6 @@ class CustomerControllerTest {
     }
 
     @Test
-    void getVendorDishesOrderUnauthorized() {
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(false);
-        when(customerAdapter.existsById(customerId)).thenReturn(true);
-
-        Order order = new Order();
-        order.setCustomerId(UUID.randomUUID()); // Different customer ID
-        when(orderService.findById(orderId)).thenReturn(order);
-
-        ResponseEntity<List<Dish>> response = customerController.getVendorDishes(customerId, orderId);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-    }
-
-    @Test
     void getVendorDishesSuccess() {
         when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
         when(customerAdapter.existsById(customerId)).thenReturn(true);
@@ -202,6 +263,22 @@ class CustomerControllerTest {
     }
 
     @Test
+    void getVendorsNullCustomerLocation() {
+        when(applicationContext.getBean(eq(DataValidator.class), eq(List.of(DataValidationField.USER))))
+                .thenReturn(dataValidator);
+
+        CustomerDTO customerDTO = new CustomerDTO();
+        when(customerAdapter.requestCustomer(customerId)).thenReturn(customerDTO);
+
+        when(customerService.getDeliveryLocation(customerDTO)).thenReturn(null);
+
+        ResponseEntity<List<Vendor>> response = customerController.getVendors(customerId, null, null, null);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+
+    @Test
     void addDishToOrderOrderNotFound() {
         when(orderService.findById(orderId)).thenReturn(null);
 
@@ -212,100 +289,59 @@ class CustomerControllerTest {
     }
 
     @Test
-    void addDishToOrderUnauthorized() {
-        Order order = new Order();
-        when(orderService.findById(orderId)).thenReturn(order);
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(false);
-
-        ResponseEntity<Order> response = customerController
-                .addDishToOrder(customerId, orderId, dishId, new UpdateDishQtyRequest());
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-    }
-
-    @Test
-    void addDishToOrderDishNotFound() {
-        Order order = new Order();
-        order.setCustomerId(customerId);
-        when(orderService.findById(orderId)).thenReturn(order);
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
-        when(dishService.findById(dishId)).thenReturn(null);
-
-        ResponseEntity<Order> response = customerController
-                .addDishToOrder(customerId, orderId, dishId, new UpdateDishQtyRequest());
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-    }
-
-    @Test
-    void addDishToOrderUpdateExistingDish() {
-        Order order = new Order();
-        order.setCustomerId(customerId);
-        order.setDishes(new ArrayList<>());
-
-        Dish dish = new Dish();
-        dish.setID(dishId);
-
+    void addDishToOrderDishExists() {
+        DataValidator mockDataValidator = mock(DataValidator.class);
+        UserAuthorizationValidator mockUserAuthorizationValidator = mock(UserAuthorizationValidator.class);
+        when(applicationContext.getBean(eq(DataValidator.class), eq(List.of(DataValidationField.USER, DataValidationField.DISH,
+                DataValidationField.ORDER, DataValidationField.UPDATEDISHQTYREQUEST)))).thenReturn(mockDataValidator);
+        when(applicationContext.getBean(UserAuthorizationValidator.class)).thenReturn(mockUserAuthorizationValidator);
+        UpdateDishQtyRequest updateDishQtyRequest = new UpdateDishQtyRequest();
+        updateDishQtyRequest.setQuantity(2);
         OrderedDish existingOrderedDish = new OrderedDish();
-        existingOrderedDish.setDish(dish);
         existingOrderedDish.setQuantity(1);
-        order.addDishesItem(existingOrderedDish);
 
+        Order mockOrder = new Order();
+        when(orderService.findById(orderId)).thenReturn(mockOrder);
+        when(dishService.findById(dishId)).thenReturn(new Dish());
+        when(orderService.orderedDishInOrder(mockOrder, dishId)).thenReturn(Optional.of(existingOrderedDish));
 
-        when(orderService.findById(orderId)).thenReturn(order);
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
-        when(dishService.findById(dishId)).thenReturn(dish);
-        when(orderService.orderedDishInOrder(order, dishId)).thenReturn(Optional.of(existingOrderedDish));
-
-        when(orderService.save(any(Order.class))).thenAnswer(invocation -> {
-            Order savedOrder = invocation.getArgument(0);
-            return savedOrder;
-        });
-
-        UpdateDishQtyRequest updateDishQtyRequest = new UpdateDishQtyRequest();
-        updateDishQtyRequest.setQuantity(2);
-
-        ResponseEntity<Order> response = customerController
-                .addDishToOrder(customerId, orderId, dishId, updateDishQtyRequest);
+        ResponseEntity<Order> response = customerController.addDishToOrder(customerId, orderId, dishId, updateDishQtyRequest);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody().getDishes().size()).isEqualTo(1);
-        assertThat(response.getBody().getDishes().get(0).getDish()).isEqualTo(dish);
-        assertThat(response.getBody().getDishes().get(0).getQuantity()).isEqualTo(3);
+        assertThat(existingOrderedDish.getQuantity()).isEqualTo(3);
+        verify(orderService).save(any(Order.class));
     }
-
 
     @Test
-    void addDishToOrderAddNewDish() {
-        Order order = new Order();
-        order.setCustomerId(customerId);
-        Dish dish = new Dish();
-        List<OrderedDish> orderedDishes = new ArrayList<>();
-
-        OrderedDish newOrderedDish = new OrderedDish();
-        newOrderedDish.setDish(dish);
-        newOrderedDish.setQuantity(1);
-        orderedDishes.add(newOrderedDish);
-
-        when(orderService.findById(orderId)).thenReturn(order);
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
-        when(dishService.findById(dishId)).thenReturn(dish);
-        when(orderService.orderedDishInOrder(order, dishId)).thenReturn(Optional.empty());
-        when(orderService.save(order)).thenReturn(order);
-
+    void addDishToOrderDishNotExists() {
+        DataValidator mockDataValidator = mock(DataValidator.class);
+        UserAuthorizationValidator mockUserAuthorizationValidator = mock(UserAuthorizationValidator.class);
+        when(applicationContext.getBean(eq(DataValidator.class), eq(List.of(DataValidationField.USER, DataValidationField.DISH,
+                DataValidationField.ORDER, DataValidationField.UPDATEDISHQTYREQUEST)))).thenReturn(mockDataValidator);
+        when(applicationContext.getBean(UserAuthorizationValidator.class)).thenReturn(mockUserAuthorizationValidator);
         UpdateDishQtyRequest updateDishQtyRequest = new UpdateDishQtyRequest();
         updateDishQtyRequest.setQuantity(2);
 
-        order.setDishes(orderedDishes);
+        Order mockOrder = new Order();
+        Dish newDish = new Dish();
+        when(orderService.findById(orderId)).thenReturn(mockOrder);
+        when(dishService.findById(dishId)).thenReturn(newDish);
+        when(orderService.orderedDishInOrder(mockOrder, dishId)).thenReturn(Optional.empty());
 
-        ResponseEntity<Order> response = customerController
-                .addDishToOrder(customerId, orderId, dishId, updateDishQtyRequest);
+        ResponseEntity<Order> response = customerController.addDishToOrder(customerId, orderId, dishId, updateDishQtyRequest);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody().getDishes().size()).isEqualTo(2);
-        assertThat(response.getBody().getDishes().get(0).getDish()).isEqualTo(dish);
-        assertThat(response.getBody().getDishes().get(0).getQuantity()).isEqualTo(1);
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+        verify(orderService).save(orderCaptor.capture());
+        Order savedOrder = orderCaptor.getValue();
+        assertThat(savedOrder.getDishes()).hasSize(1);
+        OrderedDish addedDish = savedOrder.getDishes().get(0);
+        assertThat(addedDish.getDish()).isEqualTo(newDish);
+        assertThat(addedDish.getQuantity()).isEqualTo(2);
     }
+
+
+
 
     @Test
     void removeDishFromOrderOrderNotFound() {
@@ -317,78 +353,44 @@ class CustomerControllerTest {
     }
 
     @Test
-    void removeDishFromOrderUnauthorizedCustomer() {
-        Order order = new Order();
-        when(orderService.findById(orderId)).thenReturn(order);
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(false);
+    void removeDishFromOrderSuccess() {
+        DataValidator mockDataValidator = mock(DataValidator.class);
+        UserAuthorizationValidator mockUserAuthorizationValidator = mock(UserAuthorizationValidator.class);
+        when(applicationContext.getBean(eq(DataValidator.class), eq(List.of(DataValidationField.USER, DataValidationField.ORDER, DataValidationField.DISH))))
+                .thenReturn(mockDataValidator);
+        when(applicationContext.getBean(UserAuthorizationValidator.class)).thenReturn(mockUserAuthorizationValidator);
+
+        Order mockOrder = new Order();
+        OrderedDish existingOrderedDish = new OrderedDish();
+        Dish dish = new Dish();
+        dish.setID(dishId);
+        existingOrderedDish.setDish(dish);
+        mockOrder.setDishes(new ArrayList<>(List.of(existingOrderedDish)));
+        when(orderService.findById(orderId)).thenReturn(mockOrder);
+        when(orderService.calculateOrderPrice(anyList())).thenReturn(100.0);
 
         ResponseEntity<Order> response = customerController.removeDishFromOrder(customerId, orderId, dishId);
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-    }
-
-    @Test
-    void removeDishFromOrderCustomerNotFound() {
-        when(customerAdapter.existsById(customerId)).thenReturn(false);
-
-        ResponseEntity<Order> response = customerController.removeDishFromOrder(customerId, orderId, dishId);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        verify(orderService).save(any(Order.class));
     }
 
 
     @Test
     void removeDishFromOrderDishNotFound() {
-        Order order = new Order();
-        order.setCustomerId(customerId);
-        order.setDishes(new ArrayList<>());
-        when(orderService.findById(orderId)).thenReturn(order);
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
-        when(dishService.findById(dishId)).thenReturn(null);
+        DataValidator mockDataValidator = mock(DataValidator.class);
+        UserAuthorizationValidator mockUserAuthorizationValidator = mock(UserAuthorizationValidator.class);
+        when(applicationContext.getBean(eq(DataValidator.class), eq(List.of(DataValidationField.USER, DataValidationField.ORDER, DataValidationField.DISH))))
+                .thenReturn(mockDataValidator);
+        when(applicationContext.getBean(UserAuthorizationValidator.class)).thenReturn(mockUserAuthorizationValidator);
+
+        Order mockOrder = new Order();
+        mockOrder.setDishes(new ArrayList<>());
+        when(orderService.findById(orderId)).thenReturn(mockOrder);
 
         ResponseEntity<Order> response = customerController.removeDishFromOrder(customerId, orderId, dishId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-    }
-
-    @Test
-    void removeDishFromOrderDishNotInOrder() {
-        Order order = new Order();
-        order.setCustomerId(customerId);
-        List<OrderedDish> dishes = new ArrayList<>();
-        order.setDishes(dishes);
-        when(orderService.findById(orderId)).thenReturn(order);
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
-        when(dishService.findById(dishId)).thenReturn(new Dish());
-
-        ResponseEntity<Order> response = customerController.removeDishFromOrder(customerId, orderId, dishId);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-    }
-
-    @Test
-    void removeDishFromOrderSuccess() {
-        Order order = new Order();
-        order.setCustomerId(customerId);
-        Dish dish = new Dish();
-        dish.setID(dishId);
-        OrderedDish orderedDish = new OrderedDish();
-        orderedDish.setDish(dish);
-        List<OrderedDish> dishes = new ArrayList<>();
-        dishes.add(orderedDish);
-        order.setDishes(dishes);
-
-        when(orderService.findById(orderId)).thenReturn(order);
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
-        when(customerAdapter.existsById(customerId)).thenReturn(true);
-        when(dishService.findById(dishId)).thenReturn(dish);
-        when(orderService.calculateOrderPrice(any())).thenReturn(0.0);
-        when(orderService.save(any(Order.class))).thenReturn(order);
-
-        ResponseEntity<Order> response = customerController.removeDishFromOrder(customerId, orderId, dishId);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody().getDishes()).doesNotContain(orderedDish);
     }
 
     @Test
@@ -415,48 +417,56 @@ class CustomerControllerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
-
     @Test
-    void updateDishQtyUnauthorizedCustomer() {
-        when(orderService.findById(orderId)).thenReturn(new Order());
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(false);
+    void updateDishQtyDishExists() {
+        DataValidator mockDataValidator = mock(DataValidator.class);
+        UserAuthorizationValidator mockUserAuthorizationValidator = mock(UserAuthorizationValidator.class);
+        when(applicationContext.getBean(eq(DataValidator.class), anyList())).thenReturn(mockDataValidator);
+        when(applicationContext.getBean(UserAuthorizationValidator.class)).thenReturn(mockUserAuthorizationValidator);
 
         UpdateDishQtyRequest updateDishQtyRequest = new UpdateDishQtyRequest();
-        updateDishQtyRequest.setQuantity(1);
+        updateDishQtyRequest.setQuantity(3);
 
-        ResponseEntity<Order> response = customerController
-                .updateDishQty(customerId, orderId, dishId, updateDishQtyRequest);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-    }
-
-
-    @Test
-    void updateDishQtySuccess() {
-        Order order = new Order();
-        order.setCustomerId(customerId);
+        OrderedDish existingOrderedDish = new OrderedDish();
         Dish dish = new Dish();
         dish.setID(dishId);
-        OrderedDish orderedDish = new OrderedDish();
-        orderedDish.setDish(dish);
-        orderedDish.setQuantity(1);
-        List<OrderedDish> dishes = new ArrayList<>();
-        dishes.add(orderedDish);
-        order.setDishes(dishes);
+        existingOrderedDish.setDish(dish);
+        existingOrderedDish.setQuantity(2);
 
-        when(orderService.findById(orderId)).thenReturn(order);
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
-        when(orderService.calculateOrderPrice(any())).thenReturn(0.0);
-        when(orderService.save(any(Order.class))).thenReturn(order);
+        Order mockOrder = new Order();
+        mockOrder.setDishes(new ArrayList<>(List.of(existingOrderedDish)));
 
-        UpdateDishQtyRequest updateDishQtyRequest = new UpdateDishQtyRequest();
-        updateDishQtyRequest.setQuantity(2);
+        when(orderService.findById(orderId)).thenReturn(mockOrder);
+        when(orderService.calculateOrderPrice(anyList())).thenReturn(100.0);
 
-        ResponseEntity<Order> response = customerController
-                .updateDishQty(customerId, orderId, dishId, updateDishQtyRequest);
+        ResponseEntity<Order> response = customerController.updateDishQty(customerId, orderId, dishId, updateDishQtyRequest);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody().getDishes().get(0).getQuantity()).isEqualTo(2);
+        assertThat(existingOrderedDish.getQuantity()).isEqualTo(3);
+        verify(orderService).save(any(Order.class));
+    }
+
+    @Test
+    void updateDishQtyDishNotExists() {
+        DataValidator mockDataValidator = mock(DataValidator.class);
+        UserAuthorizationValidator mockUserAuthorizationValidator = mock(UserAuthorizationValidator.class);
+        when(applicationContext.getBean(eq(DataValidator.class), anyList())).thenReturn(mockDataValidator);
+        when(applicationContext.getBean(UserAuthorizationValidator.class)).thenReturn(mockUserAuthorizationValidator);
+
+        UpdateDishQtyRequest updateDishQtyRequest = new UpdateDishQtyRequest();
+        updateDishQtyRequest.setQuantity(3);
+
+        Order mockOrder = new Order();
+        mockOrder.setDishes(new ArrayList<>());
+
+        when(orderService.findById(orderId)).thenReturn(mockOrder);
+        when(orderService.calculateOrderPrice(anyList())).thenReturn(100.0);
+
+        ResponseEntity<Order> response = customerController.updateDishQty(customerId, orderId, UUID.randomUUID(), updateDishQtyRequest);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(mockOrder.getDishes()).isEmpty();
+        verify(orderService).save(any(Order.class));
     }
 
     @Test
