@@ -1,7 +1,6 @@
 package nl.tudelft.sem.template.orders.controllers;
 
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -10,6 +9,10 @@ import java.util.stream.Collectors;
 import nl.tudelft.sem.template.api.CustomerApi;
 import nl.tudelft.sem.template.model.Address;
 import nl.tudelft.sem.template.model.Order;
+import nl.tudelft.sem.template.model.PayOrderRequest;
+import nl.tudelft.sem.template.model.CreateOrderRequest;
+import nl.tudelft.sem.template.model.Dish;
+import nl.tudelft.sem.template.model.Payment;
 import nl.tudelft.sem.template.model.Status;
 import nl.tudelft.sem.template.model.UpdateDishQtyRequest;
 import nl.tudelft.sem.template.model.Vendor;
@@ -18,11 +21,10 @@ import nl.tudelft.sem.template.orders.domain.ICustomerService;
 import nl.tudelft.sem.template.orders.domain.IDishService;
 import nl.tudelft.sem.template.orders.domain.IOrderService;
 import nl.tudelft.sem.template.orders.domain.IVendorService;
+import nl.tudelft.sem.template.orders.external.PaymentMock;
 import nl.tudelft.sem.template.orders.mappers.VendorMapper;
 import nl.tudelft.sem.template.orders.services.VendorAdapter;
 import nl.tudelft.sem.template.orders.services.CustomerAdapter;
-import nl.tudelft.sem.template.model.CreateOrderRequest;
-import nl.tudelft.sem.template.model.Dish;
 import nl.tudelft.sem.template.orders.external.CustomerDTO;
 import nl.tudelft.sem.template.orders.external.VendorDTO;
 import nl.tudelft.sem.template.orders.validator.DataValidationField;
@@ -48,6 +50,7 @@ public class CustomerController implements CustomerApi {
     private final transient CustomerAdapter customerAdapter;
     private final transient VendorAdapter vendorAdapter;
     private final transient ApplicationContext applicationContext;
+    private final transient PaymentMock paymentMock;
 
     /**
      * Constructor for this controller
@@ -63,7 +66,8 @@ public class CustomerController implements CustomerApi {
     public CustomerController(VendorMapper vendorMapper, IVendorService vendorService,
                               IDishService dishService, IOrderService orderService, ICustomerService customerService,
                               CustomerAdapter customerAdapter, VendorAdapter vendorAdapter,
-                              ApplicationContext applicationContext) {
+                              ApplicationContext applicationContext,
+                              PaymentMock paymentMock) {
         this.vendorMapper = vendorMapper;
         this.vendorService = vendorService;
         this.dishService = dishService;
@@ -72,6 +76,7 @@ public class CustomerController implements CustomerApi {
         this.customerAdapter = customerAdapter;
         this.vendorAdapter = vendorAdapter;
         this.applicationContext = applicationContext;
+        this.paymentMock = paymentMock;
     }
 
     /**
@@ -414,6 +419,64 @@ public class CustomerController implements CustomerApi {
 
         return ResponseEntity.ok(updatedOrder);
     }
+
+    /**
+     * POST /customer/{customerId}/order/{orderId}/pay : Pay for an order
+     * Processes payment for the specified order.
+     *
+     * @param customerId           (required)
+     * @param orderId              (required)
+     * @param payOrderRequest       (optional) Payment details provided by the customer.
+     * @return Payment processed successfully, order status set to accepted. (status code 200)
+     *     or Bad Request - Payment information missing or payment unsuccessful. (status code 400)
+     *     or Unauthorized - Order does not belong to user/user is not a customer. (status code 401)
+     *     or Not Found - Order or user does not exist. (status code 404)
+     *     or Internal Server Error - An unexpected error occurred on the server. (status code 500)
+     */
+    @Override
+    public ResponseEntity<Void> payOrder(UUID customerId, UUID orderId, PayOrderRequest payOrderRequest) {
+
+        //Chain of responsibility validation
+        //Get Validators
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class,
+                List.of(DataValidationField.USER, DataValidationField.ORDER));
+        UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
+
+        // Set validation chain
+        dataValidator.setNext(userAuthorizationValidator);
+        // Create and fill validation request
+        ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER, orderId, null, null, null);
+
+        try {
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
+        }
+
+        // Fetch order
+        Order order = orderService.findById(orderId);
+
+        // Check payment method
+        Payment chosenPaymentMethod = payOrderRequest.getPaymentOption();
+
+        if (chosenPaymentMethod == null) {
+            // No payment details are provided
+            return ResponseEntity.badRequest().build();
+        }
+
+        boolean paymentSuccess = paymentMock.pay(orderId, payOrderRequest);
+
+        if (paymentSuccess) {
+            order.setStatus(Status.ACCEPTED);
+            orderService.save(order);
+            return ResponseEntity.ok().build();
+        } else {
+            order.setStatus(Status.REJECTED);
+            orderService.save(order);
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
 
 }
 
