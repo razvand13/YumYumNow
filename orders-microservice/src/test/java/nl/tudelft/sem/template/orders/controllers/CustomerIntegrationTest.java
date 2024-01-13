@@ -31,6 +31,10 @@ public class CustomerIntegrationTest {
     private final UUID customerId = UUID.fromString("c00b0bcf-189a-45c7-afff-28a130e661a0");
     private final UUID vendorId = UUID.fromString("5db89f20-bb0e-4166-af07-ebef17dd78a9");
 
+    /**
+     * https://gyyl7.wiremockapi.cloud/vendors/5db89f20-bb0e-4166-af07-ebef17dd78a9
+     * @return example vendor
+     */
     Vendor exampleVendor() {
         Vendor vendor = new Vendor();
         vendor.setID(vendorId);
@@ -49,6 +53,10 @@ public class CustomerIntegrationTest {
         return vendor;
     }
 
+    /**
+     * https://gyyl7.wiremockapi.cloud/customers/c00b0bcf-189a-45c7-afff-28a130e661a0
+     * @return example customer
+     */
     CustomerDTO exampleCustomer() {
         Address homeAddress = new Address();
         homeAddress.setLatitude(34.092);
