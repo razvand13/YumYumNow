@@ -2,28 +2,18 @@ package nl.tudelft.sem.template.orders.controllers;
 
 import nl.tudelft.sem.template.model.*;
 import nl.tudelft.sem.template.orders.external.CustomerDTO;
-import nl.tudelft.sem.template.orders.external.VendorDTO;
 import nl.tudelft.sem.template.orders.repositories.DishRepository;
 import nl.tudelft.sem.template.orders.repositories.OrderRepository;
-import nl.tudelft.sem.template.orders.services.CustomerAdapter;
-import nl.tudelft.sem.template.orders.services.OrderService;
-import nl.tudelft.sem.template.orders.services.VendorAdapter;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.ApplicationContext;
+import org.springframework.http.HttpStatus;
 
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 @SpringBootTest
 public class CustomerIntegrationTest {
@@ -41,6 +31,43 @@ public class CustomerIntegrationTest {
     private final UUID customerId = UUID.fromString("c00b0bcf-189a-45c7-afff-28a130e661a0");
     private final UUID vendorId = UUID.fromString("5db89f20-bb0e-4166-af07-ebef17dd78a9");
 
+    Vendor exampleVendor() {
+        Vendor vendor = new Vendor();
+        vendor.setID(vendorId);
+        vendor.setName("Arthur Dent");
+
+        Address address = new Address();
+        address.setLatitude(34.092);
+        address.setLongitude(34.092);
+        address.setZip("2554EZ");
+        address.setHouseNumber(24);
+
+        vendor.setLocation(address);
+
+        // TODO add dishes to menu
+
+        return vendor;
+    }
+
+    CustomerDTO exampleCustomer() {
+        Address homeAddress = new Address();
+        homeAddress.setLatitude(34.092);
+        homeAddress.setLongitude(34.092);
+        homeAddress.setZip("2554EZ");
+        homeAddress.setHouseNumber(24);
+
+        Address currentLocation = new Address();
+        currentLocation.setLatitude(34.092);
+        currentLocation.setLongitude(34.092);
+        currentLocation.setZip("2554EZ");
+        currentLocation.setHouseNumber(24);
+
+        CustomerDTO customer = new CustomerDTO(customerId, "Arthur Dent", "Tempie.Farrell@email.example.mocklab.io", true,
+                "Visa Debit", homeAddress, List.of("9r4x25i52y7dayiodddgk0bfb2yx3z15pgtk0atrfa6a2u0azp8sshnpt"), currentLocation);
+
+        return customer;
+    }
+
     Order createOrder() {
         // Create an order object
         Order order = new Order();
@@ -51,6 +78,7 @@ public class CustomerIntegrationTest {
         address.setLatitude(15.0);
         address.setZip("1234AB");
 
+        // TODO add dishes to order
 //        Dish dish = new Dish();
 //        dish.setName("Chicken & Rice");
 //        dish.setVendorId(vendorId);
@@ -75,24 +103,6 @@ public class CustomerIntegrationTest {
         return orderRepo.save(order);
     }
 
-    Vendor createVendor() {
-        // Creates example vendor
-
-        Vendor vendor = new Vendor();
-        vendor.setID(vendorId);
-        vendor.setName("Arthur Dent");
-
-        Address address = new Address();
-        address.setLatitude(34.092);
-        address.setLongitude(34.092);
-        address.setZip("2554EZ");
-        address.setHouseNumber(24);
-
-        vendor.setLocation(address);
-
-        return vendor;
-    }
-
     @Test
     void testDependencyInjection() {
         assertThat(orderController).isNotNull();
@@ -103,7 +113,7 @@ public class CustomerIntegrationTest {
     }
 
     @Test
-    void testUpdateOrderStatus() {
+    void testUpdateOrderStatusOk() {
         // Create order and set (some) fields, including the status field
         Order order = createOrder();
         UUID orderId = order.getID();
@@ -121,51 +131,55 @@ public class CustomerIntegrationTest {
         Order orderRes = res.getBody();
 
         // Assert that the only status was changed
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(orderRes).isNotNull();
         assertThat(orderRes.getStatus()).isEqualTo(Status.DELIVERED);
     }
 
     @Test
-    void testGetVendorsNoFilters() {
+    void testGetVendorsOkNoFilters() {
         // Call method
         var res = customerController.getVendors(customerId, null, null ,null);
         var vendors = res.getBody();
 
-        Vendor exampleVendor = createVendor();
+        Vendor exampleVendor = exampleVendor();
 
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(vendors).isNotNull();
         assertThat(vendors).isNotEmpty();
         assertThat(vendors).contains(exampleVendor);
     }
 
     @Test
-    void testGetVendorsFiltersContains() {
+    void testGetVendorsOkFiltersContains() {
         // Call method
         var res = customerController.getVendors(customerId, "Arth", null ,null);
         var vendors = res.getBody();
 
-        Vendor exampleVendor = createVendor();
+        Vendor exampleVendor = exampleVendor();
 
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(vendors).isNotNull();
         assertThat(vendors).isNotEmpty();
         assertThat(vendors).contains(exampleVendor);
     }
 
     @Test
-    void testGetVendorsNoFiltersNotContains() {
+    void testGetVendorsOkNoFiltersNotContains() {
         // Call method
         var res = customerController.getVendors(customerId, "Arthr Dent", null ,null);
         List<Vendor> vendors = res.getBody();
 
-        Vendor exampleVendor = createVendor();
+        Vendor exampleVendor = exampleVendor();
 
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(vendors).isNotNull();
         assertThat(vendors).isNotEmpty();
         assertThat(vendors).contains(exampleVendor);
     }
 
     @Test
-    void testCreateOrder() {
+    void testCreateOrderOk() {
         Address deliveryAddress = new Address();
         deliveryAddress.setLongitude(34.0);
         deliveryAddress.setLatitude(34.0);
@@ -179,9 +193,27 @@ public class CustomerIntegrationTest {
         var res = customerController.createOrder(customerId, req);
         Order order = res.getBody();
 
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(order).isNotNull();
         assertThat(order.getID()).isNotNull();
         assertThat(order.getVendorId()).isEqualTo(vendorId);
         assertThat(order.getLocation()).isEqualTo(deliveryAddress);
     }
+
+    @Test
+    void testGetVendorDishesOk() {
+        // TODO
+    }
+
+    @Test
+    void testGetOrderOk() {
+        // TODO
+    }
+
+    @Test
+    void testGetDishFromOrderOk() {
+        // TODO
+    }
+
+    // TODO write some integration tests for error responses
 }

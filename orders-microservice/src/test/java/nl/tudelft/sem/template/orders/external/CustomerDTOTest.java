@@ -6,19 +6,21 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class CustomerDTOTest {
 
     private CustomerDTO customer;
+    private UUID customerId;
 
     /**
      * Sets up some commonly used parameters
      */
     @BeforeEach
     public void setUp() {
-        String customerId = "123";
+        customerId = UUID.randomUUID();
         String name = "John Doe";
         String email = "john@example.com";
         boolean isBlocked = false;
@@ -37,7 +39,7 @@ public class CustomerDTOTest {
     @Test
     public void testNonEmptyConstructor() {
         assertThat(customer).isNotNull();
-        assertThat(customer.getCustomerId()).isEqualTo("123");
+        assertThat(customer.getCustomerId()).isEqualTo(customerId);
         assertThat(customer.getName()).isEqualTo("John Doe");
         assertThat(customer.getEmail()).isEqualTo("john@example.com");
         assertThat(customer.isBlocked()).isFalse();
