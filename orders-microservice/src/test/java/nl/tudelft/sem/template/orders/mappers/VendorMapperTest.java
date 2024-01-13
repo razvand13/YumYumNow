@@ -1,7 +1,9 @@
 package nl.tudelft.sem.template.orders.mappers;
 
+import nl.tudelft.sem.template.model.Address;
 import nl.tudelft.sem.template.model.Vendor;
 import nl.tudelft.sem.template.orders.external.VendorDTO;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -13,27 +15,43 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class VendorMapperTest {
 
     private final VendorMapper vendorMapper = new VendorMapper();
+    private Address address;
+
+    @BeforeEach
+    void setup() {
+        address = new Address();
+        address.setHouseNumber(1);
+        address.setLatitude(50.0);
+        address.setLongitude(40.0);
+        address.setZip("1234AB");
+    }
 
     @Test
     public void testToEntityValidMapping() {
         VendorDTO vendorDTO = new VendorDTO(
-                UUID.randomUUID(), "Vendor Name", false, "vendor@example.com", true, null);
+                UUID.randomUUID(), "Vendor Name", false, "vendor@example.com", true, address);
 
         Vendor vendor = vendorMapper.toEntity(vendorDTO);
 
         assertThat(vendor).isNotNull();
         assertThat(vendor.getID()).isEqualTo(vendorDTO.getVendorId());
+        assertThat(vendor.getName()).isEqualTo(vendorDTO.getName());
+        assertThat(vendor.getLocation()).isEqualTo(vendorDTO.getLocation());
     }
 
     @Test
     public void testToDTOValidMapping() {
         Vendor vendor = new Vendor();
         vendor.setID(UUID.randomUUID());
+        vendor.setName("Vendor Name");
+        vendor.setLocation(address);
 
         VendorDTO vendorDTO = vendorMapper.toDTO(vendor);
 
         assertThat(vendorDTO).isNotNull();
         assertThat(vendorDTO.getVendorId()).isEqualTo(vendor.getID());
+        assertThat(vendorDTO.getName()).isEqualTo(vendor.getName());
+        assertThat(vendorDTO.getLocation()).isEqualTo(vendor.getLocation());
     }
 
     @Test
