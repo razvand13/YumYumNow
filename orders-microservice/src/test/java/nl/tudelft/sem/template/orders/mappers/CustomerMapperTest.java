@@ -18,7 +18,7 @@ public class CustomerMapperTest {
                 "customerId":"123",
                 "name":"John Doe",
                 "email":"john@example.com",
-                "blocked":false,
+                "isBlocked":false,
                 "payment":"Credit Card",
                 "homeAddress":{},
                 "allergens":[],

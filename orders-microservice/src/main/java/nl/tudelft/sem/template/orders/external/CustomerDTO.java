@@ -8,7 +8,6 @@ import lombok.ToString;
 import nl.tudelft.sem.template.model.Address;
 
 @Getter
-@Setter
 @EqualsAndHashCode
 @ToString
 public class CustomerDTO {
@@ -48,6 +47,45 @@ public class CustomerDTO {
         this.payment = payment;
         this.homeAddress = homeAddress;
         this.allergens = allergens;
+        this.currentLocation = currentLocation;
+    }
+
+    public void setCustomerId(String customerId) {
+        this.customerId = customerId;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    /**
+     * THIS SETTER IS NEEDED
+     * The generated setter is generated as 'setBlocked' which interferes with the ObjectMapper,
+     * as the attribute inside the JSON file is called 'isBlocked'
+     *
+     * @param isBlocked blocked
+     */
+    public void setIsBlocked(boolean isBlocked) {
+        this.isBlocked = isBlocked;
+    }
+
+    public void setPayment(String payment) {
+        this.payment = payment;
+    }
+
+    public void setHomeAddress(Address homeAddress) {
+        this.homeAddress = homeAddress;
+    }
+
+    public void setAllergens(List<String> allergens) {
+        this.allergens = allergens;
+    }
+
+    public void setCurrentLocation(Address currentLocation) {
         this.currentLocation = currentLocation;
     }
 }

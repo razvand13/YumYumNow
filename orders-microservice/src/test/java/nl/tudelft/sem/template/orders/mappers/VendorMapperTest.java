@@ -62,7 +62,7 @@ public class VendorMapperTest {
                     {
                         "vendorId": "550e8400-e29b-41d4-a716-446655440000",
                         "name": "Vendor 1",
-                        "blocked": false,
+                        "isBlocked": false,
                         "email": "vendor1@example.com",
                         "approved": true,
                         "location": {}
@@ -70,7 +70,7 @@ public class VendorMapperTest {
                     {
                         "vendorId": "550e8400-e29b-41d4-a716-446655440001",
                         "name": "Vendor 2",
-                        "blocked": true,
+                        "isBlocked": true,
                         "email": "vendor2@example.com",
                         "approved": false,
                         "location": {}
@@ -92,7 +92,7 @@ public class VendorMapperTest {
                     {
                         "vendorId": "550e8400-e29b-41d4-a716-446655440000",
                         "name": "Vendor 1",
-                        "blocked": false,
+                        "isBlocked": false,
                         "email": "vendor1@example.com",
                         "approved": true,
                         "location": {}
