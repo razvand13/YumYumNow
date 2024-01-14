@@ -4,6 +4,7 @@ import nl.tudelft.sem.template.model.*;
 import nl.tudelft.sem.template.orders.external.CustomerDTO;
 import nl.tudelft.sem.template.orders.repositories.DishRepository;
 import nl.tudelft.sem.template.orders.repositories.OrderRepository;
+import org.aspectj.weaver.ast.Or;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -48,8 +49,6 @@ public class CustomerIntegrationTest {
 
         vendor.setLocation(address);
 
-        // TODO add dishes to menu
-
         return vendor;
     }
 
@@ -86,21 +85,14 @@ public class CustomerIntegrationTest {
         address.setLatitude(15.0);
         address.setZip("1234AB");
 
-        // TODO add dishes to order
-//        Dish dish = new Dish();
-//        dish.setName("Chicken & Rice");
-//        dish.setVendorId(vendorId);
-//        dish.setPrice(10.0);
-//        dish.setIngredients(List.of("Chicken", "Rice"));
-//        dish.setDescription("yum");
-//        dish.setImageLink("www.images.com/chicken-and-rice");
-//
-//        OrderedDish orderedDish = new OrderedDish();
-//        orderedDish.setId(UUID.randomUUID());
-//        orderedDish.setDish(dish);
-//        orderedDish.setQuantity(1);
-//
-//        order.addDishesItem(orderedDish);
+        Dish dish = createDish();
+
+        OrderedDish orderedDish = new OrderedDish();
+        orderedDish.setId(UUID.randomUUID());
+        orderedDish.setDish(dish);
+        orderedDish.setQuantity(1);
+
+        order.addDishesItem(orderedDish);
         order.setLocation(address);
         order.setSpecialRequirements("Leave it at the door");
         order.setVendorId(vendorId);
@@ -109,6 +101,19 @@ public class CustomerIntegrationTest {
         order.setTotalPrice(0.0);
 
         return orderRepo.save(order);
+    }
+
+    Dish createDish() {
+        Dish dish = new Dish();
+        dish.setName("Chicken & Rice");
+        dish.setVendorId(vendorId);
+        dish.setPrice(10.0);
+        dish.setIngredients(List.of("Chicken", "Rice"));
+        dish.setDescription("yum");
+        dish.setImageLink("www.images.com/chicken-and-rice");
+        dish.setAllergens(List.of("Gluten"));
+
+        return dishRepo.save(dish);
     }
 
     @Test
@@ -142,6 +147,17 @@ public class CustomerIntegrationTest {
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(orderRes).isNotNull();
         assertThat(orderRes.getStatus()).isEqualTo(Status.DELIVERED);
+    }
+
+    @Test
+    void testUpdateOrderStatusBadRequest() {
+        var res = orderController.updateOrderStatus(null, null);
+        var body = res.getBody();
+        var statusCode = res.getStatusCode();
+
+        assertThat(res).isNotNull();
+        assertThat(body).isNull();
+        assertThat(statusCode).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
     @Test
@@ -187,6 +203,17 @@ public class CustomerIntegrationTest {
     }
 
     @Test
+    void testGetVendorsBadRequest() {
+        var res = customerController.getVendors(null, null, null, null);
+        var body = res.getBody();
+        var statusCode = res.getStatusCode();
+
+        assertThat(res).isNotNull();
+        assertThat(body).isNull();
+        assertThat(statusCode).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
     void testCreateOrderOk() {
         Address deliveryAddress = new Address();
         deliveryAddress.setLongitude(34.0);
@@ -209,19 +236,96 @@ public class CustomerIntegrationTest {
     }
 
     @Test
+    void testCreateOrderBadRequest() {
+        var res = customerController.createOrder(null, null);
+        var body = res.getBody();
+        var statusCode = res.getStatusCode();
+
+        assertThat(res).isNotNull();
+        assertThat(body).isNull();
+        assertThat(statusCode).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
     void testGetVendorDishesOk() {
-        // TODO
+        // Create environment
+        Dish dish1 = createDish();
+        Dish d2 = createDish();
+        d2.setName("Rice & Chicken");
+        Dish dish2 = dishRepo.save(d2);
+        Order order = new Order();
+        order.setVendorId(vendorId);
+        order.setCustomerId(customerId);
+        Order savedOrder = orderRepo.save(order);
+
+        // Call method under test
+        var res = customerController.getVendorDishes(customerId, savedOrder.getID());
+        List<Dish> vendorDishes = res.getBody();
+
+        // Assert
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(vendorDishes).isNotNull();
+        assertThat(vendorDishes).containsExactlyInAnyOrder(dish1, dish2);
+    }
+
+    @Test
+    void testGetVendorDishesBadRequest() {
+        var res = customerController.getVendorDishes(null, null);
+        var body = res.getBody();
+        var statusCode = res.getStatusCode();
+
+        assertThat(res).isNotNull();
+        assertThat(body).isNull();
+        assertThat(statusCode).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
     @Test
     void testGetOrderOk() {
-        // TODO
+        Order order = createOrder();
+
+        // Call method under test
+        var res = customerController.getOrder(customerId, order.getID());
+        Order orderRes = res.getBody();
+
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(orderRes).isNotNull();
+        assertThat(orderRes).isEqualTo(order);
+    }
+
+    @Test
+    void testGetOrderBadRequest() {
+        var res = customerController.getOrder(null, null);
+        var body = res.getBody();
+        var statusCode = res.getStatusCode();
+
+        assertThat(res).isNotNull();
+        assertThat(body).isNull();
+        assertThat(statusCode).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
     @Test
     void testGetDishFromOrderOk() {
-        // TODO
+        Order order = createOrder();
+        OrderedDish orderedDish = order.getDishes().get(0);
+        UUID dishId = orderedDish.getDish().getID();
+
+        // Call method under test
+        var res = customerController.getDishFromOrder(customerId, order.getID(), dishId);
+        OrderedDish orderedDishRes = res.getBody();
+
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(orderedDishRes).isNotNull();
+        assertThat(orderedDishRes).isEqualTo(orderedDish);
     }
 
-    // TODO write some integration tests for error responses
+    @Test
+    void testGetDishFromOrderBadRequest() {
+        var res = customerController.getDishFromOrder(null, null ,null);
+        var body = res.getBody();
+        var statusCode = res.getStatusCode();
+
+        assertThat(res).isNotNull();
+        assertThat(body).isNull();
+        assertThat(statusCode).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
 }
