@@ -8,7 +8,14 @@ import nl.tudelft.sem.template.orders.domain.IDishService;
 import nl.tudelft.sem.template.orders.domain.IOrderService;
 import nl.tudelft.sem.template.orders.domain.IVendorService;
 import nl.tudelft.sem.template.orders.services.VendorAdapter;
+import nl.tudelft.sem.template.orders.validator.DataValidationField;
+import nl.tudelft.sem.template.orders.validator.DataValidator;
+import nl.tudelft.sem.template.orders.validator.UserAuthorizationValidator;
+import nl.tudelft.sem.template.orders.validator.UserType;
+import nl.tudelft.sem.template.orders.validator.ValidationFailureException;
+import nl.tudelft.sem.template.orders.validator.ValidatorRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -24,6 +31,7 @@ public class VendorController implements VendorApi {
     private final transient IDishService dishService;
     private final transient IOrderService orderService;
     private final transient IVendorService vendorService;
+    private final transient ApplicationContext applicationContext;
 
     /**
      * Creates an instance of the VendorController.
@@ -34,11 +42,13 @@ public class VendorController implements VendorApi {
      */
     @Autowired
     public VendorController(VendorAdapter vendorAdapter, IDishService dishService,
-                            IOrderService orderService, IVendorService vendorService) {
+                            IOrderService orderService, IVendorService vendorService,
+                            ApplicationContext applicationContext) {
         this.vendorAdapter = vendorAdapter;
         this.dishService = dishService;
         this.orderService = orderService;
         this.vendorService = vendorService;
+        this.applicationContext = applicationContext;
     }
 
     /**
@@ -50,17 +60,22 @@ public class VendorController implements VendorApi {
      */
     @Override
     public ResponseEntity<Dish> addDishToMenu(UUID vendorId, Dish dish) {
-        if (vendorId == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        //Chain of responsibility validation
+        //Get Validators
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class, List.of(DataValidationField.USER));
+        UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
+        //Set validation chain
+        dataValidator.setNext(userAuthorizationValidator);
+        //Create and fill validation request
+        ValidatorRequest request = new ValidatorRequest();
+        request.setUserUUID(vendorId);
+        request.setUserType(UserType.VENDOR);
+        try {
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
         }
-        if (!vendorAdapter.checkRoleById(vendorId)) {
-            // Unauthorized - ID of a customer/courier/admin
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-        if (!vendorAdapter.existsById(vendorId)) {
-            // Vendor id not found
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
+
         try {
 
             Dish addedDish = dishService.addDish(vendorId, dish);
@@ -168,27 +183,26 @@ public class VendorController implements VendorApi {
      */
     @Override
     public ResponseEntity<Order> getOrderDetails(UUID vendorId, UUID orderId) {
-        if (vendorId == null || orderId == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
-
-        //Verify user is not of wrong type
-        if (!vendorAdapter.checkRoleById(vendorId)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        //Chain of responsibility validation
+        //Get Validators
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class,
+                List.of(DataValidationField.USER, DataValidationField.ORDER));
+        UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
+        //Set validation chain
+        dataValidator.setNext(userAuthorizationValidator);
+        //Create and fill validation request
+        ValidatorRequest request = new ValidatorRequest();
+        request.setUserUUID(vendorId);
+        request.setUserType(UserType.VENDOR);
+        request.setOrderUUID(orderId);
+        try {
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
         }
 
         try {
             Order order = orderService.findById(orderId);
-
-            //Verify order existence and user existence
-            if (order == null || !vendorAdapter.existsById(vendorId)) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-            }
-
-            //Verify order ownership
-            if (!order.getVendorId().equals(vendorId)) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-            }
 
             return ResponseEntity.ok(order);
         } catch (Exception e) {
@@ -210,18 +224,21 @@ public class VendorController implements VendorApi {
      */
     @Override
     public ResponseEntity<List<Order>> getVendorOrders(UUID vendorId) {
-        if (vendorId == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
-
-        //Verify user type
-        if (!vendorAdapter.checkRoleById(vendorId)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        //Verify existence of vendor
-        if (!vendorAdapter.existsById(vendorId)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        //Chain of responsibility validation
+        //Get Validators
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class,
+                List.of(DataValidationField.USER));
+        UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
+        //Set validation chain
+        dataValidator.setNext(userAuthorizationValidator);
+        //Create and fill validation request
+        ValidatorRequest request = new ValidatorRequest();
+        request.setUserUUID(vendorId);
+        request.setUserType(UserType.VENDOR);
+        try {
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
         }
 
         try {

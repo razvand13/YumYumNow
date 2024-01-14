@@ -8,10 +8,18 @@ import nl.tudelft.sem.template.orders.services.DishService;
 import nl.tudelft.sem.template.orders.services.OrderService;
 import nl.tudelft.sem.template.orders.services.VendorAdapter;
 import nl.tudelft.sem.template.orders.services.VendorService;
+import nl.tudelft.sem.template.orders.validator.DataValidationField;
+import nl.tudelft.sem.template.orders.validator.DataValidator;
+import nl.tudelft.sem.template.orders.validator.UserAuthorizationValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,6 +27,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
@@ -34,6 +43,8 @@ class VendorControllerTest {
     private OrderRepository orderRepository;
     private UUID vendorId;
     private UUID orderId;
+    private ApplicationContext applicationContext;
+
 
     @BeforeEach
     void setUp() {
@@ -41,7 +52,21 @@ class VendorControllerTest {
         dishService = mock(DishService.class);
         orderService = mock(OrderService.class);
         vendorService = mock(VendorService.class);
-        vendorController = new VendorController(vendorAdapter, dishService, orderService, vendorService);
+        applicationContext = mock(ApplicationContext.class);
+
+        //Validators need to be defined for the mocked application context, including each combination of used
+        //DataValidationFields. Unfortunately capturing the argument that getBean is called with is not an option
+        when(applicationContext.getBean(eq(DataValidator.class), eq(List.of(DataValidationField.USER))))
+                .thenReturn(new DataValidator(List.of(DataValidationField.USER), orderService, dishService, vendorAdapter));
+        when(applicationContext.getBean(eq(DataValidator.class),
+                eq(List.of(DataValidationField.USER, DataValidationField.ORDER))))
+                .thenReturn(new DataValidator(List.of(DataValidationField.USER,
+                        DataValidationField.ORDER), orderService, dishService, vendorAdapter));
+        when(applicationContext.getBean(UserAuthorizationValidator.class))
+                .thenReturn(new UserAuthorizationValidator(null, vendorAdapter, orderService, dishService));
+
+
+        vendorController = new VendorController(vendorAdapter, dishService, orderService, vendorService, applicationContext);
 
         orderRepository = mock(OrderRepository.class);
 
@@ -339,8 +364,12 @@ class VendorControllerTest {
     @Test
     void testGetOrderDetailsWrongUserType() {
         UUID customerId = UUID.randomUUID();
+        Order order = new Order();
+        order.setCustomerId(UUID.randomUUID());
+        order.setVendorId(vendorId);
 
         when(vendorAdapter.checkRoleById(customerId)).thenReturn(false);
+        when(orderService.findById(orderId)).thenReturn(order);
 
         ResponseEntity<Order> response = vendorController.getOrderDetails(customerId, orderId);
 
@@ -360,6 +389,8 @@ class VendorControllerTest {
     @Test
     void testGetOrderDetailsVendorNotExists() {
         Order order = new Order();
+        order.setCustomerId(UUID.randomUUID());
+        order.setVendorId(vendorId);
 
         when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
         when(orderService.findById(orderId)).thenReturn(order);
@@ -373,6 +404,7 @@ class VendorControllerTest {
     @Test
     void testGetOrderDetailsOrderDoesNotBelongToVendor() {
         Order order = new Order();
+        order.setCustomerId(UUID.randomUUID());
         order.setVendorId(UUID.randomUUID());
 
         when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
@@ -397,6 +429,7 @@ class VendorControllerTest {
     void testGetOrderDetails() {
         Order order = new Order();
         order.setVendorId(vendorId);
+        order.setCustomerId(UUID.randomUUID());
         order.setID(orderId);
 
         when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
