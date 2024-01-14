@@ -582,6 +582,7 @@ public class CustomerController implements CustomerApi {
         newOrder.setOrderTime(OffsetDateTime.now());
         newOrder.setStatus(Status.PENDING);
         newOrder.setLocation(address != null ? address : previousOrder.getLocation());
+        newOrder.setTotalPrice(previousOrder.getTotalPrice());
 
         // Save the new order
         Order savedOrder = orderService.save(newOrder);
