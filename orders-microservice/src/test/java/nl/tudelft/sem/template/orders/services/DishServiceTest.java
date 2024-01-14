@@ -8,12 +8,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.util.Collections;
-import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
+import java.util.Optional;
+import java.util.Collections;
+import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -29,6 +30,7 @@ public class DishServiceTest {
     @BeforeEach
     public void setup() {
         MockitoAnnotations.openMocks(this);
+        dishService = new DishService(dishRepository);
     }
 
     @Test
@@ -92,5 +94,51 @@ public class DishServiceTest {
         assertThat(savedDish).isEqualTo(dish);
         verify(dishRepository).save(dish);
     }
+
+    @Test
+    void isDishNotInOrder() {
+        UUID dishId = UUID.randomUUID();
+        List<Dish> dishes = Arrays.asList(createDish(UUID.randomUUID()), createDish(UUID.randomUUID()));
+
+        boolean result = dishService.isDishInOrder(dishes, dishId);
+
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    void removeDishFromOrder() {
+        UUID dishIdToRemove = UUID.randomUUID();
+        Dish dishToRemove = createDish(dishIdToRemove);
+        Dish otherDish = createDish(UUID.randomUUID());
+
+        List<Dish> dishes = Arrays.asList(dishToRemove, otherDish);
+
+        List<Dish> result = dishService.removeDishOrder(dishes, dishIdToRemove);
+
+        assertThat(result).doesNotContain(dishToRemove);
+        assertThat(result).hasSize(1);
+        assertThat(result).contains(otherDish);
+    }
+
+    @Test
+    void removeDishNotInOrder() {
+        UUID dishIdToRemove = UUID.randomUUID();
+        Dish dish1 = createDish(UUID.randomUUID());
+        Dish dish2 = createDish(UUID.randomUUID());
+
+        List<Dish> dishes = Arrays.asList(dish1, dish2);
+
+        List<Dish> result = dishService.removeDishOrder(dishes, dishIdToRemove);
+
+        assertThat(result).hasSize(2);
+        assertThat(result).containsExactlyInAnyOrder(dish1, dish2);
+    }
+
+    private Dish createDish(UUID dishId) {
+        Dish dish = new Dish();
+        dish.setID(dishId);
+        return dish;
+    }
+
 
 }
