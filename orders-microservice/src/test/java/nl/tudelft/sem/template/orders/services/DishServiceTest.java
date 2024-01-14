@@ -98,7 +98,7 @@ public class DishServiceTest {
     @Test
     void isDishNotInOrder() {
         UUID dishId = UUID.randomUUID();
-        List<Dish> dishes = Arrays.asList(createDishWithDifferentId(), createDishWithDifferentId());
+        List<Dish> dishes = Arrays.asList(createDish(UUID.randomUUID()), createDish(UUID.randomUUID()));
 
         boolean result = dishService.isDishInOrder(dishes, dishId);
 
@@ -140,10 +140,5 @@ public class DishServiceTest {
         return dish;
     }
 
-    private Dish createDishWithDifferentId() {
-        Dish dish = new Dish();
-        dish.setID(UUID.randomUUID());
-        return dish;
-    }
 
 }
