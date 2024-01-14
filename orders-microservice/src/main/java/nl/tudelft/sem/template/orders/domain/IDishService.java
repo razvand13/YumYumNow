@@ -19,4 +19,8 @@ public interface IDishService {
     List<Dish> removeDishOrder(List<Dish> dishEntityList, UUID dishId);
 
     Dish updateDish(UUID dishId, Dish dish);
+
+    Dish findById(UUID dishUUID);
+
+    List<Dish> findAllByVendorId(UUID vendorId);
 }

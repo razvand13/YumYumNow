@@ -7,7 +7,6 @@ import nl.tudelft.sem.template.orders.VendorNotFoundException;
 import nl.tudelft.sem.template.orders.domain.IDishService;
 import nl.tudelft.sem.template.orders.domain.IOrderService;
 import nl.tudelft.sem.template.orders.domain.IVendorService;
-import nl.tudelft.sem.template.orders.services.VendorAdapter;
 import nl.tudelft.sem.template.orders.validator.DataValidationField;
 import nl.tudelft.sem.template.orders.validator.DataValidator;
 import nl.tudelft.sem.template.orders.validator.UserAuthorizationValidator;
@@ -27,7 +26,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class VendorController implements VendorApi {
 
-    private final transient VendorAdapter vendorAdapter;
     private final transient IDishService dishService;
     private final transient IOrderService orderService;
     private final transient IVendorService vendorService;
@@ -36,15 +34,14 @@ public class VendorController implements VendorApi {
     /**
      * Creates an instance of the VendorController.
      *
-     * @param vendorAdapter the vendor adapter
      * @param dishService   the dish service
+     * @param orderService the order service
      * @param vendorService the vendor service
      */
     @Autowired
-    public VendorController(VendorAdapter vendorAdapter, IDishService dishService,
+    public VendorController(IDishService dishService,
                             IOrderService orderService, IVendorService vendorService,
                             ApplicationContext applicationContext) {
-        this.vendorAdapter = vendorAdapter;
         this.dishService = dishService;
         this.orderService = orderService;
         this.vendorService = vendorService;
@@ -103,18 +100,21 @@ public class VendorController implements VendorApi {
      */
     @Override
     public ResponseEntity<Void> removeDishFromMenu(UUID vendorId, UUID dishId) {
-        if (vendorId == null || dishId == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
 
-        if (!vendorAdapter.checkRoleById(vendorId)) {
-            // Unauthorized - ID of a customer/courier/admin
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class, List.of(DataValidationField.USER,
+                DataValidationField.DISH));
+        UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
+        dataValidator.setNext(userAuthorizationValidator);
 
-        if (!vendorAdapter.existsById(vendorId)) {
-            // Vendor id not found
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        ValidatorRequest request = new ValidatorRequest();
+        request.setUserUUID(vendorId);
+        request.setDishUUID(dishId);
+        request.setUserType(UserType.VENDOR);
+
+        try {
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
         }
 
         try {
@@ -144,16 +144,20 @@ public class VendorController implements VendorApi {
      */
     @Override
     public ResponseEntity<Dish> updateDishDetails(UUID vendorId, UUID dishId, Dish dish) {
-        if (vendorId == null || dishId == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class, List.of(DataValidationField.USER,
+                DataValidationField.DISH));
+        UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
+        dataValidator.setNext(userAuthorizationValidator);
 
-        if (!vendorAdapter.checkRoleById(vendorId)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
+        ValidatorRequest request = new ValidatorRequest();
+        request.setUserUUID(vendorId);
+        request.setDishUUID(dishId);
+        request.setUserType(UserType.VENDOR);
 
-        if (!vendorAdapter.existsById(vendorId)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        try {
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
         }
 
         try {

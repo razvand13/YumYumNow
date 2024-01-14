@@ -32,6 +32,21 @@ public class DishService implements IDishService {
     }
 
     /**
+     * Find dish by ID
+     *
+     * @param dishId id of the dish
+     * @return the dish
+     */
+    public Dish findById(UUID dishId) {
+        return dishRepository.findById(dishId).orElse(null);
+    }
+
+    @Override
+    public List<Dish> findAllByVendorId(UUID vendorId) {
+        return dishRepository.getDishesByVendorId(vendorId);
+    }
+
+    /**
      * Find all dishes that belong to a specified vendor
      *
      * @param vendorId id of the vendor
