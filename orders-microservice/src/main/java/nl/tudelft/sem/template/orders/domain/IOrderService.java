@@ -20,4 +20,6 @@ public interface IOrderService {
     public double calculateOrderPrice(List<OrderedDish> orderedDishes);
 
     Optional<OrderedDish> orderedDishInOrder(Order order, UUID dishId);
+
+    List<Order> findOrdersByCustomerId(UUID customerId);
 }
