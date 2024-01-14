@@ -197,6 +197,7 @@ public class DishServiceTest {
         verify(dishRepository).findById(dishId);
         verify(dishRepository).save(any(Dish.class));
     }
+    
     @Test
     void isDishNotInOrder() {
         UUID dishId = UUID.randomUUID();
