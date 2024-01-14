@@ -459,7 +459,8 @@ class CustomerControllerTest {
         UserAuthorizationValidator mockUserAuthorizationValidator = mock(UserAuthorizationValidator.class);
         when(applicationContext.getBean(eq(DataValidator.class),
                 eq(List.of(DataValidationField.USER, DataValidationField.DISH,
-                        DataValidationField.ORDER, DataValidationField.UPDATEDISHQTYREQUEST)))).thenReturn(mockDataValidator);
+                        DataValidationField.ORDER, DataValidationField.UPDATEDISHQTYREQUEST)))).
+                thenReturn(mockDataValidator);
         when(applicationContext.getBean(UserAuthorizationValidator.class)).thenReturn(mockUserAuthorizationValidator);
         UpdateDishQtyRequest updateDishQtyRequest = new UpdateDishQtyRequest();
         updateDishQtyRequest.setQuantity(2);
@@ -485,7 +486,8 @@ class CustomerControllerTest {
         UserAuthorizationValidator mockUserAuthorizationValidator = mock(UserAuthorizationValidator.class);
         when(applicationContext.getBean(eq(DataValidator.class),
                 eq(List.of(DataValidationField.USER, DataValidationField.DISH,
-                        DataValidationField.ORDER, DataValidationField.UPDATEDISHQTYREQUEST)))).thenReturn(mockDataValidator);
+                        DataValidationField.ORDER, DataValidationField.UPDATEDISHQTYREQUEST)))).
+                thenReturn(mockDataValidator);
         when(applicationContext.getBean(UserAuthorizationValidator.class)).thenReturn(mockUserAuthorizationValidator);
         UpdateDishQtyRequest updateDishQtyRequest = new UpdateDishQtyRequest();
         updateDishQtyRequest.setQuantity(2);
