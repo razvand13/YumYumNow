@@ -42,6 +42,17 @@ public class DataValidator extends BaseValidator {
     }
 
     /**
+     * Testing constructor
+     */
+    public DataValidator(IOrderService orderService, IDishService dishService, VendorAdapter vendorAdapter,
+                         List<DataValidationField> fields) {
+        this.orderService = orderService;
+        this.dishService = dishService;
+        this.vendorAdapter = vendorAdapter;
+        this.fields = fields;
+    }
+
+    /**
      * Constructor to manually set order service and dish service for testing
      */
     public DataValidator(List<DataValidationField> fields, IOrderService orderService, IDishService dishService,
