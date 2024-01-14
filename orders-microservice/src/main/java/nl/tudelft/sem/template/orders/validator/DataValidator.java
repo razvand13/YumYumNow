@@ -118,6 +118,12 @@ public class DataValidator extends BaseValidator {
             }
         }
 
+        if (fields.contains(DataValidationField.UPDATEORDERSTATUSREQUEST)) {
+            if (request.getUpdateOrderStatusRequest() == null || request.getUpdateOrderStatusRequest().getStatus() == null) {
+                throw new ValidationFailureException(HttpStatus.BAD_REQUEST);
+            }
+        }
+
         return super.checkNext(request);
     }
 }

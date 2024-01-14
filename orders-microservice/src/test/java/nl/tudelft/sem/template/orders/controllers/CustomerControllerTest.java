@@ -162,6 +162,165 @@ class CustomerControllerTest {
     }
 
     @Test
+    void getOrderSuccess() {
+        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
+        when(customerAdapter.existsById(customerId)).thenReturn(true);
+
+        ResponseEntity<Order> responseEntity = customerController.getOrder(customerId, orderId);
+
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(responseEntity.getBody()).isEqualTo(order);
+    }
+
+    @Test
+    void getOrderBadRequest() {
+        ResponseEntity<Order> responseEntity = customerController.getOrder(null, null);
+
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void getOrderUnauthorized() {
+        when(customerAdapter.checkRoleById(customerId)).thenReturn(false);
+
+        ResponseEntity<Order> responseEntity = customerController.getOrder(customerId, orderId);
+
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void getOrderNotFoundCustomer() {
+        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
+        when(customerAdapter.existsById(customerId)).thenReturn(false);
+
+        ResponseEntity<Order> responseEntity = customerController.getOrder(customerId, orderId);
+
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void getOrderNotFoundOrder() {
+        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
+        when(customerAdapter.existsById(customerId)).thenReturn(true);
+        when(orderService.findById(orderId)).thenReturn(null);
+
+        ResponseEntity<Order> responseEntity = customerController.getOrder(customerId, orderId);
+
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void getOrderUnauthorizedCustomerMismatch() {
+        UUID anotherCustomerId = UUID.randomUUID();
+        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
+        when(customerAdapter.existsById(customerId)).thenReturn(true);
+
+        ResponseEntity<Order> responseEntity = customerController.getOrder(anotherCustomerId, orderId);
+
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void getDishFromOrderSuccess() {
+        Dish dish = new Dish();
+        dish.setID(dishId);
+        OrderedDish orderedDish = new OrderedDish();
+        orderedDish.setDish(dish);
+        order.setDishes(Collections.singletonList(orderedDish));
+
+        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
+        when(customerAdapter.existsById(customerId)).thenReturn(true);
+        when(orderService.findById(orderId)).thenReturn(order);
+        when(dishService.findById(dishId)).thenReturn(dish);
+
+        ResponseEntity<OrderedDish> responseEntity = customerController.getDishFromOrder(customerId, orderId, dishId);
+
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(responseEntity.getBody()).isEqualTo(orderedDish);
+    }
+
+    @Test
+    void getDishFromOrderNotFound() {
+        ResponseEntity<OrderedDish> responseEntity =
+                customerController.getDishFromOrder(customerId, UUID.randomUUID(), null);
+
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void getDishFromOrderUnauthorized() {
+        when(customerAdapter.checkRoleById(customerId)).thenReturn(false);
+
+        ResponseEntity<OrderedDish> responseEntity = customerController.getDishFromOrder(customerId, orderId, dishId);
+
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void getDishFromOrderNotFoundDish() {
+        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
+        when(customerAdapter.existsById(customerId)).thenReturn(true);
+        when(orderService.findById(orderId)).thenReturn(order);
+        when(dishService.findById(dishId)).thenReturn(null);
+
+        ResponseEntity<OrderedDish> responseEntity = customerController.getDishFromOrder(customerId, orderId, dishId);
+
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void getDishFromOrderNotFoundOrder() {
+        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
+        when(customerAdapter.existsById(customerId)).thenReturn(true);
+        when(orderService.findById(orderId)).thenReturn(null);
+
+        ResponseEntity<OrderedDish> responseEntity = customerController.getDishFromOrder(customerId, orderId, dishId);
+
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void getDishFromOrderDishDoesNotBelongToOrder() {
+        Dish dish = new Dish();
+        dish.setID(dishId);
+        dish.setName("Chicken Tikka Masala");
+        OrderedDish orderedDish = new OrderedDish();
+        orderedDish.setDish(dish);
+        order.setDishes(Collections.singletonList(orderedDish));
+        Dish anotherDish = new Dish();
+        UUID anotherDishId = UUID.randomUUID();
+        dish.setID(anotherDishId);
+
+        when(dishService.findById(anotherDishId)).thenReturn(anotherDish);
+        when(dishService.findById(dishId)).thenReturn(dish);
+        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
+        when(customerAdapter.existsById(customerId)).thenReturn(true);
+
+        ResponseEntity<OrderedDish> responseEntity =
+                customerController.getDishFromOrder(customerId, orderId, anotherDishId);
+
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void getDishesFromOrderEmptyDishList() {
+        Dish dish = new Dish();
+        dish.setID(dishId);
+        dish.setName("Chicken Tikka Masala");
+        order.setDishes(Collections.emptyList());
+
+        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
+        when(customerAdapter.existsById(customerId)).thenReturn(true);
+        when(dishService.findById(dishId)).thenReturn(dish);
+
+        ResponseEntity<OrderedDish> responseEntity =
+                customerController.getDishFromOrder(customerId, orderId, dishId);
+
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+
+    @Test
     void getVendorsSuccess() {
         when(customerAdapter.existsById(customerId)).thenReturn(true);
         when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
@@ -300,7 +459,7 @@ class CustomerControllerTest {
         UserAuthorizationValidator mockUserAuthorizationValidator = mock(UserAuthorizationValidator.class);
         when(applicationContext.getBean(eq(DataValidator.class),
                 eq(List.of(DataValidationField.USER, DataValidationField.DISH,
-                DataValidationField.ORDER, DataValidationField.UPDATEDISHQTYREQUEST)))).thenReturn(mockDataValidator);
+                        DataValidationField.ORDER, DataValidationField.UPDATEDISHQTYREQUEST)))).thenReturn(mockDataValidator);
         when(applicationContext.getBean(UserAuthorizationValidator.class)).thenReturn(mockUserAuthorizationValidator);
         UpdateDishQtyRequest updateDishQtyRequest = new UpdateDishQtyRequest();
         updateDishQtyRequest.setQuantity(2);
@@ -326,7 +485,7 @@ class CustomerControllerTest {
         UserAuthorizationValidator mockUserAuthorizationValidator = mock(UserAuthorizationValidator.class);
         when(applicationContext.getBean(eq(DataValidator.class),
                 eq(List.of(DataValidationField.USER, DataValidationField.DISH,
-                DataValidationField.ORDER, DataValidationField.UPDATEDISHQTYREQUEST)))).thenReturn(mockDataValidator);
+                        DataValidationField.ORDER, DataValidationField.UPDATEDISHQTYREQUEST)))).thenReturn(mockDataValidator);
         when(applicationContext.getBean(UserAuthorizationValidator.class)).thenReturn(mockUserAuthorizationValidator);
         UpdateDishQtyRequest updateDishQtyRequest = new UpdateDishQtyRequest();
         updateDishQtyRequest.setQuantity(2);
@@ -605,6 +764,4 @@ class CustomerControllerTest {
         order.setStatus(Status.PENDING);
         return order;
     }
-
-
 }

@@ -250,7 +250,7 @@ public class CustomerController implements CustomerApi {
         dataValidator.setNext(userAuthorizationValidator);
         //Create and fill validation request
         ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER, orderId, dishId,
-                updateDishQtyRequest, null);
+                updateDishQtyRequest, null, null);
         try {
             dataValidator.handle(request);
         } catch (ValidationFailureException e) {
@@ -382,7 +382,7 @@ public class CustomerController implements CustomerApi {
         dataValidator.setNext(userAuthorizationValidator);
         //Create and fill validation request
         ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER,
-                orderId, dishId, updateDishQtyRequest, null);
+                orderId, dishId, updateDishQtyRequest, null, null);
         try {
             dataValidator.handle(request);
         } catch (ValidationFailureException e) {
@@ -422,33 +422,34 @@ public class CustomerController implements CustomerApi {
      * @param customerId (required)
      * @param orderId    (required)
      * @return Details of the specified order (status code 200)
-     *     or Bad Request - Invalid request parameters. (status code 400)
-     *     or Unauthorized - User is not a customer/order does not belong to user. (status code 401)
-     *     or Order or customer not found. (status code 404)
-     *     or Internal Server Error - An unexpected error occurred. (status code 500)
-     */
+     *      or Bad Request - Invalid request parameters. (status code 400)
+     *      or Unauthorized - User is not a customer/order does not belong to user. (status code 401)
+     *      or Order or customer not found. (status code 404)
+     *      or Internal Server Error - An unexpected error occurred. (status code 500)
+     * */
     @Override
     public ResponseEntity<Order> getOrder(UUID customerId, UUID orderId) {
-        if (customerId == null || orderId == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
-
-        if (!customerAdapter.checkRoleById(customerId)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        if (!customerAdapter.existsById(customerId) || orderService.findById(orderId) == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        //Chain of responsibility validation
+        //Get Validators
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class,
+                List.of(DataValidationField.USER, DataValidationField.ORDER));
+        UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
+        //Set validation chain
+        dataValidator.setNext(userAuthorizationValidator);
+        //Create and fill validation request
+        ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER,
+                orderId, null, null, null, null);
+        try {
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
         }
 
         Order order = orderService.findById(orderId);
 
-        if (!order.getCustomerId().equals(customerId)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
         return ResponseEntity.ok(order);
     }
+
 
 
     /**
@@ -472,7 +473,8 @@ public class CustomerController implements CustomerApi {
         // Set validation chain
         dataValidator.setNext(userAuthorizationValidator);
         // Create and fill validation request
-        ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER, null, null, null, null);
+        ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER, null,
+                null, null, null, null);
         try {
             dataValidator.handle(request);
         } catch (ValidationFailureException e) {
@@ -488,6 +490,54 @@ public class CustomerController implements CustomerApi {
         // Return the list of orders
         return ResponseEntity.ok(orders);
     }
+
+    /**
+     * GET /customer/{customerId}/order/{orderId}/dish/{dishId} : Get details of a dish inside an order
+     * Gets the details of a dish based on its id
+     *
+     * @param customerId (required)
+     * @param orderId    (required)
+     * @param dishId     (required)
+     * @return Details of the specified dish in the order. (status code 200)
+     *      or Bad Request - Invalid request parameters. (status code 400)
+     *      or Unauthorized - Order does not belong to the user / dish does not belong to order
+     *                       / user is not a customer. (status code 401)
+     *      or Not Found - Dish, order, or customer not found. (status code 404)
+     *      or Internal Server Error - An unexpected error occurred. (status code 500)
+     */
+    @Override
+    public ResponseEntity<OrderedDish> getDishFromOrder(UUID customerId, UUID orderId, UUID dishId) {
+        //Chain of responsibility validation
+        //Get Validators
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class,
+                List.of(DataValidationField.USER, DataValidationField.ORDER,
+                        DataValidationField.DISH));
+        UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
+        //Set validation chain
+        dataValidator.setNext(userAuthorizationValidator);
+        //Create and fill validation request
+        ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER,
+                orderId, dishId, null, null, null);
+        try {
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
+        }
+
+        Dish dish = dishService.findById(dishId);
+        Order order = orderService.findById(orderId);
+        List<OrderedDish> dishes = order.getDishes();
+
+        for (OrderedDish orderedDish : dishes) {
+            if (dish.equals(orderedDish.getDish())) {
+                return ResponseEntity.ok(orderedDish);
+            }
+        }
+
+        // Dish exists in the database, but it does not belong to this order
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
+
 
     /**
      * POST /customer/{customerId}/reorder/{orderId} : Reorder based on a previous order
@@ -513,7 +563,8 @@ public class CustomerController implements CustomerApi {
         // Set validation chain
         dataValidator.setNext(userAuthorizationValidator);
         // Create and fill validation request
-        ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER, orderId, null, null, null);
+        ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER, orderId,
+                null, null, null, null);
         try {
             dataValidator.handle(request);
         } catch (ValidationFailureException e) {
@@ -537,6 +588,7 @@ public class CustomerController implements CustomerApi {
 
         return ResponseEntity.ok(savedOrder);
     }
+
 
 
 
