@@ -247,6 +247,7 @@ class VendorControllerTest {
         verify(vendorAdapter).existsById(vendorId);
         verify(dishService).removeDish(vendorId, dishId);
     }
+
     @Test
     void removeDishFromMenuInternalServerError() {
         UUID dishId = UUID.randomUUID();
@@ -373,10 +374,11 @@ class VendorControllerTest {
     void updateDishDetailsSuccessful() {
         UUID dishId = UUID.randomUUID();
         Dish dish = new Dish();
-        Dish updatedDish = new Dish();
+
         dish.setVendorId(vendorId);
 
         when(dishService.findById(dishId)).thenReturn(dish);
+        Dish updatedDish = new Dish();
         when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
         when(vendorAdapter.existsById(vendorId)).thenReturn(true);
         when(dishService.updateDish(dishId, dish)).thenReturn(updatedDish);
