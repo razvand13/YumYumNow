@@ -35,7 +35,7 @@ public class VendorController implements VendorApi {
      * Creates an instance of the VendorController.
      *
      * @param dishService   the dish service
-     * @param orderService  the order service
+     * @param orderService the order service
      * @param vendorService the vendor service
      */
     @Autowired
@@ -82,6 +82,92 @@ public class VendorController implements VendorApi {
         } catch (IllegalArgumentException e) {
             // Bad request from service
             return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * DELETE /vendor/{vendorId}/dish/{dishId} : Delete a dish from the menu
+     *
+     * @param vendorId (required)
+     * @param dishId   (required)
+     * @return Dish removed successfully from the menu. (status code 200)
+     *      or Bad Request - Dish not deleted. (status code 400)
+     *      or Unauthorized - User is not a vendor/dish does not belong to vendor. (status code 401)
+     *      or Not Found - Dish or vendor not found. (status code 404)
+     *      or Internal Server Error - An unexpected error occurred. (status code 500)
+     */
+    @Override
+    public ResponseEntity<Void> removeDishFromMenu(UUID vendorId, UUID dishId) {
+
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class, List.of(DataValidationField.USER,
+                DataValidationField.DISH));
+        UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
+        dataValidator.setNext(userAuthorizationValidator);
+
+        ValidatorRequest request = new ValidatorRequest();
+        request.setUserUUID(vendorId);
+        request.setDishUUID(dishId);
+        request.setUserType(UserType.VENDOR);
+
+        try {
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
+        }
+
+        try {
+            boolean isRemoved = dishService.removeDish(vendorId, dishId);
+            if (isRemoved) {
+                return ResponseEntity.ok().build();
+            } else {
+                // Dish not found or not removed for some reason
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * PUT /vendor/{vendorId}/dish/{dishId} : Update details of a dish
+     *
+     * @param vendorId (required)
+     * @param dishId   (required)
+     * @param dish     (required)
+     * @return Dish details updated successfully. (status code 200)
+     *      or Bad Request - Incorrect dish details format or missing required fields. (status code 400)
+     *      or Unauthorized - User is not a vendor/dish does not belong to vendor. (status code 401)
+     *      or Not Found - Dish or vendor not found. (status code 404)
+     *      or Internal Server Error - An unexpected error occurred. (status code 500)
+     */
+    @Override
+    public ResponseEntity<Dish> updateDishDetails(UUID vendorId, UUID dishId, Dish dish) {
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class, List.of(DataValidationField.USER,
+                DataValidationField.DISH));
+        UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
+        dataValidator.setNext(userAuthorizationValidator);
+
+        ValidatorRequest request = new ValidatorRequest();
+        request.setUserUUID(vendorId);
+        request.setDishUUID(dishId);
+        request.setUserType(UserType.VENDOR);
+
+        try {
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
+        }
+
+        try {
+            Dish updatedDish = dishService.updateDish(dishId, dish);
+
+            if (updatedDish == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+
+            return ResponseEntity.ok(updatedDish);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
