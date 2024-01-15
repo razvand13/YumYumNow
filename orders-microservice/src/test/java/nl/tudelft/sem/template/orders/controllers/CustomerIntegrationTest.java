@@ -1,14 +1,23 @@
 package nl.tudelft.sem.template.orders.controllers;
 
-import nl.tudelft.sem.template.model.*;
+import nl.tudelft.sem.template.model.Dish;
+import nl.tudelft.sem.template.model.Vendor;
+import nl.tudelft.sem.template.model.Order;
+import nl.tudelft.sem.template.model.OrderedDish;
+import nl.tudelft.sem.template.model.Status;
+import nl.tudelft.sem.template.model.CreateOrderRequest;
+import nl.tudelft.sem.template.model.UpdateOrderStatusRequest;
+import nl.tudelft.sem.template.model.Address;
+import nl.tudelft.sem.template.model.UpdateDishQtyRequest;
+import nl.tudelft.sem.template.model.UpdateSpecialRequirementsRequest;
 import nl.tudelft.sem.template.orders.external.CustomerDTO;
 import nl.tudelft.sem.template.orders.repositories.DishRepository;
 import nl.tudelft.sem.template.orders.repositories.OrderRepository;
-import org.aspectj.weaver.ast.Or;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,6 +26,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
+@Transactional
 public class CustomerIntegrationTest {
 
     @Autowired
@@ -34,6 +44,7 @@ public class CustomerIntegrationTest {
 
     /**
      * https://gyyl7.wiremockapi.cloud/vendors/5db89f20-bb0e-4166-af07-ebef17dd78a9
+     *
      * @return example vendor
      */
     Vendor exampleVendor() {
@@ -44,7 +55,7 @@ public class CustomerIntegrationTest {
         Address address = new Address();
         address.setLatitude(34.092);
         address.setLongitude(34.092);
-        address.setZip("2554EZ");
+        address.setZipCode("2554EZ");
         address.setHouseNumber(24);
 
         vendor.setLocation(address);
@@ -54,44 +65,41 @@ public class CustomerIntegrationTest {
 
     /**
      * https://gyyl7.wiremockapi.cloud/customers/c00b0bcf-189a-45c7-afff-28a130e661a0
+     *
      * @return example customer
      */
     CustomerDTO exampleCustomer() {
         Address homeAddress = new Address();
         homeAddress.setLatitude(34.092);
         homeAddress.setLongitude(34.092);
-        homeAddress.setZip("2554EZ");
+        homeAddress.setZipCode("2554EZ");
         homeAddress.setHouseNumber(24);
 
         Address currentLocation = new Address();
         currentLocation.setLatitude(34.092);
         currentLocation.setLongitude(34.092);
-        currentLocation.setZip("2554EZ");
+        currentLocation.setZipCode("2554EZ");
         currentLocation.setHouseNumber(24);
 
-        CustomerDTO customer = new CustomerDTO(customerId, "Arthur Dent", "Tempie.Farrell@email.example.mocklab.io", true,
-                "Visa Debit", homeAddress, List.of("9r4x25i52y7dayiodddgk0bfb2yx3z15pgtk0atrfa6a2u0azp8sshnpt"), currentLocation);
-
-        return customer;
+        return new CustomerDTO(customerId, "Arthur Dent", "Tempie.Farrell@email.example.mocklab.io", true,
+                "Visa Debit", homeAddress, List.of("9r4x25i52y7dayiodddgk0bfb2yx3z15pgtk0atrfa6a2u0azp8sshnpt"),
+                currentLocation);
     }
 
     Order createOrder() {
-        // Create an order object
-        Order order = new Order();
-
         Address address = new Address();
         address.setHouseNumber(1);
         address.setLongitude(10.0);
         address.setLatitude(15.0);
-        address.setZip("1234AB");
+        address.setZipCode("1234AB");
 
         Dish dish = createDish();
 
         OrderedDish orderedDish = new OrderedDish();
-        orderedDish.setId(UUID.randomUUID());
         orderedDish.setDish(dish);
         orderedDish.setQuantity(1);
 
+        Order order = new Order();
         order.addDishesItem(orderedDish);
         order.setLocation(address);
         order.setSpecialRequirements("Leave it at the door");
@@ -113,6 +121,18 @@ public class CustomerIntegrationTest {
         dish.setImageLink("www.images.com/chicken-and-rice");
         dish.setAllergens(List.of("Gluten"));
 
+        return dishRepo.save(dish);
+    }
+
+    Dish createDish2() {
+        Dish dish = new Dish();
+        dish.setName("Rice & Chicken");
+        dish.setVendorId(vendorId);
+        dish.setPrice(10.0);
+        dish.setIngredients(List.of("Rice", "maybe some chicken as well"));
+        dish.setDescription("yum");
+        dish.setImageLink("www.images.com/chicken-and-rice-rice-and-chicken");
+        dish.setAllergens(List.of("Chick", "en"));
         return dishRepo.save(dish);
     }
 
@@ -163,7 +183,7 @@ public class CustomerIntegrationTest {
     @Test
     void testGetVendorsOkNoFilters() {
         // Call method
-        var res = customerController.getVendors(customerId, null, null ,null);
+        var res = customerController.getVendors(customerId, null, null, null);
         var vendors = res.getBody();
 
         Vendor exampleVendor = exampleVendor();
@@ -177,29 +197,24 @@ public class CustomerIntegrationTest {
     @Test
     void testGetVendorsOkFiltersContains() {
         // Call method
-        var res = customerController.getVendors(customerId, "Arth", null ,null);
+        var res = customerController.getVendors(customerId, "Arth", null, null);
         var vendors = res.getBody();
-
-        Vendor exampleVendor = exampleVendor();
 
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(vendors).isNotNull();
         assertThat(vendors).isNotEmpty();
-        assertThat(vendors).contains(exampleVendor);
+        assertThat(vendors).contains(exampleVendor());
     }
 
     @Test
     void testGetVendorsOkNoFiltersNotContains() {
         // Call method
-        var res = customerController.getVendors(customerId, "Arthr Dent", null ,null);
+        var res = customerController.getVendors(customerId, "Arthr Dent", null, null);
         List<Vendor> vendors = res.getBody();
-
-        Vendor exampleVendor = exampleVendor();
 
         assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(vendors).isNotNull();
-        assertThat(vendors).isNotEmpty();
-        assertThat(vendors).contains(exampleVendor);
+        assertThat(vendors).doesNotContain(exampleVendor());
     }
 
     @Test
@@ -249,13 +264,11 @@ public class CustomerIntegrationTest {
     @Test
     void testGetVendorDishesOk() {
         // Create environment
-        Dish dish1 = createDish();
-        Dish d2 = createDish();
-        d2.setName("Rice & Chicken");
-        Dish dish2 = dishRepo.save(d2);
         Order order = new Order();
         order.setVendorId(vendorId);
         order.setCustomerId(customerId);
+        Dish dish1 = createDish();
+        Dish dish2 = createDish2();
         Order savedOrder = orderRepo.save(order);
 
         // Call method under test
@@ -320,7 +333,7 @@ public class CustomerIntegrationTest {
 
     @Test
     void testGetDishFromOrderBadRequest() {
-        var res = customerController.getDishFromOrder(null, null ,null);
+        var res = customerController.getDishFromOrder(null, null, null);
         var body = res.getBody();
         var statusCode = res.getStatusCode();
 
