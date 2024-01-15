@@ -174,6 +174,76 @@ public class VendorController implements VendorApi {
     }
 
     /**
+     * GET /vendor/{vendorId}/dishes : Get list of dishes from a vendor
+     * Allows a vendor to see their own menu.
+     *
+     * @param vendorId (required)
+     *      @return A list of dishes offered by the vendor. (status code 200)
+     *      or Bad Request - Invalid request parameters. (status code 400)
+     *      or Unauthorized - User is not a vendor. (status code 401)
+     *      or Vendor not found (status code 404)
+     *      or Internal Server Error - An unexpected error occurred on the server. (status code 500)
+     */
+    public ResponseEntity<List<Dish>> getOwnDishes(UUID vendorId) {
+
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class, List.of(DataValidationField.USER));
+        UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
+
+        dataValidator.setNext(userAuthorizationValidator);
+
+        ValidatorRequest request = new ValidatorRequest();
+        request.setUserUUID(vendorId);
+        request.setUserType(UserType.VENDOR);
+        try {
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
+        }
+
+        try {
+            List<Dish> dishes = dishService.findAllByVendorId(vendorId);
+            return ResponseEntity.ok(dishes);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * GET /vendor/{vendorId}/dish/{dishId} : Get details of a specific dish
+     * Get detailed information about a specific dish offered by the vendor.
+     *
+     * @param vendorId (required)
+     * @param dishId   (required)
+     * @return Detailed information about the specified dish. (status code 200)
+     *      or Bad Request - Invalid request parameters. (status code 400)
+     *      or Unauthorized - User is a vendor/dish does not belong to vendor. (status code 401)
+     *      or Dish or vendor not found. (status code 404)
+     *      or Internal Server Error - An unexpected error occurred on the server. (status code 500)
+     */
+    @Override
+    public ResponseEntity<Dish> getDish(UUID vendorId, UUID dishId) {
+
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class, List.of(DataValidationField.USER,
+            DataValidationField.DISH));
+        UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
+
+        dataValidator.setNext(userAuthorizationValidator);
+
+        ValidatorRequest request = new ValidatorRequest();
+        request.setUserUUID(vendorId);
+        request.setDishUUID(dishId);
+        request.setUserType(UserType.VENDOR);
+        try {
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
+        }
+
+        Dish dish = dishService.findById(dishId);
+        return ResponseEntity.ok(dish);
+    }
+
+    /**
      * GET /vendor/{vendorId}/orders/{orderId} : Get details of a specific order
      * (including how much money is earned and special requirements)
      *
