@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class VendorController implements VendorApi {
 
+
     private final transient IDishService dishService;
     private final transient IOrderService orderService;
     private final transient IVendorService vendorService;
@@ -42,6 +43,7 @@ public class VendorController implements VendorApi {
     public VendorController(IDishService dishService,
                             IOrderService orderService, IVendorService vendorService,
                             ApplicationContext applicationContext) {
+
         this.dishService = dishService;
         this.orderService = orderService;
         this.vendorService = vendorService;

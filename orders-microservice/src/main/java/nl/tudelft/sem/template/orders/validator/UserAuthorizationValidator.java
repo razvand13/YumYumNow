@@ -2,8 +2,8 @@ package nl.tudelft.sem.template.orders.validator;
 
 import nl.tudelft.sem.template.orders.domain.IDishService;
 import nl.tudelft.sem.template.orders.domain.IOrderService;
-import nl.tudelft.sem.template.orders.services.CustomerAdapter;
-import nl.tudelft.sem.template.orders.services.VendorAdapter;
+import nl.tudelft.sem.template.orders.integration.CustomerFacade;
+import nl.tudelft.sem.template.orders.integration.VendorFacade;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -31,9 +31,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class UserAuthorizationValidator extends BaseValidator {
     @Autowired
-    private transient CustomerAdapter customerAdapter;
+    private transient CustomerFacade customerFacade;
     @Autowired
-    private transient VendorAdapter vendorAdapter;
+    private transient VendorFacade vendorFacade;
     @Autowired
     private transient IOrderService orderService;
     @Autowired
@@ -45,10 +45,10 @@ public class UserAuthorizationValidator extends BaseValidator {
     /**
      * Constructor to manually set fields for testing
      */
-    public UserAuthorizationValidator(CustomerAdapter customerAdapter, VendorAdapter vendorAdapter,
+    public UserAuthorizationValidator(CustomerFacade customerFacade, VendorFacade vendorFacade,
                                       IOrderService orderService, IDishService dishService) {
-        this.customerAdapter = customerAdapter;
-        this.vendorAdapter = vendorAdapter;
+        this.customerFacade = customerFacade;
+        this.vendorFacade = vendorFacade;
         this.orderService = orderService;
         this.dishService = dishService;
     }
@@ -58,11 +58,11 @@ public class UserAuthorizationValidator extends BaseValidator {
         switch (request.getUserType()) {
             case CUSTOMER:
                 //Check type first, fails on not being of type customer
-                if (!customerAdapter.checkRoleById(request.getUserUUID())) {
+                if (!customerFacade.checkRoleById(request.getUserUUID())) {
                     throw new ValidationFailureException(HttpStatus.UNAUTHORIZED);
                 }
                 //Check existence of customer
-                if (!customerAdapter.existsById(request.getUserUUID())) {
+                if (!customerFacade.existsById(request.getUserUUID())) {
                     throw new ValidationFailureException(HttpStatus.NOT_FOUND);
                 }
                 //If orderUUID specified, check that order belongs to customer
@@ -73,11 +73,11 @@ public class UserAuthorizationValidator extends BaseValidator {
                 break;
             case VENDOR:
                 //Check user type -- verifies user not of another type
-                if (!vendorAdapter.checkRoleById(request.getUserUUID())) {
+                if (!vendorFacade.checkRoleById(request.getUserUUID())) {
                     throw new ValidationFailureException(HttpStatus.UNAUTHORIZED);
                 }
                 //Check existence of vendor
-                if (!vendorAdapter.existsById(request.getUserUUID())) {
+                if (!vendorFacade.existsById(request.getUserUUID())) {
                     throw new ValidationFailureException(HttpStatus.NOT_FOUND);
                 }
                 //If orderUUID specified, check that order belongs to vendor

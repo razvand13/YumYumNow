@@ -18,13 +18,13 @@ import nl.tudelft.sem.template.orders.domain.ICustomerService;
 import nl.tudelft.sem.template.orders.domain.IDishService;
 import nl.tudelft.sem.template.orders.domain.IOrderService;
 import nl.tudelft.sem.template.orders.domain.IVendorService;
-import nl.tudelft.sem.template.orders.mappers.VendorMapper;
-import nl.tudelft.sem.template.orders.services.VendorAdapter;
-import nl.tudelft.sem.template.orders.services.CustomerAdapter;
+import nl.tudelft.sem.template.orders.mappers.interfaces.IVendorMapper;
+import nl.tudelft.sem.template.orders.integration.CustomerFacade;
 import nl.tudelft.sem.template.model.CreateOrderRequest;
 import nl.tudelft.sem.template.model.Dish;
 import nl.tudelft.sem.template.orders.external.CustomerDTO;
 import nl.tudelft.sem.template.orders.external.VendorDTO;
+import nl.tudelft.sem.template.orders.integration.VendorFacade;
 import nl.tudelft.sem.template.orders.validator.DataValidationField;
 import nl.tudelft.sem.template.orders.validator.DataValidator;
 import nl.tudelft.sem.template.orders.validator.UserAuthorizationValidator;
@@ -40,13 +40,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class CustomerController implements CustomerApi {
-    private final transient VendorMapper vendorMapper;
+    private final transient IVendorMapper IVendorMapper;
     private final transient IVendorService vendorService;
     private final transient IDishService dishService;
     private final transient IOrderService orderService;
     private final transient ICustomerService customerService;
-    private final transient CustomerAdapter customerAdapter;
-    private final transient VendorAdapter vendorAdapter;
+    private final transient CustomerFacade customerFacade;
+    private final transient VendorFacade vendorFacade;
     private final transient ApplicationContext applicationContext;
 
     /**
@@ -56,21 +56,22 @@ public class CustomerController implements CustomerApi {
      * @param vendorService   vendor service
      * @param dishService     dish service
      * @param orderService    order service
-     * @param customerAdapter customer adapter
-     * @param vendorAdapter   vendor adapter
+     * @param customerFacade customer facade
+     * @param vendorFacade   vendor facade
      */
+
     @Autowired
-    public CustomerController(VendorMapper vendorMapper, IVendorService vendorService,
+    public CustomerController(IVendorMapper vendorMapper, IVendorService vendorService,
                               IDishService dishService, IOrderService orderService, ICustomerService customerService,
-                              CustomerAdapter customerAdapter, VendorAdapter vendorAdapter,
+                              CustomerFacade customerFacade, VendorFacade vendorFacade,
                               ApplicationContext applicationContext) {
-        this.vendorMapper = vendorMapper;
+        this.IVendorMapper = vendorMapper;
         this.vendorService = vendorService;
         this.dishService = dishService;
         this.orderService = orderService;
         this.customerService = customerService;
-        this.customerAdapter = customerAdapter;
-        this.vendorAdapter = vendorAdapter;
+        this.customerFacade = customerFacade;
+        this.vendorFacade = vendorFacade;
         this.applicationContext = applicationContext;
     }
 
@@ -112,7 +113,7 @@ public class CustomerController implements CustomerApi {
         }
 
         // Get the customer's delivery location
-        CustomerDTO customer = customerAdapter.requestCustomer(customerId);
+        CustomerDTO customer = customerFacade.requestCustomer(customerId);
         Address customerLocation = customerService.getDeliveryLocation(customer);
 
         if (customerLocation == null) {
@@ -120,10 +121,10 @@ public class CustomerController implements CustomerApi {
         }
 
         // Filter vendors by name, average price and distance to delivery location
-        List<VendorDTO> vendors = vendorAdapter.requestVendors();
+        List<VendorDTO> vendors = vendorFacade.requestVendors();
         List<VendorDTO> filteredVendors = vendorService.filterVendors(
                 vendors, name, minAvgPrice, maxAvgPrice, customerLocation);
-        var filteredVendorEntities = filteredVendors.stream().map(vendorMapper::toEntity).collect(Collectors.toList());
+        var filteredVendorEntities = filteredVendors.stream().map(IVendorMapper::toEntity).collect(Collectors.toList());
 
         return ResponseEntity.ok(filteredVendorEntities);
     }

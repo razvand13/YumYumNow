@@ -5,12 +5,18 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import nl.tudelft.sem.template.model.Vendor;
 import nl.tudelft.sem.template.orders.external.VendorDTO;
+import nl.tudelft.sem.template.orders.mappers.interfaces.IVendorMapper;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+/**
+ * Adapter class in the Adapter design pattern. Implements IVendorMapper interface.
+ * Used for converting JSON response data into VendorDTO objects and vice versa.
+ * This class acts as a converter between the users microservice's data format and our internal data format.
+ */
 @Component
-public class VendorMapper {
+public class VendorMapper implements IVendorMapper {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     /**

@@ -6,7 +6,7 @@ import nl.tudelft.sem.template.orders.VendorNotFoundException;
 import nl.tudelft.sem.template.orders.repositories.OrderRepository;
 import nl.tudelft.sem.template.orders.services.DishService;
 import nl.tudelft.sem.template.orders.services.OrderService;
-import nl.tudelft.sem.template.orders.services.VendorAdapter;
+import nl.tudelft.sem.template.orders.integration.VendorFacade;
 import nl.tudelft.sem.template.orders.services.VendorService;
 import nl.tudelft.sem.template.orders.validator.DataValidationField;
 import nl.tudelft.sem.template.orders.validator.DataValidator;
@@ -32,7 +32,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 class VendorControllerTest {
 
-    private VendorAdapter vendorAdapter;
+    private VendorFacade vendorFacade;
     private DishService dishService;
     private VendorController vendorController;
     private OrderService orderService;
@@ -44,7 +44,7 @@ class VendorControllerTest {
 
     @BeforeEach
     void setUp() {
-        vendorAdapter = mock(VendorAdapter.class);
+        vendorFacade = mock(VendorFacade.class);
         dishService = mock(DishService.class);
         orderService = mock(OrderService.class);
         vendorService = mock(VendorService.class);
@@ -53,17 +53,17 @@ class VendorControllerTest {
         //Validators need to be defined for the mocked application context, including each combination of used
         //DataValidationFields. Unfortunately capturing the argument that getBean is called with is not an option
         when(applicationContext.getBean(eq(DataValidator.class), eq(List.of(DataValidationField.USER))))
-                .thenReturn(new DataValidator(List.of(DataValidationField.USER), orderService, dishService, vendorAdapter));
+                .thenReturn(new DataValidator(List.of(DataValidationField.USER), orderService, dishService, vendorFacade));
         when(applicationContext.getBean(eq(DataValidator.class),
                 eq(List.of(DataValidationField.USER, DataValidationField.ORDER))))
                 .thenReturn(new DataValidator(List.of(DataValidationField.USER,
-                        DataValidationField.ORDER), orderService, dishService, vendorAdapter));
+                        DataValidationField.ORDER), orderService, dishService, vendorFacade));
         when(applicationContext.getBean(UserAuthorizationValidator.class))
-                .thenReturn(new UserAuthorizationValidator(null, vendorAdapter, orderService, dishService));
+                .thenReturn(new UserAuthorizationValidator(null, vendorFacade, orderService, dishService));
         when(applicationContext.getBean(eq(DataValidator.class),
                     eq(List.of(DataValidationField.USER, DataValidationField.DISH))))
             .thenReturn(new DataValidator(List.of(DataValidationField.USER,
-                    DataValidationField.DISH), orderService, dishService, vendorAdapter));
+                    DataValidationField.DISH), orderService, dishService, vendorFacade));
 
         vendorController = new VendorController(dishService, orderService, vendorService, applicationContext);
 
@@ -81,7 +81,7 @@ class VendorControllerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 
-        verifyNoInteractions(vendorAdapter);
+        verifyNoInteractions(vendorFacade);
         verifyNoInteractions(dishService);
     }
 
@@ -89,12 +89,12 @@ class VendorControllerTest {
     void addDishToMenuWhenVendorRoleIsInvalid() {
         Dish dish = new Dish();
 
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(false);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(false);
 
         ResponseEntity<Dish> response = vendorController.addDishToMenu(vendorId, dish);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-        verify(vendorAdapter).checkRoleById(vendorId);
+        verify(vendorFacade).checkRoleById(vendorId);
         verifyNoInteractions(dishService);
     }
 
@@ -102,14 +102,14 @@ class VendorControllerTest {
     void addDishToMenuWhenVendorNotFound() {
         Dish dish = new Dish();
 
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
-        when(vendorAdapter.existsById(vendorId)).thenReturn(false);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
+        when(vendorFacade.existsById(vendorId)).thenReturn(false);
 
         ResponseEntity<Dish> response = vendorController.addDishToMenu(vendorId, dish);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-        verify(vendorAdapter).checkRoleById(vendorId);
-        verify(vendorAdapter).existsById(vendorId);
+        verify(vendorFacade).checkRoleById(vendorId);
+        verify(vendorFacade).existsById(vendorId);
         verifyNoInteractions(dishService);
     }
 
@@ -119,16 +119,16 @@ class VendorControllerTest {
         Dish dishEntity = new Dish();
         Dish addedDishEntity = new Dish();
 
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
-        when(vendorAdapter.existsById(vendorId)).thenReturn(true);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
+        when(vendorFacade.existsById(vendorId)).thenReturn(true);
         when(dishService.addDish(vendorId, dishEntity)).thenReturn(addedDishEntity);
 
         ResponseEntity<Dish> response = vendorController.addDishToMenu(vendorId, dish);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isEqualTo(dish);
-        verify(vendorAdapter).checkRoleById(vendorId);
-        verify(vendorAdapter).existsById(vendorId);
+        verify(vendorFacade).checkRoleById(vendorId);
+        verify(vendorFacade).existsById(vendorId);
         verify(dishService).addDish(vendorId, dishEntity);
 
     }
@@ -138,8 +138,8 @@ class VendorControllerTest {
         UUID nonExistentVendorId = UUID.randomUUID();
         Dish dish = new Dish();
 
-        when(vendorAdapter.checkRoleById(any(UUID.class))).thenReturn(true);
-        when(vendorAdapter.existsById(any(UUID.class))).thenReturn(true);
+        when(vendorFacade.checkRoleById(any(UUID.class))).thenReturn(true);
+        when(vendorFacade.existsById(any(UUID.class))).thenReturn(true);
         when(dishService.addDish(any(UUID.class), any(Dish.class)))
             .thenThrow(new VendorNotFoundException());
 
@@ -148,8 +148,8 @@ class VendorControllerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
 
         // Verify interactions
-        verify(vendorAdapter).checkRoleById(nonExistentVendorId);
-        verify(vendorAdapter).existsById(nonExistentVendorId);
+        verify(vendorFacade).checkRoleById(nonExistentVendorId);
+        verify(vendorFacade).existsById(nonExistentVendorId);
         verify(dishService).addDish(nonExistentVendorId, dish);
     }
 
@@ -158,8 +158,8 @@ class VendorControllerTest {
         Dish dish = new Dish();
         Dish dishEntity = new Dish();
 
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
-        when(vendorAdapter.existsById(vendorId)).thenReturn(true);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
+        when(vendorFacade.existsById(vendorId)).thenReturn(true);
         when(dishService.addDish(vendorId, dishEntity)).thenThrow(new IllegalArgumentException());
 
         ResponseEntity<Dish> response = vendorController.addDishToMenu(vendorId, dish);
@@ -172,8 +172,8 @@ class VendorControllerTest {
     void addDishToMenuInternalServerError() {
         Dish dish = new Dish();
 
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
-        when(vendorAdapter.existsById(vendorId)).thenReturn(true);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
+        when(vendorFacade.existsById(vendorId)).thenReturn(true);
         when(dishService.addDish(vendorId, dish)).thenThrow(new RuntimeException());
         ResponseEntity<Dish> response = vendorController.addDishToMenu(vendorId, dish);
 
@@ -187,7 +187,7 @@ class VendorControllerTest {
         ResponseEntity<Void> response = vendorController.removeDishFromMenu(null, dishId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        verifyNoInteractions(vendorAdapter, dishService);
+        verifyNoInteractions(vendorFacade, dishService);
     }
 
     @Test
@@ -196,7 +196,7 @@ class VendorControllerTest {
         Dish dish = new Dish();
 
         when(dishService.findById(dishId)).thenReturn(dish);
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(false);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(false);
 
         ResponseEntity<Void> response = vendorController.removeDishFromMenu(vendorId, dishId);
 
@@ -207,8 +207,8 @@ class VendorControllerTest {
     void removeDishFromMenuWhenVendorNotFound() {
         UUID dishId = UUID.randomUUID();
 
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
-        when(vendorAdapter.existsById(vendorId)).thenReturn(false);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
+        when(vendorFacade.existsById(vendorId)).thenReturn(false);
 
         ResponseEntity<Void> response = vendorController.removeDishFromMenu(vendorId, dishId);
 
@@ -219,8 +219,8 @@ class VendorControllerTest {
     void removeDishFromMenuWhenDishNotFound() {
         UUID dishId = UUID.randomUUID();
 
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
-        when(vendorAdapter.existsById(vendorId)).thenReturn(true);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
+        when(vendorFacade.existsById(vendorId)).thenReturn(true);
         when(dishService.removeDish(vendorId, dishId)).thenReturn(false);
 
         ResponseEntity<Void> response = vendorController.removeDishFromMenu(vendorId, dishId);
@@ -236,16 +236,16 @@ class VendorControllerTest {
         dish.setVendorId(vendorId);
 
         when(dishService.findById(dishId)).thenReturn(dish);
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
-        when(vendorAdapter.existsById(vendorId)).thenReturn(true);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
+        when(vendorFacade.existsById(vendorId)).thenReturn(true);
         when(dishService.removeDish(vendorId, dishId)).thenReturn(false);
 
         ResponseEntity<Void> response = vendorController.removeDishFromMenu(vendorId, dishId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
 
-        verify(vendorAdapter).checkRoleById(vendorId);
-        verify(vendorAdapter).existsById(vendorId);
+        verify(vendorFacade).checkRoleById(vendorId);
+        verify(vendorFacade).existsById(vendorId);
         verify(dishService).removeDish(vendorId, dishId);
     }
 
@@ -256,8 +256,8 @@ class VendorControllerTest {
         dish.setVendorId(vendorId);
 
         when(dishService.findById(dishId)).thenReturn(dish);
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
-        when(vendorAdapter.existsById(vendorId)).thenReturn(true);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
+        when(vendorFacade.existsById(vendorId)).thenReturn(true);
         when(dishService.removeDish(vendorId, dishId)).thenThrow(new RuntimeException());
 
         ResponseEntity<Void> response = vendorController.removeDishFromMenu(vendorId, dishId);
@@ -272,15 +272,15 @@ class VendorControllerTest {
         dish.setVendorId(vendorId);
 
         when(dishService.findById(dishId)).thenReturn(dish);
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
-        when(vendorAdapter.existsById(vendorId)).thenReturn(true);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
+        when(vendorFacade.existsById(vendorId)).thenReturn(true);
         when(dishService.removeDish(vendorId, dishId)).thenReturn(true);
 
         ResponseEntity<Void> response = vendorController.removeDishFromMenu(vendorId, dishId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        verify(vendorAdapter).checkRoleById(vendorId);
-        verify(vendorAdapter).existsById(vendorId);
+        verify(vendorFacade).checkRoleById(vendorId);
+        verify(vendorFacade).existsById(vendorId);
         verify(dishService).removeDish(vendorId, dishId);
     }
 
@@ -292,7 +292,7 @@ class VendorControllerTest {
         ResponseEntity<Dish> response = vendorController.updateDishDetails(null, dishId, dish);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        verifyNoInteractions(vendorAdapter, dishService);
+        verifyNoInteractions(vendorFacade, dishService);
     }
 
     @Test
@@ -302,7 +302,7 @@ class VendorControllerTest {
         ResponseEntity<Dish> response = vendorController.updateDishDetails(vendorId, null, dish);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        verifyNoInteractions(vendorAdapter, dishService);
+        verifyNoInteractions(vendorFacade, dishService);
     }
 
     @Test
@@ -311,12 +311,12 @@ class VendorControllerTest {
         Dish dish = new Dish();
 
         when(dishService.findById(dishId)).thenReturn(dish);
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(false);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(false);
 
         ResponseEntity<Dish> response = vendorController.updateDishDetails(vendorId, dishId, dish);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-        verify(vendorAdapter).checkRoleById(vendorId);
+        verify(vendorFacade).checkRoleById(vendorId);
         verify(dishService).findById(dishId);
     }
 
@@ -326,14 +326,14 @@ class VendorControllerTest {
         Dish dish = new Dish();
 
         when(dishService.findById(dishId)).thenReturn(dish);
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
-        when(vendorAdapter.existsById(vendorId)).thenReturn(false);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
+        when(vendorFacade.existsById(vendorId)).thenReturn(false);
 
         ResponseEntity<Dish> response = vendorController.updateDishDetails(vendorId, dishId, dish);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-        verify(vendorAdapter).checkRoleById(vendorId);
-        verify(vendorAdapter).existsById(vendorId);
+        verify(vendorFacade).checkRoleById(vendorId);
+        verify(vendorFacade).existsById(vendorId);
         verify(dishService).findById(dishId);
     }
 
@@ -344,8 +344,8 @@ class VendorControllerTest {
         dish.setVendorId(vendorId);
 
         when(dishService.findById(dishId)).thenReturn(dish);
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
-        when(vendorAdapter.existsById(vendorId)).thenReturn(true);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
+        when(vendorFacade.existsById(vendorId)).thenReturn(true);
         when(dishService.updateDish(dishId, dish)).thenReturn(null);
 
         ResponseEntity<Dish> response = vendorController.updateDishDetails(vendorId, dishId, dish);
@@ -361,8 +361,8 @@ class VendorControllerTest {
         dish.setVendorId(vendorId);
 
         when(dishService.findById(dishId)).thenReturn(dish);
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
-        when(vendorAdapter.existsById(vendorId)).thenReturn(true);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
+        when(vendorFacade.existsById(vendorId)).thenReturn(true);
         when(dishService.updateDish(dishId, dish)).thenThrow(new RuntimeException());
 
         ResponseEntity<Dish> response = vendorController.updateDishDetails(vendorId, dishId, dish);
@@ -380,16 +380,16 @@ class VendorControllerTest {
 
         when(dishService.findById(dishId)).thenReturn(dish);
         Dish updatedDish = new Dish();
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
-        when(vendorAdapter.existsById(vendorId)).thenReturn(true);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
+        when(vendorFacade.existsById(vendorId)).thenReturn(true);
         when(dishService.updateDish(dishId, dish)).thenReturn(updatedDish);
 
         ResponseEntity<Dish> response = vendorController.updateDishDetails(vendorId, dishId, dish);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isEqualTo(updatedDish);
-        verify(vendorAdapter).checkRoleById(vendorId);
-        verify(vendorAdapter).existsById(vendorId);
+        verify(vendorFacade).checkRoleById(vendorId);
+        verify(vendorFacade).existsById(vendorId);
         verify(dishService).updateDish(dishId, dish);
     }
 
@@ -400,7 +400,7 @@ class VendorControllerTest {
         order.setCustomerId(UUID.randomUUID());
         order.setVendorId(vendorId);
 
-        when(vendorAdapter.checkRoleById(customerId)).thenReturn(false);
+        when(vendorFacade.checkRoleById(customerId)).thenReturn(false);
         when(orderService.findById(orderId)).thenReturn(order);
 
         ResponseEntity<Order> response = vendorController.getOrderDetails(customerId, orderId);
@@ -410,7 +410,7 @@ class VendorControllerTest {
 
     @Test
     void testGetOrderDetailsOrderNotExists() {
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
         when(orderService.findById(orderId)).thenReturn(null);
 
         ResponseEntity<Order> response = vendorController.getOrderDetails(vendorId, orderId);
@@ -424,9 +424,9 @@ class VendorControllerTest {
         order.setCustomerId(UUID.randomUUID());
         order.setVendorId(vendorId);
 
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
         when(orderService.findById(orderId)).thenReturn(order);
-        when(vendorAdapter.existsById(vendorId)).thenReturn(false);
+        when(vendorFacade.existsById(vendorId)).thenReturn(false);
 
         ResponseEntity<Order> response = vendorController.getOrderDetails(vendorId, orderId);
 
@@ -439,9 +439,9 @@ class VendorControllerTest {
         order.setCustomerId(UUID.randomUUID());
         order.setVendorId(UUID.randomUUID());
 
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
         when(orderService.findById(orderId)).thenReturn(order);
-        when(vendorAdapter.existsById(vendorId)).thenReturn(true);
+        when(vendorFacade.existsById(vendorId)).thenReturn(true);
 
         ResponseEntity<Order> response = vendorController.getOrderDetails(vendorId, orderId);
 
@@ -464,9 +464,9 @@ class VendorControllerTest {
         order.setCustomerId(UUID.randomUUID());
         order.setID(orderId);
 
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
         when(orderService.findById(orderId)).thenReturn(order);
-        when(vendorAdapter.existsById(vendorId)).thenReturn(true);
+        when(vendorFacade.existsById(vendorId)).thenReturn(true);
 
         ResponseEntity<Order> response = vendorController.getOrderDetails(vendorId, orderId);
 
@@ -476,7 +476,7 @@ class VendorControllerTest {
 
     @Test
     void testGetVendorOrdersWrongUserType() {
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(false);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(false);
 
         ResponseEntity<List<Order>> response = vendorController.getVendorOrders(vendorId);
 
@@ -485,8 +485,8 @@ class VendorControllerTest {
 
     @Test
     void testGetVendorOrdersVendorDoesNotExist() {
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
-        when(vendorAdapter.existsById(vendorId)).thenReturn(false);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
+        when(vendorFacade.existsById(vendorId)).thenReturn(false);
 
         ResponseEntity<List<Order>> response = vendorController.getVendorOrders(vendorId);
 
@@ -495,8 +495,8 @@ class VendorControllerTest {
 
     @Test
     void testGetVendorOrdersEmpty() {
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
-        when(vendorAdapter.existsById(vendorId)).thenReturn(true);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
+        when(vendorFacade.existsById(vendorId)).thenReturn(true);
         when(orderRepository.findByVendorId(vendorId)).thenReturn(new ArrayList<>());
 
         ResponseEntity<List<Order>> response = vendorController.getVendorOrders(vendorId);
@@ -523,8 +523,8 @@ class VendorControllerTest {
 
         List<Order> orders = List.of(order1, order2, order3);
 
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
-        when(vendorAdapter.existsById(vendorId)).thenReturn(true);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
+        when(vendorFacade.existsById(vendorId)).thenReturn(true);
         when(vendorService.getVendorOrders(vendorId)).thenReturn(orders);
 
         ResponseEntity<List<Order>> response = vendorController.getVendorOrders(vendorId);
@@ -538,39 +538,39 @@ class VendorControllerTest {
         ResponseEntity<List<Dish>> response = vendorController.getOwnDishes(null);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        verifyNoInteractions(vendorAdapter);
+        verifyNoInteractions(vendorFacade);
         verifyNoInteractions(dishService);
     }
 
     @Test
     void getOwnDishesWhenUserIsNotAuthorized() {
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(false);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(false);
 
         ResponseEntity<List<Dish>> response = vendorController.getOwnDishes(vendorId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-        verify(vendorAdapter).checkRoleById(vendorId);
+        verify(vendorFacade).checkRoleById(vendorId);
         verifyNoInteractions(dishService);
     }
 
     @Test
     void getOwnDishesWhenVendorNotFound() {
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
-        when(vendorAdapter.existsById(vendorId)).thenReturn(false);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
+        when(vendorFacade.existsById(vendorId)).thenReturn(false);
 
         ResponseEntity<List<Dish>> response = vendorController.getOwnDishes(vendorId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-        verify(vendorAdapter).checkRoleById(vendorId);
-        verify(vendorAdapter).existsById(vendorId);
+        verify(vendorFacade).checkRoleById(vendorId);
+        verify(vendorFacade).existsById(vendorId);
         verifyNoInteractions(dishService);
     }
 
     @Test
     void getOwnDishesSuccessful() {
         List<Dish> expectedDishes = new ArrayList<>();
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
-        when(vendorAdapter.existsById(vendorId)).thenReturn(true);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
+        when(vendorFacade.existsById(vendorId)).thenReturn(true);
         when(dishService.findAllByVendorId(vendorId)).thenReturn(expectedDishes);
 
         ResponseEntity<List<Dish>> response = vendorController.getOwnDishes(vendorId);
@@ -582,8 +582,8 @@ class VendorControllerTest {
 
     @Test
     void getOwnDishesInternalServerError() {
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
-        when(vendorAdapter.existsById(vendorId)).thenReturn(true);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
+        when(vendorFacade.existsById(vendorId)).thenReturn(true);
         when(dishService.findAllByVendorId(vendorId)).thenThrow(new RuntimeException());
 
         ResponseEntity<List<Dish>> response = vendorController.getOwnDishes(vendorId);
@@ -602,7 +602,7 @@ class VendorControllerTest {
         response = vendorController.getDish(vendorId, null);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 
-        verifyNoInteractions(vendorAdapter);
+        verifyNoInteractions(vendorFacade);
         verifyNoInteractions(dishService);
     }
 
@@ -613,12 +613,12 @@ class VendorControllerTest {
         dish.setVendorId(vendorId);
 
         when(dishService.findById(dishId)).thenReturn(dish);
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(false);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(false);
 
         ResponseEntity<Dish> response = vendorController.getDish(vendorId, dishId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-        verify(vendorAdapter).checkRoleById(vendorId);
+        verify(vendorFacade).checkRoleById(vendorId);
     }
 
     @Test
@@ -627,21 +627,21 @@ class VendorControllerTest {
         Dish dish = new Dish();
 
         when(dishService.findById(dishId)).thenReturn(dish);
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
-        when(vendorAdapter.existsById(vendorId)).thenReturn(false);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
+        when(vendorFacade.existsById(vendorId)).thenReturn(false);
 
         ResponseEntity<Dish> response = vendorController.getDish(vendorId, dishId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-        verify(vendorAdapter).checkRoleById(vendorId);
-        verify(vendorAdapter).existsById(vendorId);
+        verify(vendorFacade).checkRoleById(vendorId);
+        verify(vendorFacade).existsById(vendorId);
     }
 
     @Test
     void getDishWhenDishNotFound() {
         UUID dishId = UUID.randomUUID();
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
-        when(vendorAdapter.existsById(vendorId)).thenReturn(true);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
+        when(vendorFacade.existsById(vendorId)).thenReturn(true);
         when(dishService.findById(dishId)).thenReturn(null);
 
         ResponseEntity<Dish> response = vendorController.getDish(vendorId, dishId);
@@ -655,8 +655,8 @@ class VendorControllerTest {
 
         Dish dish = new Dish();
         dish.setVendorId(UUID.randomUUID());
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
-        when(vendorAdapter.existsById(vendorId)).thenReturn(true);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
+        when(vendorFacade.existsById(vendorId)).thenReturn(true);
         UUID dishId = UUID.randomUUID();
         when(dishService.findById(dishId)).thenReturn(dish);
 
@@ -671,8 +671,8 @@ class VendorControllerTest {
 
         Dish expectedDish = new Dish();
         expectedDish.setVendorId(vendorId);
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
-        when(vendorAdapter.existsById(vendorId)).thenReturn(true);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
+        when(vendorFacade.existsById(vendorId)).thenReturn(true);
         UUID dishId = UUID.randomUUID();
         when(dishService.findById(dishId)).thenReturn(expectedDish);
 
