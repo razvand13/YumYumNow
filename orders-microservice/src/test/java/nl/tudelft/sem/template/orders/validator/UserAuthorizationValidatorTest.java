@@ -193,8 +193,8 @@ class UserAuthorizationValidatorTest {
         ValidatorRequest request = new ValidatorRequest();
         request.setUserUUID(vendorUUID);
         request.setUserType(UserType.VENDOR);
-        request.setOrderUUID(order.getID());
-        order.setVendorId(UUID.randomUUID());
+        request.setDishUUID(dish.getID());
+        dish.setVendorId(UUID.randomUUID());
         assertThatThrownBy(() -> {
             sut.handle(request);
         }).matches((e) -> ((ValidationFailureException) e).getFailureStatus().equals(HttpStatus.UNAUTHORIZED));
