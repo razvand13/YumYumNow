@@ -3,6 +3,7 @@ package nl.tudelft.sem.template.orders.mappers;
 import nl.tudelft.sem.template.model.Address;
 import nl.tudelft.sem.template.model.Vendor;
 import nl.tudelft.sem.template.orders.external.VendorDTO;
+import nl.tudelft.sem.template.orders.mappers.interfaces.IVendorMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -14,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class VendorMapperTest {
 
-    private final VendorMapper vendorMapper = new VendorMapper();
+    private final IVendorMapper vendorMapper = new VendorMapper();
     private Address address;
 
     @BeforeEach
