@@ -8,7 +8,6 @@ import nl.tudelft.sem.template.orders.repositories.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.validation.Valid;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -26,8 +25,16 @@ public class OrderService implements IOrderService {
         return orderRepository.findById(orderId).orElse(null);
     }
 
+    public List<Order> findAll() {
+        return orderRepository.findAll();
+    }
+
     public Order save(Order order) {
         return orderRepository.save(order);
+    }
+
+    public void delete(UUID orderId) {
+        orderRepository.deleteById(orderId);
     }
 
     /**
@@ -61,4 +68,27 @@ public class OrderService implements IOrderService {
                 .filter(orderedDish -> orderedDish.getDish().getID().equals(dishId))
                 .findFirst();
     }
+
+    /**
+     *
+     * @param orderedDishes ordered dishes
+     * @param dishId id of dish to remove
+     * @return OrderedDish without the dish that was removed
+     */
+    public Optional<OrderedDish> removeDishOrder(List<OrderedDish> orderedDishes, UUID dishId) {
+        return orderedDishes.stream()
+                .filter(orderedDish -> orderedDish.getDish().getID().equals(dishId))
+                .findFirst();
+    }
+
+    /**
+     *
+     * @param customerId id of customer
+     * @return finds the orders of a customer by its id
+     */
+    public List<Order> findOrdersByCustomerId(UUID customerId) {
+        // This method fetches orders from the repository using the customerId
+        return orderRepository.findByCustomerId(customerId);
+    }
+
 }
