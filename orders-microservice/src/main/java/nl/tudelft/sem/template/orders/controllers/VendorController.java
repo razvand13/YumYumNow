@@ -7,7 +7,6 @@ import nl.tudelft.sem.template.orders.VendorNotFoundException;
 import nl.tudelft.sem.template.orders.domain.IDishService;
 import nl.tudelft.sem.template.orders.domain.IOrderService;
 import nl.tudelft.sem.template.orders.domain.IVendorService;
-import nl.tudelft.sem.template.orders.services.VendorAdapter;
 import nl.tudelft.sem.template.orders.validator.DataValidationField;
 import nl.tudelft.sem.template.orders.validator.DataValidator;
 import nl.tudelft.sem.template.orders.validator.UserAuthorizationValidator;
@@ -27,7 +26,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class VendorController implements VendorApi {
 
-    private final transient VendorAdapter vendorAdapter;
     private final transient IDishService dishService;
     private final transient IOrderService orderService;
     private final transient IVendorService vendorService;
@@ -36,15 +34,14 @@ public class VendorController implements VendorApi {
     /**
      * Creates an instance of the VendorController.
      *
-     * @param vendorAdapter the vendor adapter
      * @param dishService   the dish service
+     * @param orderService  the order service
      * @param vendorService the vendor service
      */
     @Autowired
-    public VendorController(VendorAdapter vendorAdapter, IDishService dishService,
+    public VendorController(IDishService dishService,
                             IOrderService orderService, IVendorService vendorService,
                             ApplicationContext applicationContext) {
-        this.vendorAdapter = vendorAdapter;
         this.dishService = dishService;
         this.orderService = orderService;
         this.vendorService = vendorService;
@@ -101,18 +98,20 @@ public class VendorController implements VendorApi {
      *      or Vendor not found (status code 404)
      *      or Internal Server Error - An unexpected error occurred on the server. (status code 500)
      */
-    @Override
     public ResponseEntity<List<Dish>> getOwnDishes(UUID vendorId) {
-        if (vendorId == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
 
-        if (!vendorAdapter.checkRoleById(vendorId)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class, List.of(DataValidationField.USER));
+        UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
 
-        if (!vendorAdapter.existsById(vendorId)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        dataValidator.setNext(userAuthorizationValidator);
+
+        ValidatorRequest request = new ValidatorRequest();
+        request.setUserUUID(vendorId);
+        request.setUserType(UserType.VENDOR);
+        try {
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
         }
 
         try {
@@ -137,33 +136,25 @@ public class VendorController implements VendorApi {
      */
     @Override
     public ResponseEntity<Dish> getDish(UUID vendorId, UUID dishId) {
-        if (vendorId == null || dishId == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
 
-        if (!vendorAdapter.checkRoleById(vendorId)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class, List.of(DataValidationField.USER,
+            DataValidationField.DISH));
+        UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
 
-        if (!vendorAdapter.existsById(vendorId)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
+        dataValidator.setNext(userAuthorizationValidator);
 
+        ValidatorRequest request = new ValidatorRequest();
+        request.setUserUUID(vendorId);
+        request.setDishUUID(dishId);
+        request.setUserType(UserType.VENDOR);
         try {
-            Dish dish = dishService.findById(dishId);
-
-            if (dish == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-            }
-
-            if (dish.getVendorId() != vendorId) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-            }
-
-            return ResponseEntity.ok(dish);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
         }
+
+        Dish dish = dishService.findById(dishId);
+        return ResponseEntity.ok(dish);
     }
 
     /**

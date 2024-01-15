@@ -13,13 +13,9 @@ import nl.tudelft.sem.template.orders.validator.DataValidator;
 import nl.tudelft.sem.template.orders.validator.UserAuthorizationValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -43,7 +40,6 @@ class VendorControllerTest {
     private OrderRepository orderRepository;
     private UUID vendorId;
     private UUID orderId;
-    private ApplicationContext applicationContext;
 
 
     @BeforeEach
@@ -52,7 +48,7 @@ class VendorControllerTest {
         dishService = mock(DishService.class);
         orderService = mock(OrderService.class);
         vendorService = mock(VendorService.class);
-        applicationContext = mock(ApplicationContext.class);
+        ApplicationContext applicationContext = mock(ApplicationContext.class);
 
         //Validators need to be defined for the mocked application context, including each combination of used
         //DataValidationFields. Unfortunately capturing the argument that getBean is called with is not an option
@@ -64,9 +60,12 @@ class VendorControllerTest {
                         DataValidationField.ORDER), orderService, dishService, vendorAdapter));
         when(applicationContext.getBean(UserAuthorizationValidator.class))
                 .thenReturn(new UserAuthorizationValidator(null, vendorAdapter, orderService, dishService));
+        when(applicationContext.getBean(eq(DataValidator.class),
+                    eq(List.of(DataValidationField.USER, DataValidationField.DISH))))
+            .thenReturn(new DataValidator(List.of(DataValidationField.USER,
+                    DataValidationField.DISH), orderService, dishService, vendorAdapter));
 
-
-        vendorController = new VendorController(vendorAdapter, dishService, orderService, vendorService, applicationContext);
+        vendorController = new VendorController(dishService, orderService, vendorService, applicationContext);
 
         orderRepository = mock(OrderRepository.class);
 
@@ -285,7 +284,7 @@ class VendorControllerTest {
     void testGetVendorOrdersEmpty() {
         when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
         when(vendorAdapter.existsById(vendorId)).thenReturn(true);
-        when(orderRepository.findByVendorId(vendorId)).thenReturn(new ArrayList<Order>());
+        when(orderRepository.findByVendorId(vendorId)).thenReturn(new ArrayList<>());
 
         ResponseEntity<List<Order>> response = vendorController.getVendorOrders(vendorId);
 
@@ -397,18 +396,24 @@ class VendorControllerTest {
     @Test
     void getDishWhenUserIsNotAuthorized() {
         UUID dishId = UUID.randomUUID();
+        Dish dish = new Dish();
+        dish.setVendorId(vendorId);
+
+        when(dishService.findById(dishId)).thenReturn(dish);
         when(vendorAdapter.checkRoleById(vendorId)).thenReturn(false);
 
         ResponseEntity<Dish> response = vendorController.getDish(vendorId, dishId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
         verify(vendorAdapter).checkRoleById(vendorId);
-        verifyNoInteractions(dishService);
     }
 
     @Test
     void getDishWhenVendorNotFound() {
         UUID dishId = UUID.randomUUID();
+        Dish dish = new Dish();
+
+        when(dishService.findById(dishId)).thenReturn(dish);
         when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
         when(vendorAdapter.existsById(vendorId)).thenReturn(false);
 
@@ -417,7 +422,6 @@ class VendorControllerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         verify(vendorAdapter).checkRoleById(vendorId);
         verify(vendorAdapter).existsById(vendorId);
-        verifyNoInteractions(dishService);
     }
 
     @Test
@@ -446,7 +450,7 @@ class VendorControllerTest {
         ResponseEntity<Dish> response = vendorController.getDish(vendorId, dishId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-        verify(dishService).findById(dishId);
+        verify(dishService, times(2)).findById(dishId);
     }
 
     @Test
@@ -463,20 +467,7 @@ class VendorControllerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isEqualTo(expectedDish);
-        verify(dishService).findById(dishId);
-    }
-
-    @Test
-    void getDishInternalServerError() {
-        UUID dishId = UUID.randomUUID();
-        when(vendorAdapter.checkRoleById(vendorId)).thenReturn(true);
-        when(vendorAdapter.existsById(vendorId)).thenReturn(true);
-        when(dishService.findById(dishId)).thenThrow(new RuntimeException());
-
-        ResponseEntity<Dish> response = vendorController.getDish(vendorId, dishId);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-        verify(dishService).findById(dishId);
+        verify(dishService, times(3)).findById(dishId);
     }
 
 }
