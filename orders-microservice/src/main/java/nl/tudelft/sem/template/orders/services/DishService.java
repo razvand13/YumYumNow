@@ -23,11 +23,27 @@ public class DishService implements IDishService {
      * Find dish by ID
      *
      * @param dishId id of the dish
-     * @return dish
-     * @throws IllegalArgumentException if there is no dish with the specified ID
+     * @return the dish
+     */
+    public Dish findByIdNotDeleted(UUID dishId) {
+        return dishRepository.findById(dishId)
+            .filter(dish -> !dish.getIsDeleted())
+            .orElse(null);
+    }
+
+    /**
+     * Find dish by ID
+     *
+     * @param dishId id of the dish
+     * @return the dish
      */
     public Dish findById(UUID dishId) {
         return dishRepository.findById(dishId).orElse(null);
+    }
+
+    @Override
+    public List<Dish> findAllByVendorId(UUID vendorId) {
+        return dishRepository.getDishesByVendorId(vendorId);
     }
 
     /**
@@ -36,8 +52,11 @@ public class DishService implements IDishService {
      * @param vendorId id of the vendor
      * @return the vendor's dishes
      */
-    public List<Dish> findAllByVendorId(UUID vendorId) {
-        return dishRepository.getDishesByVendorId(vendorId);
+    public List<Dish> findAllByVendorIdNotDeleted(UUID vendorId) {
+        return dishRepository.getDishesByVendorId(vendorId)
+            .stream()
+            .filter(dish -> !dish.getIsDeleted())
+            .collect(Collectors.toList());
     }
 
     /**
@@ -52,6 +71,45 @@ public class DishService implements IDishService {
         return dishRepository.save(dish);
     }
 
+    /**
+     * Removes a dish from the menu of a vendor.
+     *
+     * @param vendorId the id of the vendor
+     * @param dishId the id of the dish
+     * @return true if the dish was removed, false otherwise
+     */
+    @Override
+    public boolean removeDish(UUID vendorId, UUID dishId) {
+        Dish dish = dishRepository.findById(dishId).orElse(null);
+
+        if (dish != null && dish.getVendorId().equals(vendorId) && !dish.getIsDeleted()) {
+            dish.setIsDeleted(true);
+            dishRepository.save(dish);
+            return true;
+        }
+
+        return false;
+    }
+
+    @Override
+    public Dish updateDish(UUID dishId, Dish updatedDish) {
+        Dish existingDish = dishRepository.findById(dishId)
+            .filter(dish -> !dish.getIsDeleted())
+            .orElse(null);
+
+        if (existingDish == null) {
+            return null;
+        }
+
+        existingDish.setName(updatedDish.getName());
+        existingDish.setIngredients(updatedDish.getIngredients());
+        existingDish.setDescription(updatedDish.getDescription());
+        existingDish.setImageLink(updatedDish.getImageLink());
+        existingDish.setPrice(updatedDish.getPrice());
+        existingDish.setAllergens(updatedDish.getAllergens());
+
+        return dishRepository.save(existingDish);
+    }
 
     /**
      * Checks if a dish is in an order

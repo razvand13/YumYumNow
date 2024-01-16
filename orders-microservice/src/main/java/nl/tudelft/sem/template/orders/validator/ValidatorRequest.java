@@ -3,6 +3,7 @@ package nl.tudelft.sem.template.orders.validator;
 import nl.tudelft.sem.template.model.CreateOrderRequest;
 import nl.tudelft.sem.template.model.UpdateDishQtyRequest;
 import nl.tudelft.sem.template.model.UpdateOrderStatusRequest;
+import nl.tudelft.sem.template.model.UpdateSpecialRequirementsRequest;
 
 import java.util.UUID;
 
@@ -14,6 +15,7 @@ public class ValidatorRequest {
     private UpdateDishQtyRequest updateDishQtyRequest;
     private CreateOrderRequest createOrderRequest;
     private UpdateOrderStatusRequest updateOrderStatusRequest;
+    private UpdateSpecialRequirementsRequest updateSpecialRequirementsRequest;
 
     public ValidatorRequest() {
 
@@ -31,7 +33,8 @@ public class ValidatorRequest {
      */
     public ValidatorRequest(UUID userUUID, UserType userType, UUID orderUUID, UUID dishUUID,
                             UpdateDishQtyRequest updateDishQtyRequest, CreateOrderRequest createOrderRequest,
-                            UpdateOrderStatusRequest updateOrderStatusRequest) {
+                            UpdateOrderStatusRequest updateOrderStatusRequest,
+                            UpdateSpecialRequirementsRequest updateSpecialRequirementsRequest) {
         this.userUUID = userUUID;
         this.userType = userType;
         this.orderUUID = orderUUID;
@@ -39,6 +42,7 @@ public class ValidatorRequest {
         this.updateDishQtyRequest = updateDishQtyRequest;
         this.createOrderRequest = createOrderRequest;
         this.updateOrderStatusRequest = updateOrderStatusRequest;
+        this.updateSpecialRequirementsRequest = updateSpecialRequirementsRequest;
     }
 
     public UUID getUserUUID() {
@@ -95,5 +99,13 @@ public class ValidatorRequest {
 
     public void setCreateOrderRequest(CreateOrderRequest createOrderRequest) {
         this.createOrderRequest = createOrderRequest;
+    }
+
+    public UpdateSpecialRequirementsRequest getUpdateSpecialRequirementsRequest() {
+        return updateSpecialRequirementsRequest;
+    }
+
+    public void setUpdateSpecialRequirementsRequest(UpdateSpecialRequirementsRequest updateSpecialRequirementsRequest) {
+        this.updateSpecialRequirementsRequest = updateSpecialRequirementsRequest;
     }
 }

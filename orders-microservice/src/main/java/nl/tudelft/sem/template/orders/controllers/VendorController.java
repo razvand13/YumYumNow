@@ -7,7 +7,6 @@ import nl.tudelft.sem.template.orders.VendorNotFoundException;
 import nl.tudelft.sem.template.orders.domain.IDishService;
 import nl.tudelft.sem.template.orders.domain.IOrderService;
 import nl.tudelft.sem.template.orders.domain.IVendorService;
-import nl.tudelft.sem.template.orders.services.VendorAdapter;
 import nl.tudelft.sem.template.orders.validator.DataValidationField;
 import nl.tudelft.sem.template.orders.validator.DataValidator;
 import nl.tudelft.sem.template.orders.validator.UserAuthorizationValidator;
@@ -27,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class VendorController implements VendorApi {
 
-    private final transient VendorAdapter vendorAdapter;
+
     private final transient IDishService dishService;
     private final transient IOrderService orderService;
     private final transient IVendorService vendorService;
@@ -36,15 +35,15 @@ public class VendorController implements VendorApi {
     /**
      * Creates an instance of the VendorController.
      *
-     * @param vendorAdapter the vendor adapter
      * @param dishService   the dish service
+     * @param orderService the order service
      * @param vendorService the vendor service
      */
     @Autowired
-    public VendorController(VendorAdapter vendorAdapter, IDishService dishService,
+    public VendorController(IDishService dishService,
                             IOrderService orderService, IVendorService vendorService,
                             ApplicationContext applicationContext) {
-        this.vendorAdapter = vendorAdapter;
+
         this.dishService = dishService;
         this.orderService = orderService;
         this.vendorService = vendorService;
@@ -88,6 +87,162 @@ public class VendorController implements VendorApi {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+    /**
+     * DELETE /vendor/{vendorId}/dish/{dishId} : Delete a dish from the menu
+     *
+     * @param vendorId (required)
+     * @param dishId   (required)
+     * @return Dish removed successfully from the menu. (status code 200)
+     *      or Bad Request - Dish not deleted. (status code 400)
+     *      or Unauthorized - User is not a vendor/dish does not belong to vendor. (status code 401)
+     *      or Not Found - Dish or vendor not found. (status code 404)
+     *      or Internal Server Error - An unexpected error occurred. (status code 500)
+     */
+    @Override
+    public ResponseEntity<Void> removeDishFromMenu(UUID vendorId, UUID dishId) {
+
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class, List.of(DataValidationField.USER,
+                DataValidationField.DISH));
+        UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
+        dataValidator.setNext(userAuthorizationValidator);
+
+        ValidatorRequest request = new ValidatorRequest();
+        request.setUserUUID(vendorId);
+        request.setDishUUID(dishId);
+        request.setUserType(UserType.VENDOR);
+
+        try {
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
+        }
+
+        try {
+            boolean isRemoved = dishService.removeDish(vendorId, dishId);
+            if (isRemoved) {
+                return ResponseEntity.ok().build();
+            } else {
+                // Dish not found or not removed for some reason
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * PUT /vendor/{vendorId}/dish/{dishId} : Update details of a dish
+     *
+     * @param vendorId (required)
+     * @param dishId   (required)
+     * @param dish     (required)
+     * @return Dish details updated successfully. (status code 200)
+     *      or Bad Request - Incorrect dish details format or missing required fields. (status code 400)
+     *      or Unauthorized - User is not a vendor/dish does not belong to vendor. (status code 401)
+     *      or Not Found - Dish or vendor not found. (status code 404)
+     *      or Internal Server Error - An unexpected error occurred. (status code 500)
+     */
+    @Override
+    public ResponseEntity<Dish> updateDishDetails(UUID vendorId, UUID dishId, Dish dish) {
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class, List.of(DataValidationField.USER,
+                DataValidationField.DISH));
+        UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
+        dataValidator.setNext(userAuthorizationValidator);
+
+        ValidatorRequest request = new ValidatorRequest();
+        request.setUserUUID(vendorId);
+        request.setDishUUID(dishId);
+        request.setUserType(UserType.VENDOR);
+
+        try {
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
+        }
+
+        try {
+            Dish updatedDish = dishService.updateDish(dishId, dish);
+
+            if (updatedDish == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+
+            return ResponseEntity.ok(updatedDish);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * GET /vendor/{vendorId}/dishes : Get list of dishes from a vendor
+     * Allows a vendor to see their own menu.
+     *
+     * @param vendorId (required)
+     *      @return A list of dishes offered by the vendor. (status code 200)
+     *      or Bad Request - Invalid request parameters. (status code 400)
+     *      or Unauthorized - User is not a vendor. (status code 401)
+     *      or Vendor not found (status code 404)
+     *      or Internal Server Error - An unexpected error occurred on the server. (status code 500)
+     */
+    public ResponseEntity<List<Dish>> getOwnDishes(UUID vendorId) {
+
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class, List.of(DataValidationField.USER));
+        UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
+
+        dataValidator.setNext(userAuthorizationValidator);
+
+        ValidatorRequest request = new ValidatorRequest();
+        request.setUserUUID(vendorId);
+        request.setUserType(UserType.VENDOR);
+        try {
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
+        }
+
+        try {
+            List<Dish> dishes = dishService.findAllByVendorId(vendorId);
+            return ResponseEntity.ok(dishes);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * GET /vendor/{vendorId}/dish/{dishId} : Get details of a specific dish
+     * Get detailed information about a specific dish offered by the vendor.
+     *
+     * @param vendorId (required)
+     * @param dishId   (required)
+     * @return Detailed information about the specified dish. (status code 200)
+     *      or Bad Request - Invalid request parameters. (status code 400)
+     *      or Unauthorized - User is a vendor/dish does not belong to vendor. (status code 401)
+     *      or Dish or vendor not found. (status code 404)
+     *      or Internal Server Error - An unexpected error occurred on the server. (status code 500)
+     */
+    @Override
+    public ResponseEntity<Dish> getDish(UUID vendorId, UUID dishId) {
+
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class, List.of(DataValidationField.USER,
+            DataValidationField.DISH));
+        UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
+
+        dataValidator.setNext(userAuthorizationValidator);
+
+        ValidatorRequest request = new ValidatorRequest();
+        request.setUserUUID(vendorId);
+        request.setDishUUID(dishId);
+        request.setUserType(UserType.VENDOR);
+        try {
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
+        }
+
+        Dish dish = dishService.findById(dishId);
+        return ResponseEntity.ok(dish);
     }
 
     /**
