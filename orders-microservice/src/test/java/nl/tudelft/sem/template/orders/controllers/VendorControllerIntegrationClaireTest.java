@@ -54,7 +54,7 @@ public class VendorControllerIntegrationClaireTest {
         Address address = new Address();
         address.setLatitude(34.02);
         address.setLongitude(34.00);
-        address.setZip("2222AB");
+        address.setZipCode("2222AB");
         address.setHouseNumber(42);
 
         createOrderRequest.setAddress(address);
