@@ -1,13 +1,13 @@
 package nl.tudelft.sem.template.orders.controllers;
 
 
+import nl.tudelft.sem.template.model.Vendor;
 import nl.tudelft.sem.template.model.Dish;
 import nl.tudelft.sem.template.model.Order;
-import nl.tudelft.sem.template.model.Vendor;
-import nl.tudelft.sem.template.model.OrderedDish;
-import nl.tudelft.sem.template.model.Status;
 import nl.tudelft.sem.template.model.Address;
 import nl.tudelft.sem.template.model.UpdateDishQtyRequest;
+import nl.tudelft.sem.template.model.OrderedDish;
+import nl.tudelft.sem.template.model.Status;
 import nl.tudelft.sem.template.model.UpdateSpecialRequirementsRequest;
 import nl.tudelft.sem.template.orders.domain.ICustomerService;
 import nl.tudelft.sem.template.orders.domain.IDishService;
@@ -36,6 +36,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.Optional;
 import java.util.Collections;
+import java.util.Optional;
+import java.util.Arrays;
 import java.util.ArrayList;
 
 
@@ -46,8 +48,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyList;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 
 class CustomerControllerTest {
@@ -436,6 +438,9 @@ class CustomerControllerTest {
 
         List<Dish> dishes = Collections.singletonList(new Dish());
         when(dishService.findAllByVendorId(vendorId)).thenReturn(dishes);
+
+        CustomerDTO customer = setupCustomer();
+        when(customerFacade.requestCustomer(customerId)).thenReturn(customer);
 
         ResponseEntity<List<Dish>> response = customerController.getVendorDishes(customerId, orderId);
 
@@ -866,6 +871,80 @@ class CustomerControllerTest {
         verify(customerFacade).existsById(customerId);
         verify(customerFacade).checkRoleById(customerId);
         verify(orderService, times(4)).findById(orderId);
+    }
+
+    @Test
+    void getDishesWithClashingAllergens() {
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
+
+        Order order = createOrder();
+
+        when(orderService.findById(orderId)).thenReturn(order);
+
+        CustomerDTO customer = setupCustomer("Gluten");
+        when(customerFacade.requestCustomer(customerId)).thenReturn(customer);
+
+        List<Dish> vendorDishes = setupVendorDishes(
+                new String[]{"Nuts, Lactose"},
+                new String[]{"Nuts", "Lactose", "Chocolate", "Gluten"});
+
+        when(dishService.findAllByVendorId(order.getVendorId())).thenReturn(vendorDishes);
+
+        ResponseEntity<List<Dish>> response = customerController.getVendorDishes(customerId, orderId);
+
+        List<Dish> result = setupVendorDishes(new String[]{"Nuts, Lactose"});
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(result);
+
+        verify(customerFacade).checkRoleById(customerId);
+        verify(customerFacade).existsById(customerId);
+        verify(dishService).findAllByVendorId(order.getVendorId());
+    }
+
+    @Test
+    void getDishesWithNoClashingAllergens() {
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
+
+        Order order = createOrder();
+
+        when(orderService.findById(orderId)).thenReturn(order);
+
+        CustomerDTO customer = setupCustomer("Gluten");
+        when(customerFacade.requestCustomer(customerId)).thenReturn(customer);
+
+        List<Dish> vendorDishes = setupVendorDishes(new String[]{}, new String[]{"Nuts", "Lactose", "Chocolate"});
+
+        when(dishService.findAllByVendorId(order.getVendorId())).thenReturn(vendorDishes);
+
+        ResponseEntity<List<Dish>> response = customerController.getVendorDishes(customerId, orderId);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(vendorDishes);
+
+        verify(customerFacade).checkRoleById(customerId);
+        verify(customerFacade).existsById(customerId);
+        verify(dishService).findAllByVendorId(order.getVendorId());
+    }
+
+    private CustomerDTO setupCustomer(String... customerAllergens) {
+        CustomerDTO customerDTO = new CustomerDTO();
+        if (customerAllergens != null) {
+            List<String> allergens = new ArrayList<>(Arrays.asList(customerAllergens));
+            customerDTO.setAllergens(allergens);
+        }
+        return customerDTO;
+    }
+
+    private List<Dish> setupVendorDishes(String[]... dishAllergens) {
+        List<Dish> vendorDishes = new ArrayList<>();
+        for (String[] allergens : dishAllergens) {
+            Dish dish = new Dish();
+            dish.setAllergens(Arrays.asList(allergens));
+            vendorDishes.add(dish);
+        }
+        return vendorDishes;
     }
 
     private Order createOrder() {
