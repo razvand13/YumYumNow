@@ -324,4 +324,51 @@ public class VendorController implements VendorApi {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    /**
+     * GET /vendor/{vendorId}/customers/{customerId}/history : Get order history for a specific customer
+     * Allows a vendor to view the order history of a specific customer.
+     *
+     * @param vendorId  (required)
+     * @param customerId  (required)
+     * @return List of orders made by the specified customer for the given vendor (status code 200)
+     *         or Bad Request - Invalid request parameters. (status code 400)
+     *         or Unauthorized - User is not a vendor. (status code 401)
+     *         or Not Found - Vendor not found or customer has not ordered from vendor. (status code 404)
+     *         or Internal Server Error - An unexpected error occurred. (status code 500)
+     */
+    @Override
+    public ResponseEntity<List<Order>> getCustomerOrderHistory(UUID vendorId, UUID customerId) {
+        //Chain of responsibility validation
+        //Get Validators
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class,
+                List.of(DataValidationField.USER));
+        UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
+        //Set validation chain
+        dataValidator.setNext(userAuthorizationValidator);
+        //Create and fill validation request
+        ValidatorRequest request = new ValidatorRequest();
+        request.setUserUUID(vendorId);
+        request.setUserType(UserType.VENDOR);
+        try {
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
+        }
+
+        List<Order> vendorOrderList = this.getVendorOrders(vendorId).getBody();
+
+        if (vendorOrderList == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        vendorOrderList.removeIf(order -> order.getCustomerId() != null && !order.getCustomerId().equals(customerId));
+
+
+        if (vendorOrderList.size() == 0) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        return ResponseEntity.ok(vendorOrderList);
+    }
 }
