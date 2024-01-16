@@ -14,7 +14,6 @@ import nl.tudelft.sem.template.model.Dish;
 import nl.tudelft.sem.template.model.Order;
 import nl.tudelft.sem.template.model.OrderedDish;
 import nl.tudelft.sem.template.model.PayOrderRequest;
-import nl.tudelft.sem.template.model.Payment;
 import nl.tudelft.sem.template.model.Status;
 import nl.tudelft.sem.template.model.UpdateDishQtyRequest;
 import nl.tudelft.sem.template.model.UpdateSpecialRequirementsRequest;
@@ -278,7 +277,7 @@ public class CustomerController implements CustomerApi {
         dataValidator.setNext(userAuthorizationValidator);
         //Create and fill validation request
         ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER, orderId, dishId,
-                updateDishQtyRequest, null, null, null);
+                updateDishQtyRequest, null, null, null, null);
         try {
             dataValidator.handle(request);
         } catch (ValidationFailureException e) {
@@ -410,7 +409,7 @@ public class CustomerController implements CustomerApi {
         dataValidator.setNext(userAuthorizationValidator);
         //Create and fill validation request
         ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER,
-                orderId, dishId, updateDishQtyRequest, null, null, null);
+                orderId, dishId, updateDishQtyRequest, null, null, null, null);
         try {
             dataValidator.handle(request);
         } catch (ValidationFailureException e) {
@@ -466,7 +465,7 @@ public class CustomerController implements CustomerApi {
         dataValidator.setNext(userAuthorizationValidator);
         //Create and fill validation request
         ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER,
-                orderId, null, null, null, null, null);
+                orderId, null, null, null, null, null, null);
         try {
             dataValidator.handle(request);
         } catch (ValidationFailureException e) {
@@ -502,7 +501,7 @@ public class CustomerController implements CustomerApi {
         dataValidator.setNext(userAuthorizationValidator);
         // Create and fill validation request
         ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER, null,
-                null, null, null, null, null);
+                null, null, null, null, null, null);
         try {
             dataValidator.handle(request);
         } catch (ValidationFailureException e) {
@@ -545,7 +544,7 @@ public class CustomerController implements CustomerApi {
         dataValidator.setNext(userAuthorizationValidator);
         //Create and fill validation request
         ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER,
-                orderId, dishId, null, null, null, null);
+                orderId, dishId, null, null, null, null, null);
         try {
             dataValidator.handle(request);
         } catch (ValidationFailureException e) {
@@ -592,7 +591,7 @@ public class CustomerController implements CustomerApi {
         dataValidator.setNext(userAuthorizationValidator);
         // Create and fill validation request
         ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER, orderId,
-                null, null, null, null, null);
+                null, null, null, null, null, null);
         try {
             dataValidator.handle(request);
         } catch (ValidationFailureException e) {
@@ -645,7 +644,7 @@ public class CustomerController implements CustomerApi {
         // Create and fill validation request
         ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER, orderId,
                 null, null, null, null,
-                updateSpecialRequirementsRequest);
+                updateSpecialRequirementsRequest, null);
         try {
             dataValidator.handle(request);
         } catch (ValidationFailureException e) {
@@ -680,14 +679,16 @@ public class CustomerController implements CustomerApi {
         //Chain of responsibility validation
         //Get Validators
         DataValidator dataValidator = applicationContext.getBean(DataValidator.class,
-                List.of(DataValidationField.USER, DataValidationField.ORDER));
+                List.of(DataValidationField.USER, DataValidationField.ORDER,
+                        DataValidationField.PAYORDERREQUEST));
         UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
 
         // Set validation chain
         dataValidator.setNext(userAuthorizationValidator);
         // Create and fill validation request
         ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER, orderId,
-            null, null, null, null, null);
+            null, null, null, null,
+                null, payOrderRequest);
         try {
             dataValidator.handle(request);
         } catch (ValidationFailureException e) {
@@ -696,14 +697,6 @@ public class CustomerController implements CustomerApi {
 
         // Fetch order
         Order order = orderService.findById(orderId);
-
-        // Check payment method
-        Payment chosenPaymentMethod = payOrderRequest.getPaymentOption();
-
-        if (chosenPaymentMethod == null) {
-            // No payment details are provided
-            return ResponseEntity.badRequest().build();
-        }
 
         boolean paymentSuccess = paymentMock.pay(orderId, payOrderRequest);
 

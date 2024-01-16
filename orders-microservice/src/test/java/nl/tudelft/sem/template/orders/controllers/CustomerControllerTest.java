@@ -26,7 +26,6 @@ import nl.tudelft.sem.template.orders.validator.DataValidator;
 import nl.tudelft.sem.template.orders.validator.DataValidationField;
 import nl.tudelft.sem.template.orders.validator.UserAuthorizationValidator;
 import nl.tudelft.sem.template.orders.validator.ValidatorRequest;
-import nl.tudelft.sem.template.orders.validator.ValidationFailureException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -52,7 +51,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyList;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -174,6 +172,15 @@ class CustomerControllerTest {
                 .thenReturn(new DataValidator(
                         List.of(DataValidationField.USER, DataValidationField.ORDER,
                                 DataValidationField.UPDATESPECIALREQUIREMENTSREQUEST),
+                        orderService, dishService, vendorFacade));
+
+        // payOrderRequest
+        when(applicationContext.getBean(DataValidator.class,
+                List.of(DataValidationField.USER, DataValidationField.ORDER,
+                        DataValidationField.PAYORDERREQUEST)))
+                .thenReturn(new DataValidator(
+                        List.of(DataValidationField.USER, DataValidationField.ORDER,
+                                DataValidationField.PAYORDERREQUEST),
                         orderService, dishService, vendorFacade));
 
         when(applicationContext.getBean(UserAuthorizationValidator.class))
@@ -966,13 +973,9 @@ class CustomerControllerTest {
 
     @Test
     void payOrderSuccess() {
-        when(dataValidator.handle(any(ValidatorRequest.class))).thenReturn(true);
-        when(userAuthorizationValidator.handle(any(ValidatorRequest.class))).thenReturn(true);
-        when(orderService.findById(orderId)).thenReturn(createOrder());
         when(paymentMock.pay(orderId, payOrderRequest)).thenReturn(true);
         when(customerFacade.checkRoleById(customerId)).thenReturn(true);
         when(customerFacade.existsById(customerId)).thenReturn(true);
-        when(validatorRequest.getUserUUID()).thenReturn(customerId);
         when(payOrderRequest.getPaymentOption()).thenReturn(Payment.IDEAL);
 
         ResponseEntity<Void> response = customerController.payOrder(customerId, orderId, payOrderRequest);
@@ -982,24 +985,16 @@ class CustomerControllerTest {
 
     @Test
     void payOrderWithUnauthorizedUser() {
-        doThrow(new ValidationFailureException(HttpStatus.UNAUTHORIZED))
-                .when(dataValidator).handle(any(ValidatorRequest.class));
+        payOrderRequest.setPaymentOption(Payment.IDEAL);
+        when(payOrderRequest.getPaymentOption()).thenReturn(Payment.IDEAL);
 
-        ResponseEntity<Void> response = customerController.payOrder(customerId, orderId, payOrderRequest);
+        ResponseEntity<Void> response = customerController.payOrder(UUID.randomUUID(), orderId, payOrderRequest);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
     @Test
     void payOrderWithMissingPaymentInfo() {
-        when(dataValidator.handle(any(ValidatorRequest.class))).thenReturn(true);
-        when(userAuthorizationValidator.handle(any(ValidatorRequest.class))).thenReturn(true);
-        when(orderService.findById(orderId)).thenReturn(createOrder());
-        when(paymentMock.pay(orderId, payOrderRequest)).thenReturn(true);
-        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
-        when(customerFacade.existsById(customerId)).thenReturn(true);
-        when(validatorRequest.getUserUUID()).thenReturn(customerId);
-        when(payOrderRequest.getPaymentOption()).thenReturn(null);
 
         ResponseEntity<Void> response = customerController.payOrder(customerId, orderId, payOrderRequest);
 
@@ -1008,12 +1003,6 @@ class CustomerControllerTest {
 
     @Test
     void payOrderWithPaymentFailure() {
-        doThrow(new ValidationFailureException(HttpStatus.BAD_REQUEST))
-                .when(dataValidator).handle(any(ValidatorRequest.class));
-        when(validatorRequest.getUserUUID()).thenReturn(null);
-        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
-
-        when(customerFacade.existsById(customerId)).thenReturn(true);
         ResponseEntity<Void> response = customerController.payOrder(customerId, orderId, payOrderRequest);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
@@ -1021,17 +1010,12 @@ class CustomerControllerTest {
 
     @Test
     void payOrderWithNotFound() {
-        doThrow(new ValidationFailureException(HttpStatus.NOT_FOUND))
-                .when(dataValidator).handle(any(ValidatorRequest.class));
         when(orderService.findById(orderId)).thenReturn(null);
 
         ResponseEntity<Void> response = customerController.payOrder(customerId, orderId, payOrderRequest);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
-
-
-
 
     private Order createOrder() {
         Order order = new Order();
