@@ -8,7 +8,6 @@ import nl.tudelft.sem.template.model.Address;
 import java.util.UUID;
 
 @Getter
-@Setter
 @EqualsAndHashCode
 @ToString
 public class VendorDTO {
@@ -41,6 +40,37 @@ public class VendorDTO {
         this.isBlocked = isBlocked;
         this.email = email;
         this.isApproved = isApproved;
+        this.location = location;
+    }
+
+    public void setVendorId(UUID vendorId) {
+        this.vendorId = vendorId;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    /**
+     * THIS SETTER IS NEEDED
+     * The generated setter is generated as 'setBlocked' which interferes with the ObjectMapper,
+     * as the attribute inside the JSON file is called 'isBlocked'
+     *
+     * @param isBlocked blocked
+     */
+    public void setIsBlocked(boolean isBlocked) {
+        this.isBlocked = isBlocked;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public void setApproved(boolean approved) {
+        isApproved = approved;
+    }
+
+    public void setLocation(Address location) {
         this.location = location;
     }
 }

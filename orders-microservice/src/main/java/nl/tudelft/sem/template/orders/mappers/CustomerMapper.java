@@ -1,7 +1,7 @@
 package nl.tudelft.sem.template.orders.mappers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import nl.tudelft.sem.template.orders.external.CustomerDTO;
 import nl.tudelft.sem.template.orders.mappers.interfaces.ICustomerMapper;
@@ -25,9 +25,15 @@ public class CustomerMapper implements ICustomerMapper {
      */
     public CustomerDTO toDTO(String responseBody) {
         try {
-            return OBJECT_MAPPER.readValue(responseBody, new TypeReference<CustomerDTO>() {
+            OBJECT_MAPPER.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            var res = OBJECT_MAPPER.readValue(responseBody, new TypeReference<CustomerDTO>() {
             });
-        } catch (JsonProcessingException e) {
+            if (res.equals(new CustomerDTO())) {
+                throw new RuntimeException();
+            }
+
+            return res;
+        } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
