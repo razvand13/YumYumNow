@@ -8,12 +8,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.util.Collections;
-import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
+import java.util.Optional;
+import java.util.Collections;
+import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -29,6 +31,7 @@ public class DishServiceTest {
     @BeforeEach
     public void setup() {
         MockitoAnnotations.openMocks(this);
+        dishService = new DishService(dishRepository);
     }
 
     @Test
@@ -38,7 +41,7 @@ public class DishServiceTest {
         dish.setID(dishId);
         when(dishRepository.findById(dishId)).thenReturn(Optional.of(dish));
 
-        Dish result = dishService.findById(dishId);
+        Dish result = dishService.findByIdNotDeleted(dishId);
 
         assertThat(result).isNotNull();
         assertThat(result.getID()).isEqualTo(dishId);
@@ -49,7 +52,7 @@ public class DishServiceTest {
         UUID nonExistentDishId = UUID.randomUUID();
 
         when(dishRepository.findById(nonExistentDishId)).thenReturn(Optional.empty()); // Unsuccessful query
-        Dish dish = dishService.findById(nonExistentDishId);
+        Dish dish = dishService.findByIdNotDeleted(nonExistentDishId);
 
         assertThat(dish).isNull();
     }
@@ -61,7 +64,7 @@ public class DishServiceTest {
         dish.setID(UUID.randomUUID());
         when(dishRepository.getDishesByVendorId(vendorId)).thenReturn(Collections.singletonList(dish));
 
-        Iterable<Dish> result = dishService.findAllByVendorId(vendorId);
+        Iterable<Dish> result = dishService.findAllByVendorIdNotDeleted(vendorId);
 
         assertThat(result).isNotNull();
         assertThat(result).hasSize(1);
@@ -75,7 +78,7 @@ public class DishServiceTest {
         Dish dish = new Dish();
         when(dishRepository.getDishesByVendorId(existentVendorId)).thenReturn(Collections.singletonList(dish));
 
-        Iterable<Dish> result = dishService.findAllByVendorId(nonExistentVendorId);
+        Iterable<Dish> result = dishService.findAllByVendorIdNotDeleted(nonExistentVendorId);
 
         assertThat(result).isEmpty();
     }
@@ -92,5 +95,153 @@ public class DishServiceTest {
         assertThat(savedDish).isEqualTo(dish);
         verify(dishRepository).save(dish);
     }
+
+    @Test
+    void removeDishWhenDishNotFound() {
+        UUID vendorId = UUID.randomUUID();
+        UUID dishId = UUID.randomUUID();
+
+        when(dishRepository.findById(dishId)).thenReturn(Optional.empty());
+
+        boolean result = dishService.removeDish(vendorId, dishId);
+
+        assertThat(result).isFalse();
+        verify(dishRepository).findById(dishId);
+    }
+
+    @Test
+    void removeDishWhenDishBelongsToAnotherVendor() {
+
+        UUID anotherVendorId = UUID.randomUUID();
+        UUID dishId = UUID.randomUUID();
+        Dish dish = new Dish();
+        dish.setID(dishId);
+        dish.setVendorId(anotherVendorId);
+
+        when(dishRepository.findById(dishId)).thenReturn(Optional.of(dish));
+
+        UUID vendorId = UUID.randomUUID();
+        boolean result = dishService.removeDish(vendorId, dishId);
+
+        assertThat(result).isFalse();
+        verify(dishRepository).findById(dishId);
+        verify(dishRepository, never()).delete(any(Dish.class));
+    }
+
+    @Test
+    void removeDishSuccessful() {
+        UUID vendorId = UUID.randomUUID();
+        UUID dishId = UUID.randomUUID();
+        Dish dish = new Dish();
+        dish.setID(dishId);
+        dish.setVendorId(vendorId);
+
+        when(dishRepository.findById(dishId)).thenReturn(Optional.of(dish));
+
+        boolean result = dishService.removeDish(vendorId, dishId);
+
+        assertThat(result).isTrue();
+        verify(dishRepository).findById(dishId);
+        verify(dishRepository).save(dish);
+        assertThat(dish.getIsDeleted()).isTrue();
+    }
+
+    @Test
+    void updateDishNotFound() {
+        UUID dishId = UUID.randomUUID();
+        Dish updatedDish = new Dish();
+
+        when(dishRepository.findById(dishId)).thenReturn(Optional.empty());
+
+        Dish result = dishService.updateDish(dishId, updatedDish);
+
+        assertThat(result).isNull();
+        verify(dishRepository).findById(dishId);
+        verify(dishRepository, never()).save(any(Dish.class));
+    }
+
+    @Test
+    void updateDishAlreadyDeleted() {
+        UUID dishId = UUID.randomUUID();
+        Dish existingDish = new Dish();
+        existingDish.setID(dishId);
+        existingDish.setIsDeleted(true);
+
+        Dish updatedDish = new Dish();
+
+        when(dishRepository.findById(dishId)).thenReturn(Optional.of(existingDish));
+
+        Dish result = dishService.updateDish(dishId, updatedDish);
+
+        assertThat(result).isNull();
+        verify(dishRepository).findById(dishId);
+        verify(dishRepository, never()).save(any(Dish.class));
+    }
+
+    @Test
+    void updateDishSuccessful() {
+        UUID dishId = UUID.randomUUID();
+        Dish existingDish = new Dish();
+        existingDish.setID(dishId);
+        existingDish.setIsDeleted(false);
+
+        Dish updatedDish = new Dish();
+        updatedDish.setName("Updated Name");
+
+        when(dishRepository.findById(dishId)).thenReturn(Optional.of(existingDish));
+        when(dishRepository.save(any(Dish.class))).thenReturn(updatedDish);
+
+        Dish result = dishService.updateDish(dishId, updatedDish);
+
+        assertThat(result).isEqualTo(updatedDish);
+        verify(dishRepository).findById(dishId);
+        verify(dishRepository).save(any(Dish.class));
+    }
+    
+    @Test
+    void isDishNotInOrder() {
+        UUID dishId = UUID.randomUUID();
+        List<Dish> dishes = Arrays.asList(createDish(UUID.randomUUID()), createDish(UUID.randomUUID()));
+
+        boolean result = dishService.isDishInOrder(dishes, dishId);
+
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    void removeDishFromOrder() {
+        UUID dishIdToRemove = UUID.randomUUID();
+        Dish dishToRemove = createDish(dishIdToRemove);
+        Dish otherDish = createDish(UUID.randomUUID());
+
+        List<Dish> dishes = Arrays.asList(dishToRemove, otherDish);
+
+        List<Dish> result = dishService.removeDishOrder(dishes, dishIdToRemove);
+
+        assertThat(result).doesNotContain(dishToRemove);
+        assertThat(result).hasSize(1);
+        assertThat(result).contains(otherDish);
+    }
+
+    @Test
+    void removeDishNotInOrder() {
+        UUID dishIdToRemove = UUID.randomUUID();
+        Dish dish1 = createDish(UUID.randomUUID());
+        Dish dish2 = createDish(UUID.randomUUID());
+
+        List<Dish> dishes = Arrays.asList(dish1, dish2);
+
+        List<Dish> result = dishService.removeDishOrder(dishes, dishIdToRemove);
+
+        assertThat(result).hasSize(2);
+        assertThat(result).containsExactlyInAnyOrder(dish1, dish2);
+    }
+
+    private Dish createDish(UUID dishId) {
+        Dish dish = new Dish();
+        dish.setID(dishId);
+        return dish;
+    }
+
 
 }

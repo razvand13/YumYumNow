@@ -7,14 +7,13 @@ import nl.tudelft.sem.template.model.Order;
 import nl.tudelft.sem.template.model.Status;
 import nl.tudelft.sem.template.model.UpdateDishQtyRequest;
 import nl.tudelft.sem.template.model.UpdateOrderStatusRequest;
+import nl.tudelft.sem.template.orders.integration.VendorFacade;
 import nl.tudelft.sem.template.orders.services.DishService;
 import nl.tudelft.sem.template.orders.services.OrderService;
-import nl.tudelft.sem.template.orders.services.VendorAdapter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.mockito.stubbing.OngoingStubbing;
 import org.springframework.http.HttpStatus;
 
 import java.util.ArrayList;
@@ -32,7 +31,7 @@ class DataValidatorTest {
     @Mock
     DishService dishService;
     @Mock
-    VendorAdapter vendorAdapter;
+    VendorFacade vendorFacade;
 
     Order order;
     UUID customerUUID = UUID.randomUUID();
@@ -55,13 +54,13 @@ class DataValidatorTest {
         when(orderService.findById(order.getID())).thenReturn(order);
         when(dishService.findById(any(UUID.class))).thenReturn(null);
         when(dishService.findById(dish.getID())).thenReturn(dish);
-        when(vendorAdapter.existsById(any(UUID.class))).thenReturn(false);
-        when(vendorAdapter.existsById(vendorUUID)).thenReturn(true);
+        when(vendorFacade.existsById(any(UUID.class))).thenReturn(false);
+        when(vendorFacade.existsById(vendorUUID)).thenReturn(true);
     }
 
     @Test
     public void testUserSuccess() {
-        sut = new DataValidator(orderService, dishService, vendorAdapter, List.of(DataValidationField.USER));
+        sut = new DataValidator(orderService, dishService, vendorFacade, List.of(DataValidationField.USER));
 
         ValidatorRequest request = new ValidatorRequest();
         request.setUserUUID(customerUUID);
@@ -71,7 +70,7 @@ class DataValidatorTest {
 
     @Test
     public void testUserFailure() {
-        sut = new DataValidator(orderService, dishService, vendorAdapter, List.of(DataValidationField.USER));
+        sut = new DataValidator(orderService, dishService, vendorFacade, List.of(DataValidationField.USER));
 
         ValidatorRequest request = new ValidatorRequest();
 
@@ -82,7 +81,7 @@ class DataValidatorTest {
 
     @Test
     public void testOrderSuccess() {
-        sut = new DataValidator(orderService, dishService, vendorAdapter, List.of(DataValidationField.ORDER));
+        sut = new DataValidator(orderService, dishService, vendorFacade, List.of(DataValidationField.ORDER));
 
         ValidatorRequest request = new ValidatorRequest();
         request.setOrderUUID(order.getID());
@@ -94,7 +93,7 @@ class DataValidatorTest {
 
     @Test
     public void testOrderNullID() {
-        sut = new DataValidator(orderService, dishService, vendorAdapter, List.of(DataValidationField.ORDER));
+        sut = new DataValidator(orderService, dishService, vendorFacade, List.of(DataValidationField.ORDER));
 
         ValidatorRequest request = new ValidatorRequest();
 
@@ -105,7 +104,7 @@ class DataValidatorTest {
 
     @Test
     public void testOrderNotFound() {
-        sut = new DataValidator(orderService, dishService, vendorAdapter, List.of(DataValidationField.ORDER));
+        sut = new DataValidator(orderService, dishService, vendorFacade, List.of(DataValidationField.ORDER));
 
         ValidatorRequest request = new ValidatorRequest();
         request.setOrderUUID(UUID.randomUUID());
@@ -117,7 +116,7 @@ class DataValidatorTest {
 
     @Test
     public void testOrderCustomerVendorIDNoMatch() {
-        sut = new DataValidator(orderService, dishService, vendorAdapter, List.of(DataValidationField.ORDER));
+        sut = new DataValidator(orderService, dishService, vendorFacade, List.of(DataValidationField.ORDER));
 
         ValidatorRequest request = new ValidatorRequest();
         request.setOrderUUID(order.getID());
@@ -137,7 +136,7 @@ class DataValidatorTest {
 
     @Test
     public void testDishSuccess() {
-        sut = new DataValidator(orderService, dishService, vendorAdapter, List.of(DataValidationField.DISH));
+        sut = new DataValidator(orderService, dishService, vendorFacade, List.of(DataValidationField.DISH));
 
         ValidatorRequest request = new ValidatorRequest();
         request.setDishUUID(dish.getID());
@@ -147,7 +146,7 @@ class DataValidatorTest {
 
     @Test
     public void testDishNullID() {
-        sut = new DataValidator(orderService, dishService, vendorAdapter, List.of(DataValidationField.DISH));
+        sut = new DataValidator(orderService, dishService, vendorFacade, List.of(DataValidationField.DISH));
 
         ValidatorRequest request = new ValidatorRequest();
 
@@ -158,7 +157,7 @@ class DataValidatorTest {
 
     @Test
     public void testDishNotFound() {
-        sut = new DataValidator(orderService, dishService, vendorAdapter, List.of(DataValidationField.DISH));
+        sut = new DataValidator(orderService, dishService, vendorFacade, List.of(DataValidationField.DISH));
 
         ValidatorRequest request = new ValidatorRequest();
         request.setDishUUID(UUID.randomUUID());
@@ -170,7 +169,7 @@ class DataValidatorTest {
 
     @Test
     public void testUpdateDishSuccess() {
-        sut = new DataValidator(orderService, dishService, vendorAdapter, List.of(DataValidationField.UPDATEDISHQTYREQUEST));
+        sut = new DataValidator(orderService, dishService, vendorFacade, List.of(DataValidationField.UPDATEDISHQTYREQUEST));
 
         ValidatorRequest request = new ValidatorRequest();
         UpdateDishQtyRequest updateDishQtyRequest = new UpdateDishQtyRequest();
@@ -182,7 +181,7 @@ class DataValidatorTest {
 
     @Test
     public void testUpdateDishNull() {
-        sut = new DataValidator(orderService, dishService, vendorAdapter, List.of(DataValidationField.UPDATEDISHQTYREQUEST));
+        sut = new DataValidator(orderService, dishService, vendorFacade, List.of(DataValidationField.UPDATEDISHQTYREQUEST));
 
         ValidatorRequest request = new ValidatorRequest();
 
@@ -193,7 +192,7 @@ class DataValidatorTest {
 
     @Test
     public void testUpdateDishInvalidQuantity() {
-        sut = new DataValidator(orderService, dishService, vendorAdapter, List.of(DataValidationField.UPDATEDISHQTYREQUEST));
+        sut = new DataValidator(orderService, dishService, vendorFacade, List.of(DataValidationField.UPDATEDISHQTYREQUEST));
 
         ValidatorRequest request = new ValidatorRequest();
         UpdateDishQtyRequest updateDishQtyRequest = new UpdateDishQtyRequest();
@@ -207,7 +206,7 @@ class DataValidatorTest {
 
     @Test
     public void testCreateOrderSuccess() {
-        sut = new DataValidator(orderService, dishService, vendorAdapter, List.of(DataValidationField.CREATEORDERREQUEST));
+        sut = new DataValidator(orderService, dishService, vendorFacade, List.of(DataValidationField.CREATEORDERREQUEST));
 
         ValidatorRequest request = new ValidatorRequest();
         CreateOrderRequest createOrderRequest = new CreateOrderRequest();
@@ -220,7 +219,7 @@ class DataValidatorTest {
 
     @Test
     public void testCreateOrderNull() {
-        sut = new DataValidator(orderService, dishService, vendorAdapter, List.of(DataValidationField.CREATEORDERREQUEST));
+        sut = new DataValidator(orderService, dishService, vendorFacade, List.of(DataValidationField.CREATEORDERREQUEST));
 
         ValidatorRequest request = new ValidatorRequest();
 
@@ -231,7 +230,7 @@ class DataValidatorTest {
 
     @Test
     public void testCreateOrderNullAddress() {
-        sut = new DataValidator(orderService, dishService, vendorAdapter, List.of(DataValidationField.CREATEORDERREQUEST));
+        sut = new DataValidator(orderService, dishService, vendorFacade, List.of(DataValidationField.CREATEORDERREQUEST));
 
         ValidatorRequest request = new ValidatorRequest();
         CreateOrderRequest createOrderRequest = new CreateOrderRequest();
@@ -245,7 +244,7 @@ class DataValidatorTest {
 
     @Test
     public void testCreateOrderNullVendor() {
-        sut = new DataValidator(orderService, dishService, vendorAdapter, List.of(DataValidationField.CREATEORDERREQUEST));
+        sut = new DataValidator(orderService, dishService, vendorFacade, List.of(DataValidationField.CREATEORDERREQUEST));
 
         ValidatorRequest request = new ValidatorRequest();
         CreateOrderRequest createOrderRequest = new CreateOrderRequest();
@@ -259,7 +258,7 @@ class DataValidatorTest {
 
     @Test
     public void testCreateOrderVendorNotExist() {
-        sut = new DataValidator(orderService, dishService, vendorAdapter, List.of(DataValidationField.CREATEORDERREQUEST));
+        sut = new DataValidator(orderService, dishService, vendorFacade, List.of(DataValidationField.CREATEORDERREQUEST));
 
         ValidatorRequest request = new ValidatorRequest();
         CreateOrderRequest createOrderRequest = new CreateOrderRequest();
@@ -274,7 +273,7 @@ class DataValidatorTest {
 
     @Test
     public void testUpdateStatusSuccess() {
-        sut = new DataValidator(orderService, dishService, vendorAdapter,
+        sut = new DataValidator(orderService, dishService, vendorFacade,
                 List.of(DataValidationField.UPDATEORDERSTATUSREQUEST));
 
         UpdateOrderStatusRequest updateOrderStatusRequest = new UpdateOrderStatusRequest();
@@ -287,7 +286,7 @@ class DataValidatorTest {
 
     @Test
     public void testUpdateStatusNull() {
-        sut = new DataValidator(orderService, dishService, vendorAdapter,
+        sut = new DataValidator(orderService, dishService, vendorFacade,
                 List.of(DataValidationField.UPDATEORDERSTATUSREQUEST));
 
         ValidatorRequest request = new ValidatorRequest();
@@ -299,7 +298,7 @@ class DataValidatorTest {
 
     @Test
     public void testUpdateStatusStatusNull() {
-        sut = new DataValidator(orderService, dishService, vendorAdapter,
+        sut = new DataValidator(orderService, dishService, vendorFacade,
                 List.of(DataValidationField.UPDATEORDERSTATUSREQUEST));
 
         UpdateOrderStatusRequest updateOrderStatusRequest = new UpdateOrderStatusRequest();
@@ -313,7 +312,7 @@ class DataValidatorTest {
 
     @Test
     public void testEmpty() {
-        sut = new DataValidator(orderService, dishService, vendorAdapter,
+        sut = new DataValidator(orderService, dishService, vendorFacade,
                 new ArrayList<>());
 
         ValidatorRequest request = new ValidatorRequest();

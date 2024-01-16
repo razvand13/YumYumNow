@@ -2,11 +2,11 @@ package nl.tudelft.sem.template.orders.validator;
 
 import nl.tudelft.sem.template.model.Dish;
 import nl.tudelft.sem.template.model.Order;
-import nl.tudelft.sem.template.orders.services.AdminAdapter;
-import nl.tudelft.sem.template.orders.services.CustomerAdapter;
+import nl.tudelft.sem.template.orders.integration.AdminFacade;
+import nl.tudelft.sem.template.orders.integration.CustomerFacade;
+import nl.tudelft.sem.template.orders.integration.VendorFacade;
 import nl.tudelft.sem.template.orders.services.DishService;
 import nl.tudelft.sem.template.orders.services.OrderService;
-import nl.tudelft.sem.template.orders.services.VendorAdapter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -22,11 +22,11 @@ import static org.mockito.Mockito.when;
 
 class UserAuthorizationValidatorTest {
     @Mock
-    CustomerAdapter customerAdapter;
+    CustomerFacade customerFacade;
     @Mock
-    VendorAdapter vendorAdapter;
+    VendorFacade vendorFacade;
     @Mock
-    AdminAdapter adminAdapter;
+    AdminFacade adminFacade;
     @Mock
     OrderService orderService;
     @Mock
@@ -55,25 +55,25 @@ class UserAuthorizationValidatorTest {
         when(dishService.findById(dish.getID())).thenReturn(dish);
 
         //Define adapter behavior
-        when(customerAdapter.checkRoleById(any(UUID.class))).thenReturn(true);
-        when(customerAdapter.checkRoleById(vendorUUID)).thenReturn(false);
-        when(customerAdapter.checkRoleById(adminUUID)).thenReturn(false);
-        when(customerAdapter.existsById(any(UUID.class))).thenReturn(false);
-        when(customerAdapter.existsById(customerUUID)).thenReturn(true);
+        when(customerFacade.checkRoleById(any(UUID.class))).thenReturn(true);
+        when(customerFacade.checkRoleById(vendorUUID)).thenReturn(false);
+        when(customerFacade.checkRoleById(adminUUID)).thenReturn(false);
+        when(customerFacade.existsById(any(UUID.class))).thenReturn(false);
+        when(customerFacade.existsById(customerUUID)).thenReturn(true);
 
-        when(vendorAdapter.checkRoleById(any(UUID.class))).thenReturn(true);
-        when(vendorAdapter.checkRoleById(customerUUID)).thenReturn(false);
-        when(vendorAdapter.checkRoleById(adminUUID)).thenReturn(false);
-        when(vendorAdapter.existsById(any(UUID.class))).thenReturn(false);
-        when(vendorAdapter.existsById(vendorUUID)).thenReturn(true);
+        when(vendorFacade.checkRoleById(any(UUID.class))).thenReturn(true);
+        when(vendorFacade.checkRoleById(customerUUID)).thenReturn(false);
+        when(vendorFacade.checkRoleById(adminUUID)).thenReturn(false);
+        when(vendorFacade.existsById(any(UUID.class))).thenReturn(false);
+        when(vendorFacade.existsById(vendorUUID)).thenReturn(true);
 
-        when(adminAdapter.checkRoleById(any(UUID.class))).thenReturn(true);
-        when(adminAdapter.checkRoleById(customerUUID)).thenReturn(false);
-        when(adminAdapter.checkRoleById(vendorUUID)).thenReturn(false);
-        when(adminAdapter.existsById(any(UUID.class))).thenReturn(false);
-        when(adminAdapter.existsById(adminUUID)).thenReturn(true);
+        when(adminFacade.checkRoleById(any(UUID.class))).thenReturn(true);
+        when(adminFacade.checkRoleById(customerUUID)).thenReturn(false);
+        when(adminFacade.checkRoleById(vendorUUID)).thenReturn(false);
+        when(adminFacade.existsById(any(UUID.class))).thenReturn(false);
+        when(adminFacade.existsById(adminUUID)).thenReturn(true);
 
-        sut = new UserAuthorizationValidator(customerAdapter, vendorAdapter, orderService, dishService, adminAdapter);
+        sut = new UserAuthorizationValidator(customerFacade, vendorFacade, orderService, dishService, adminFacade);
     }
 
     @Test

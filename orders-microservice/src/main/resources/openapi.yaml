@@ -54,8 +54,6 @@ paths:
                 $ref: '#/components/schemas/Order'
         '400':
           description: Bad request - Invalid status or request format.
-        '401':
-          description: Unauthorized - User is not authorized to update order status.
         '404':
           description: Not Found - Order ID does not exist.
         '500':
@@ -1399,6 +1397,9 @@ components:
         price:
           type: number
           format: double
+        isDeleted:
+          type: boolean
+          default: false
         allergens:
           type: array
           items:

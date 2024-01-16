@@ -1,4 +1,4 @@
-package nl.tudelft.sem.template.orders.services;
+package nl.tudelft.sem.template.orders.integration;
 
 import org.springframework.stereotype.Component;
 
@@ -9,7 +9,7 @@ import java.net.http.HttpResponse;
 import java.util.UUID;
 
 @Component
-public class AdminAdapter {
+public class AdminFacade {
 
     private static final String USERS_URL = "https://localhost:8088";
     private static final HttpClient CLIENT = HttpClient.newBuilder().build();

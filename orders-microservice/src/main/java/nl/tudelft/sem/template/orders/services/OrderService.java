@@ -69,4 +69,26 @@ public class OrderService implements IOrderService {
                 .findFirst();
     }
 
+    /**
+     *
+     * @param orderedDishes ordered dishes
+     * @param dishId id of dish to remove
+     * @return OrderedDish without the dish that was removed
+     */
+    public Optional<OrderedDish> removeDishOrder(List<OrderedDish> orderedDishes, UUID dishId) {
+        return orderedDishes.stream()
+                .filter(orderedDish -> orderedDish.getDish().getID().equals(dishId))
+                .findFirst();
+    }
+
+    /**
+     *
+     * @param customerId id of customer
+     * @return finds the orders of a customer by its id
+     */
+    public List<Order> findOrdersByCustomerId(UUID customerId) {
+        // This method fetches orders from the repository using the customerId
+        return orderRepository.findByCustomerId(customerId);
+    }
+
 }

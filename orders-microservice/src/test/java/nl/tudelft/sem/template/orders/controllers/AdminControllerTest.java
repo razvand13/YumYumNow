@@ -1,7 +1,7 @@
 package nl.tudelft.sem.template.orders.controllers;
 
 import nl.tudelft.sem.template.model.Order;
-import nl.tudelft.sem.template.orders.services.AdminAdapter;
+import nl.tudelft.sem.template.orders.integration.AdminFacade;
 import nl.tudelft.sem.template.orders.services.OrderService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,7 +21,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 class AdminControllerTest {
 
-    private AdminAdapter adminAdapter;
+    private AdminFacade adminFacade;
     private OrderService orderService;
     private AdminController adminController;
     private UUID adminId;
@@ -29,9 +29,9 @@ class AdminControllerTest {
 
     @BeforeEach
     void setUp() {
-        adminAdapter = mock(AdminAdapter.class);
+        adminFacade = mock(AdminFacade.class);
         orderService = mock(OrderService.class);
-        adminController = new AdminController(orderService, adminAdapter);
+        adminController = new AdminController(orderService, adminFacade);
 
         adminId = UUID.randomUUID();
         orderId = UUID.randomUUID();
@@ -44,38 +44,38 @@ class AdminControllerTest {
         ResponseEntity<List<Order>> response = adminController.adminGetAllOrders(null);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        verifyNoInteractions(adminAdapter);
+        verifyNoInteractions(adminFacade);
         verifyNoInteractions(orderService);
     }
 
     @Test
     void adminGetAllOrdersWhenUserIsNotAdmin() {
-        when(adminAdapter.checkRoleById(adminId)).thenReturn(false);
+        when(adminFacade.checkRoleById(adminId)).thenReturn(false);
 
         ResponseEntity<List<Order>> response = adminController.adminGetAllOrders(adminId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-        verify(adminAdapter).checkRoleById(adminId);
+        verify(adminFacade).checkRoleById(adminId);
         verifyNoInteractions(orderService);
     }
 
     @Test
     void adminGetAllOrdersWhenAdminNotFound() {
-        when(adminAdapter.checkRoleById(adminId)).thenReturn(true);
-        when(adminAdapter.existsById(adminId)).thenReturn(false);
+        when(adminFacade.checkRoleById(adminId)).thenReturn(true);
+        when(adminFacade.existsById(adminId)).thenReturn(false);
 
         ResponseEntity<List<Order>> response = adminController.adminGetAllOrders(adminId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-        verify(adminAdapter).checkRoleById(adminId);
-        verify(adminAdapter).existsById(adminId);
+        verify(adminFacade).checkRoleById(adminId);
+        verify(adminFacade).existsById(adminId);
         verifyNoInteractions(orderService);
     }
 
     @Test
     void adminGetAllOrdersSuccess() {
-        when(adminAdapter.checkRoleById(adminId)).thenReturn(true);
-        when(adminAdapter.existsById(adminId)).thenReturn(true);
+        when(adminFacade.checkRoleById(adminId)).thenReturn(true);
+        when(adminFacade.existsById(adminId)).thenReturn(true);
         List<Order> mockOrders = new ArrayList<>();
         when(orderService.findAll()).thenReturn(mockOrders);
 
@@ -83,8 +83,8 @@ class AdminControllerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isEqualTo(mockOrders);
-        verify(adminAdapter).checkRoleById(adminId);
-        verify(adminAdapter).existsById(adminId);
+        verify(adminFacade).checkRoleById(adminId);
+        verify(adminFacade).existsById(adminId);
         verify(orderService).findAll();
     }
 
@@ -96,7 +96,7 @@ class AdminControllerTest {
         ResponseEntity<Order> response = adminController.adminGetOrder(null, orderId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        verifyNoInteractions(adminAdapter);
+        verifyNoInteractions(adminFacade);
         verifyNoInteractions(orderService);
     }
 
@@ -105,75 +105,75 @@ class AdminControllerTest {
         ResponseEntity<Order> response = adminController.adminGetOrder(adminId, null);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        verifyNoInteractions(adminAdapter);
+        verifyNoInteractions(adminFacade);
         verifyNoInteractions(orderService);
     }
 
     @Test
     void adminGetOrderWhenUserIsNotAdmin() {
-        when(adminAdapter.checkRoleById(adminId)).thenReturn(false);
+        when(adminFacade.checkRoleById(adminId)).thenReturn(false);
 
         ResponseEntity<Order> response = adminController.adminGetOrder(adminId, orderId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-        verify(adminAdapter).checkRoleById(adminId);
+        verify(adminFacade).checkRoleById(adminId);
         verifyNoInteractions(orderService);
     }
 
     @Test
     void adminGetOrderWhenAdminNotFound() {
-        when(adminAdapter.checkRoleById(adminId)).thenReturn(true);
-        when(adminAdapter.existsById(adminId)).thenReturn(false);
+        when(adminFacade.checkRoleById(adminId)).thenReturn(true);
+        when(adminFacade.existsById(adminId)).thenReturn(false);
 
         ResponseEntity<Order> response = adminController.adminGetOrder(adminId, orderId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-        verify(adminAdapter).checkRoleById(adminId);
-        verify(adminAdapter).existsById(adminId);
+        verify(adminFacade).checkRoleById(adminId);
+        verify(adminFacade).existsById(adminId);
         verifyNoInteractions(orderService);
     }
 
     @Test
     void adminGetOrderWhenOrderNotFound() {
-        when(adminAdapter.checkRoleById(adminId)).thenReturn(true);
-        when(adminAdapter.existsById(adminId)).thenReturn(true);
+        when(adminFacade.checkRoleById(adminId)).thenReturn(true);
+        when(adminFacade.existsById(adminId)).thenReturn(true);
         when(orderService.findById(orderId)).thenReturn(null);
 
         ResponseEntity<Order> response = adminController.adminGetOrder(adminId, orderId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-        verify(adminAdapter).checkRoleById(adminId);
-        verify(adminAdapter).existsById(adminId);
+        verify(adminFacade).checkRoleById(adminId);
+        verify(adminFacade).existsById(adminId);
         verify(orderService).findById(orderId);
     }
 
     @Test
     void adminGetOrderSuccess() {
         Order mockOrder = new Order(); // Assuming Order is a valid class
-        when(adminAdapter.checkRoleById(adminId)).thenReturn(true);
-        when(adminAdapter.existsById(adminId)).thenReturn(true);
+        when(adminFacade.checkRoleById(adminId)).thenReturn(true);
+        when(adminFacade.existsById(adminId)).thenReturn(true);
         when(orderService.findById(orderId)).thenReturn(mockOrder);
 
         ResponseEntity<Order> response = adminController.adminGetOrder(adminId, orderId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isEqualTo(mockOrder);
-        verify(adminAdapter).checkRoleById(adminId);
-        verify(adminAdapter).existsById(adminId);
+        verify(adminFacade).checkRoleById(adminId);
+        verify(adminFacade).existsById(adminId);
         verify(orderService).findById(orderId);
     }
 
     @Test
     void adminGetOrderThrowsException() {
-        when(adminAdapter.checkRoleById(adminId)).thenReturn(true);
-        when(adminAdapter.existsById(adminId)).thenReturn(true);
+        when(adminFacade.checkRoleById(adminId)).thenReturn(true);
+        when(adminFacade.existsById(adminId)).thenReturn(true);
         when(orderService.findById(orderId)).thenThrow(RuntimeException.class);
 
         ResponseEntity<Order> response = adminController.adminGetOrder(adminId, orderId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-        verify(adminAdapter).checkRoleById(adminId);
-        verify(adminAdapter).existsById(adminId);
+        verify(adminFacade).checkRoleById(adminId);
+        verify(adminFacade).existsById(adminId);
         verify(orderService).findById(orderId);
     }
 
@@ -186,7 +186,7 @@ class AdminControllerTest {
         ResponseEntity<Order> response = adminController.adminUpdateOrder(null, orderId, updatedOrder);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        verifyNoInteractions(adminAdapter);
+        verifyNoInteractions(adminFacade);
         verifyNoInteractions(orderService);
     }
 
@@ -196,48 +196,48 @@ class AdminControllerTest {
         ResponseEntity<Order> response = adminController.adminUpdateOrder(adminId, null, updatedOrder);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        verifyNoInteractions(adminAdapter);
+        verifyNoInteractions(adminFacade);
         verifyNoInteractions(orderService);
     }
 
     @Test
     void adminUpdateOrderWhenUserIsNotAdmin() {
         Order updatedOrder = new Order();
-        when(adminAdapter.checkRoleById(adminId)).thenReturn(false);
+        when(adminFacade.checkRoleById(adminId)).thenReturn(false);
 
         ResponseEntity<Order> response = adminController.adminUpdateOrder(adminId, orderId, updatedOrder);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-        verify(adminAdapter).checkRoleById(adminId);
+        verify(adminFacade).checkRoleById(adminId);
         verifyNoInteractions(orderService);
     }
 
     @Test
     void adminUpdateOrderWhenAdminNotFound() {
         Order updatedOrder = new Order();
-        when(adminAdapter.checkRoleById(adminId)).thenReturn(true);
-        when(adminAdapter.existsById(adminId)).thenReturn(false);
+        when(adminFacade.checkRoleById(adminId)).thenReturn(true);
+        when(adminFacade.existsById(adminId)).thenReturn(false);
 
         ResponseEntity<Order> response = adminController.adminUpdateOrder(adminId, orderId, updatedOrder);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-        verify(adminAdapter).checkRoleById(adminId);
-        verify(adminAdapter).existsById(adminId);
+        verify(adminFacade).checkRoleById(adminId);
+        verify(adminFacade).existsById(adminId);
         verifyNoInteractions(orderService);
     }
 
     @Test
     void adminUpdateOrderWhenOrderNotFound() {
         Order updatedOrder = new Order();
-        when(adminAdapter.checkRoleById(adminId)).thenReturn(true);
-        when(adminAdapter.existsById(adminId)).thenReturn(true);
+        when(adminFacade.checkRoleById(adminId)).thenReturn(true);
+        when(adminFacade.existsById(adminId)).thenReturn(true);
         when(orderService.findById(orderId)).thenReturn(null);
 
         ResponseEntity<Order> response = adminController.adminUpdateOrder(adminId, orderId, updatedOrder);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-        verify(adminAdapter).checkRoleById(adminId);
-        verify(adminAdapter).existsById(adminId);
+        verify(adminFacade).checkRoleById(adminId);
+        verify(adminFacade).existsById(adminId);
         verify(orderService).findById(orderId);
     }
 
@@ -245,8 +245,8 @@ class AdminControllerTest {
     void adminUpdateOrderSuccess() {
         Order updatedOrder = new Order();
         Order savedOrder = new Order();
-        when(adminAdapter.checkRoleById(adminId)).thenReturn(true);
-        when(adminAdapter.existsById(adminId)).thenReturn(true);
+        when(adminFacade.checkRoleById(adminId)).thenReturn(true);
+        when(adminFacade.existsById(adminId)).thenReturn(true);
         when(orderService.findById(orderId)).thenReturn(new Order());
         when(orderService.save(updatedOrder)).thenReturn(savedOrder);
 
@@ -254,8 +254,8 @@ class AdminControllerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isEqualTo(savedOrder);
-        verify(adminAdapter).checkRoleById(adminId);
-        verify(adminAdapter).existsById(adminId);
+        verify(adminFacade).checkRoleById(adminId);
+        verify(adminFacade).existsById(adminId);
         verify(orderService).findById(orderId);
         verify(orderService).save(updatedOrder);
     }
@@ -263,16 +263,16 @@ class AdminControllerTest {
     @Test
     void adminUpdateOrderThrowsException() {
         Order updatedOrder = new Order();
-        when(adminAdapter.checkRoleById(adminId)).thenReturn(true);
-        when(adminAdapter.existsById(adminId)).thenReturn(true);
+        when(adminFacade.checkRoleById(adminId)).thenReturn(true);
+        when(adminFacade.existsById(adminId)).thenReturn(true);
         when(orderService.findById(orderId)).thenReturn(new Order());
         when(orderService.save(updatedOrder)).thenThrow(RuntimeException.class);
 
         ResponseEntity<Order> response = adminController.adminUpdateOrder(adminId, orderId, updatedOrder);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-        verify(adminAdapter).checkRoleById(adminId);
-        verify(adminAdapter).existsById(adminId);
+        verify(adminFacade).checkRoleById(adminId);
+        verify(adminFacade).existsById(adminId);
         verify(orderService).findById(orderId);
         verify(orderService).save(updatedOrder);
     }
@@ -285,7 +285,7 @@ class AdminControllerTest {
         ResponseEntity<Void> response = adminController.adminRemoveOrder(null, orderId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        verifyNoInteractions(adminAdapter);
+        verifyNoInteractions(adminFacade);
         verifyNoInteractions(orderService);
     }
 
@@ -294,60 +294,60 @@ class AdminControllerTest {
         ResponseEntity<Void> response = adminController.adminRemoveOrder(adminId, null);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        verifyNoInteractions(adminAdapter);
+        verifyNoInteractions(adminFacade);
         verifyNoInteractions(orderService);
     }
 
     @Test
     void adminRemoveOrderWhenUserIsNotAdmin() {
-        when(adminAdapter.checkRoleById(adminId)).thenReturn(false);
+        when(adminFacade.checkRoleById(adminId)).thenReturn(false);
 
         ResponseEntity<Void> response = adminController.adminRemoveOrder(adminId, orderId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-        verify(adminAdapter).checkRoleById(adminId);
+        verify(adminFacade).checkRoleById(adminId);
         verifyNoInteractions(orderService);
     }
 
     @Test
     void adminRemoveOrderWhenAdminNotFound() {
-        when(adminAdapter.checkRoleById(adminId)).thenReturn(true);
-        when(adminAdapter.existsById(adminId)).thenReturn(false);
+        when(adminFacade.checkRoleById(adminId)).thenReturn(true);
+        when(adminFacade.existsById(adminId)).thenReturn(false);
 
         ResponseEntity<Void> response = adminController.adminRemoveOrder(adminId, orderId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-        verify(adminAdapter).checkRoleById(adminId);
-        verify(adminAdapter).existsById(adminId);
+        verify(adminFacade).checkRoleById(adminId);
+        verify(adminFacade).existsById(adminId);
         verifyNoInteractions(orderService);
     }
 
     @Test
     void adminRemoveOrderWhenOrderNotFound() {
-        when(adminAdapter.checkRoleById(adminId)).thenReturn(true);
-        when(adminAdapter.existsById(adminId)).thenReturn(true);
+        when(adminFacade.checkRoleById(adminId)).thenReturn(true);
+        when(adminFacade.existsById(adminId)).thenReturn(true);
         when(orderService.findById(orderId)).thenReturn(null);
 
         ResponseEntity<Void> response = adminController.adminRemoveOrder(adminId, orderId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-        verify(adminAdapter).checkRoleById(adminId);
-        verify(adminAdapter).existsById(adminId);
+        verify(adminFacade).checkRoleById(adminId);
+        verify(adminFacade).existsById(adminId);
         verify(orderService).findById(orderId);
     }
 
     @Test
     void adminRemoveOrderSuccess() {
         Order mockOrder = new Order(); // Assuming Order is a valid class
-        when(adminAdapter.checkRoleById(adminId)).thenReturn(true);
-        when(adminAdapter.existsById(adminId)).thenReturn(true);
+        when(adminFacade.checkRoleById(adminId)).thenReturn(true);
+        when(adminFacade.existsById(adminId)).thenReturn(true);
         when(orderService.findById(orderId)).thenReturn(mockOrder);
 
         ResponseEntity<Void> response = adminController.adminRemoveOrder(adminId, orderId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        verify(adminAdapter).checkRoleById(adminId);
-        verify(adminAdapter).existsById(adminId);
+        verify(adminFacade).checkRoleById(adminId);
+        verify(adminFacade).existsById(adminId);
         verify(orderService).findById(orderId);
         verify(orderService).delete(orderId);
     }
@@ -355,16 +355,16 @@ class AdminControllerTest {
     @Test
     void adminRemoveOrderThrowsException() {
         Order mockOrder = new Order();
-        when(adminAdapter.checkRoleById(adminId)).thenReturn(true);
-        when(adminAdapter.existsById(adminId)).thenReturn(true);
+        when(adminFacade.checkRoleById(adminId)).thenReturn(true);
+        when(adminFacade.existsById(adminId)).thenReturn(true);
         when(orderService.findById(orderId)).thenReturn(mockOrder);
         doThrow(RuntimeException.class).when(orderService).delete(orderId);
 
         ResponseEntity<Void> response = adminController.adminRemoveOrder(adminId, orderId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-        verify(adminAdapter).checkRoleById(adminId);
-        verify(adminAdapter).existsById(adminId);
+        verify(adminFacade).checkRoleById(adminId);
+        verify(adminFacade).existsById(adminId);
         verify(orderService).findById(orderId);
         verify(orderService).delete(orderId);
     }
