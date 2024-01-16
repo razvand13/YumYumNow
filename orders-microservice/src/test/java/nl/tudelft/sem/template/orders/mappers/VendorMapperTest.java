@@ -24,7 +24,7 @@ public class VendorMapperTest {
         address.setHouseNumber(1);
         address.setLatitude(50.0);
         address.setLongitude(40.0);
-        address.setZip("1234AB");
+        address.setZipCode("1234AB");
     }
 
     @Test
