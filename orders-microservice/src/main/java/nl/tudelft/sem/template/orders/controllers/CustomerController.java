@@ -217,11 +217,29 @@ public class CustomerController implements CustomerApi {
         // Get the vendor's dishes from the repository
         List<Dish> vendorDishes = dishService.findAllByVendorId(order.getVendorId());
 
+        CustomerDTO customer = customerFacade.requestCustomer(customerId);
+
+        List<String> customerAllergens = new ArrayList<>();
+        customerAllergens.addAll(customer.getAllergens());
+        List<Dish> dishesToRemove = new ArrayList<>();
+
+        // Find the dishes from the vendor that the customer is allergic to
+        for (int i = 0; i < vendorDishes.size(); i++) {
+            List<String> dishAllergens = vendorDishes.get(i).getAllergens();
+            if (dishAllergens != null) {
+                for (String allergen : dishAllergens) {
+                    if (customerAllergens.contains(allergen)) {
+                        dishesToRemove.add(vendorDishes.get(i));
+                        break;
+                    }
+                }
+            }
+        }
+
+        vendorDishes.removeAll(dishesToRemove);
+
         return ResponseEntity.ok(vendorDishes);
     }
-
-
-
 
     /**
      * POST /customer/{customerId}/order/{orderId}/dish/{dishId} : Add dish to order
