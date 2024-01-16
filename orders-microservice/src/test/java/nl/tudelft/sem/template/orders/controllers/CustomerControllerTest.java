@@ -6,6 +6,7 @@ import nl.tudelft.sem.template.model.Dish;
 import nl.tudelft.sem.template.model.Order;
 import nl.tudelft.sem.template.model.Address;
 import nl.tudelft.sem.template.model.UpdateDishQtyRequest;
+import nl.tudelft.sem.template.model.CreateOrderRequest;
 import nl.tudelft.sem.template.model.OrderedDish;
 import nl.tudelft.sem.template.model.Status;
 import nl.tudelft.sem.template.model.UpdateSpecialRequirementsRequest;
@@ -75,6 +76,7 @@ class CustomerControllerTest {
     @InjectMocks
     private CustomerController customerController;
 
+    private CreateOrderRequest createOrderRequest;
     private UpdateSpecialRequirementsRequest updateSpecialRequirementsRequest;
 
     private UUID customerId;
@@ -174,6 +176,7 @@ class CustomerControllerTest {
         order.setVendorId(UUID.randomUUID());
 
         updateSpecialRequirementsRequest = new UpdateSpecialRequirementsRequest();
+        createOrderRequest = new CreateOrderRequest();
 
         when(orderService.findById(orderId)).thenReturn(order);
         when(dishService.findById(dishId)).thenReturn(new Dish());
@@ -531,9 +534,6 @@ class CustomerControllerTest {
         assertThat(addedDish.getDish()).isEqualTo(newDish);
         assertThat(addedDish.getQuantity()).isEqualTo(2);
     }
-
-
-
 
     @Test
     void removeDishFromOrderOrderNotFound() {
@@ -928,6 +928,43 @@ class CustomerControllerTest {
         verify(dishService).findAllByVendorId(order.getVendorId());
     }
 
+    @Test
+    void testAddDishToOrderPriceUpdate() {
+
+    }
+
+    @Test
+    void testReorderAttributes() {
+        Order previousOrder = createOrder();
+        previousOrder.setLocation(createTestingAddress(42));
+        previousOrder.setTotalPrice(12.5);
+        previousOrder.setSpecialRequirements("Leave at the door");
+        previousOrder.setStatus(Status.ACCEPTED);
+
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
+        when(orderService.findById(orderId)).thenReturn(previousOrder);
+
+        // Mock the behavior of orderService.save
+        when(orderService.save(any(Order.class))).thenAnswer(invocation -> {
+            return invocation.getArgument(0);
+        });
+
+        ResponseEntity<Order> response = customerController.reorder(customerId, orderId, null);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        Order order = response.getBody();
+
+        assertThat(order.getCustomerId()).isEqualTo(previousOrder.getCustomerId());
+        assertThat(order.getVendorId()).isEqualTo(previousOrder.getVendorId());
+        assertThat(order.getDishes()).isEqualTo(previousOrder.getDishes());
+        assertThat(order.getOrderTime()).isNotEqualTo(previousOrder.getOrderTime());
+        assertThat(order.getStatus()).isEqualTo(Status.PENDING);
+        assertThat(order.getLocation()).isEqualTo(previousOrder.getLocation());
+        assertThat(order.getTotalPrice()).isEqualTo(previousOrder.getTotalPrice());
+    }
+
     private CustomerDTO setupCustomer(String... customerAllergens) {
         CustomerDTO customerDTO = new CustomerDTO();
         if (customerAllergens != null) {
@@ -937,6 +974,15 @@ class CustomerControllerTest {
         return customerDTO;
     }
 
+    private Address createTestingAddress(Integer housenumber) {
+        Address address = new Address();
+        address.setLatitude(1.0);
+        address.setLongitude(1.0);
+        address.setHouseNumber(housenumber);
+        address.setZipCode("1344AH");
+
+        return address;
+    }
     private List<Dish> setupVendorDishes(String[]... dishAllergens) {
         List<Dish> vendorDishes = new ArrayList<>();
         for (String[] allergens : dishAllergens) {

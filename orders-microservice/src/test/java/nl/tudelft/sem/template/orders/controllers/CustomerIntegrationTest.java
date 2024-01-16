@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -340,5 +341,29 @@ public class CustomerIntegrationTest {
         assertThat(res).isNotNull();
         assertThat(body).isNull();
         assertThat(statusCode).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void testCreateOrderStatus() {
+        CreateOrderRequest createOrderRequest = new CreateOrderRequest();
+        createOrderRequest.setVendorId(vendorId);
+        createOrderRequest.setAddress(new Address());
+
+        ResponseEntity<Order> response = customerController.createOrder(customerId, createOrderRequest);
+        Order order = response.getBody();
+
+        assertThat(order.getStatus()).isEqualTo(Status.PENDING);
+    }
+
+    @Test
+    void testCreateOrderTime() {
+        CreateOrderRequest createOrderRequest = new CreateOrderRequest();
+        createOrderRequest.setVendorId(vendorId);
+        createOrderRequest.setAddress(new Address());
+
+        ResponseEntity<Order> response = customerController.createOrder(customerId, createOrderRequest);
+        Order order = response.getBody();
+
+        assertThat(order.getOrderTime()).isNotNull();
     }
 }
