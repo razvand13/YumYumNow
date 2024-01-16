@@ -1,13 +1,14 @@
 package nl.tudelft.sem.template.orders.controllers;
 
 
-import nl.tudelft.sem.template.model.Vendor;
 import nl.tudelft.sem.template.model.Dish;
 import nl.tudelft.sem.template.model.Order;
-import nl.tudelft.sem.template.model.Address;
-import nl.tudelft.sem.template.model.UpdateDishQtyRequest;
+import nl.tudelft.sem.template.model.Vendor;
 import nl.tudelft.sem.template.model.OrderedDish;
 import nl.tudelft.sem.template.model.Status;
+import nl.tudelft.sem.template.model.Address;
+import nl.tudelft.sem.template.model.UpdateDishQtyRequest;
+import nl.tudelft.sem.template.model.UpdateSpecialRequirementsRequest;
 import nl.tudelft.sem.template.orders.domain.ICustomerService;
 import nl.tudelft.sem.template.orders.domain.IDishService;
 import nl.tudelft.sem.template.orders.domain.IOrderService;
@@ -45,6 +46,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyList;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.times;
 
 
 class CustomerControllerTest {
@@ -69,6 +72,8 @@ class CustomerControllerTest {
     ApplicationContext applicationContext;
     @InjectMocks
     private CustomerController customerController;
+
+    private UpdateSpecialRequirementsRequest updateSpecialRequirementsRequest;
 
     private UUID customerId;
     private UUID orderId;
@@ -143,6 +148,14 @@ class CustomerControllerTest {
                         List.of(DataValidationField.USER, DataValidationField.ORDER, DataValidationField.DISH),
                         orderService, dishService, vendorFacade));
 
+        // updateSpecialRequirements
+        when(applicationContext.getBean(eq(DataValidator.class),
+                eq(List.of(DataValidationField.USER, DataValidationField.ORDER,
+                        DataValidationField.UPDATESPECIALREQUIREMENTSREQUEST))))
+                .thenReturn(new DataValidator(
+                        List.of(DataValidationField.USER, DataValidationField.ORDER,
+                                DataValidationField.UPDATESPECIALREQUIREMENTSREQUEST),
+                        orderService, dishService, vendorFacade));
 
         when(applicationContext.getBean(UserAuthorizationValidator.class))
                 .thenReturn(new UserAuthorizationValidator(customerFacade, vendorFacade, orderService, dishService));
@@ -157,6 +170,8 @@ class CustomerControllerTest {
         order.setID(orderId);
         order.setCustomerId(customerId);
         order.setVendorId(UUID.randomUUID());
+
+        updateSpecialRequirementsRequest = new UpdateSpecialRequirementsRequest();
 
         when(orderService.findById(orderId)).thenReturn(order);
         when(dishService.findById(dishId)).thenReturn(new Dish());
@@ -756,6 +771,101 @@ class CustomerControllerTest {
         ResponseEntity<Order> response = customerController.reorder(customerId, orderId, new Address());
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
+    void updateSpecialRequirementsWhenOrderIsNull() {
+        UpdateSpecialRequirementsRequest updateSpecialRequirementsRequest = new UpdateSpecialRequirementsRequest();
+        ResponseEntity<Order> response = customerController
+                .updateSpecialRequirements(customerId, null, updateSpecialRequirementsRequest);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        verifyNoInteractions(customerFacade);
+        verifyNoInteractions(orderService);
+    }
+
+    @Test
+    void updateSpecialRequirementsWhenCustomerIsNull() {
+        ResponseEntity<Order> response = customerController
+                .updateSpecialRequirements(null, orderId, updateSpecialRequirementsRequest);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        verifyNoInteractions(customerFacade);
+        verifyNoInteractions(orderService);
+    }
+
+    @Test
+    void updateSpecialRequirementsCustomerNotFound() {
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(false);
+
+        ResponseEntity<Order> responseEntity = customerController
+                .updateSpecialRequirements(customerId, orderId, updateSpecialRequirementsRequest);
+
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void updateSpecialRequirementsCustomerInvalid() {
+        when(customerFacade.existsById(customerId)).thenReturn(true);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(false);
+
+        ResponseEntity<Order> response = customerController
+                .updateSpecialRequirements(customerId, orderId, updateSpecialRequirementsRequest);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void updateSpecialRequirementsRequestOrderIsNull() {
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
+        when(orderService.findById(orderId)).thenReturn(null);
+
+        ResponseEntity<Order> response = customerController
+                .updateSpecialRequirements(customerId, orderId, updateSpecialRequirementsRequest);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void updateSpecialRequirementsCustomerNotEqual() {
+        Order order = createOrder();
+        order.setCustomerId(UUID.randomUUID());
+
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
+        when(orderService.findById(orderId)).thenReturn(order);
+
+        ResponseEntity<Order> response = customerController
+                .updateSpecialRequirements(customerId, orderId, updateSpecialRequirementsRequest);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void updateSpecialRequirementsSuccess() {
+        Order order = createOrder();
+
+        when(customerFacade.existsById(customerId)).thenReturn(true);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(orderService.findById(orderId)).thenReturn(order);
+        when(orderService.save(order)).thenReturn(order);
+
+        updateSpecialRequirementsRequest.setSpecialRequirements("New Special Requirements");
+        Order result = createOrder();
+        result.setSpecialRequirements("New Special Requirements");
+        result.setVendorId(order.getVendorId());
+        result.setOrderTime(order.getOrderTime());
+
+        ResponseEntity<Order> response = customerController
+                .updateSpecialRequirements(customerId, orderId, updateSpecialRequirementsRequest);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(result);
+        verify(customerFacade).existsById(customerId);
+        verify(customerFacade).checkRoleById(customerId);
+        verify(orderService, times(4)).findById(orderId);
     }
 
     private Order createOrder() {
