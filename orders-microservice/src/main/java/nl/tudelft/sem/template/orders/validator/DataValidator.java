@@ -122,6 +122,12 @@ public class DataValidator extends BaseValidator {
             }
         }
 
+        if (fields.contains(DataValidationField.UPDATESPECIALREQUIREMENTSREQUEST)) {
+            if (request.getUpdateSpecialRequirementsRequest() == null) {
+                throw new ValidationFailureException(HttpStatus.BAD_REQUEST);
+            }
+        }
+
         return super.checkNext(request);
     }
 }
