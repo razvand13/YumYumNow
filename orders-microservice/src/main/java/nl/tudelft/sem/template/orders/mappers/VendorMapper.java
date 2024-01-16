@@ -1,16 +1,22 @@
 package nl.tudelft.sem.template.orders.mappers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import nl.tudelft.sem.template.model.Vendor;
 import nl.tudelft.sem.template.orders.external.VendorDTO;
+import nl.tudelft.sem.template.orders.mappers.interfaces.IVendorMapper;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+/**
+ * Adapter class in the Adapter design pattern. Implements IVendorMapper interface.
+ * Used for converting JSON response data into VendorDTO objects and vice versa.
+ * This class acts as a converter between the users microservice's data format and our internal data format.
+ */
 @Component
-public class VendorMapper {
+public class VendorMapper implements IVendorMapper {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     /**
@@ -51,8 +57,14 @@ public class VendorMapper {
      */
     public List<VendorDTO> toDTO(String responseBody) {
         try {
-            return OBJECT_MAPPER.readValue(responseBody, new TypeReference<List<VendorDTO>>() {});
-        } catch (JsonProcessingException e) {
+            OBJECT_MAPPER.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            var res = OBJECT_MAPPER.readValue(responseBody, new TypeReference<List<VendorDTO>>() {});
+            if (res.contains(new VendorDTO())) {
+                throw new RuntimeException();
+            }
+
+            return res;
+        } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
         }

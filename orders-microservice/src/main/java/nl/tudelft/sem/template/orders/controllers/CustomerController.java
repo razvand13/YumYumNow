@@ -9,25 +9,26 @@ import java.util.stream.Collectors;
 
 import nl.tudelft.sem.template.api.CustomerApi;
 import nl.tudelft.sem.template.model.Address;
-import nl.tudelft.sem.template.model.Payment;
+import nl.tudelft.sem.template.model.CreateOrderRequest;
 import nl.tudelft.sem.template.model.Dish;
-import nl.tudelft.sem.template.model.Status;
-import nl.tudelft.sem.template.model.PayOrderRequest;
-import nl.tudelft.sem.template.model.UpdateDishQtyRequest;
 import nl.tudelft.sem.template.model.Order;
 import nl.tudelft.sem.template.model.OrderedDish;
-import nl.tudelft.sem.template.model.CreateOrderRequest;
+import nl.tudelft.sem.template.model.PayOrderRequest;
+import nl.tudelft.sem.template.model.Payment;
+import nl.tudelft.sem.template.model.Status;
+import nl.tudelft.sem.template.model.UpdateDishQtyRequest;
+import nl.tudelft.sem.template.model.UpdateSpecialRequirementsRequest;
 import nl.tudelft.sem.template.model.Vendor;
 import nl.tudelft.sem.template.orders.domain.ICustomerService;
 import nl.tudelft.sem.template.orders.domain.IDishService;
 import nl.tudelft.sem.template.orders.domain.IOrderService;
 import nl.tudelft.sem.template.orders.domain.IVendorService;
+import nl.tudelft.sem.template.orders.mappers.interfaces.IVendorMapper;
+import nl.tudelft.sem.template.orders.integration.CustomerFacade;
 import nl.tudelft.sem.template.orders.external.PaymentMock;
-import nl.tudelft.sem.template.orders.mappers.VendorMapper;
-import nl.tudelft.sem.template.orders.services.VendorAdapter;
-import nl.tudelft.sem.template.orders.services.CustomerAdapter;
 import nl.tudelft.sem.template.orders.external.CustomerDTO;
 import nl.tudelft.sem.template.orders.external.VendorDTO;
+import nl.tudelft.sem.template.orders.integration.VendorFacade;
 import nl.tudelft.sem.template.orders.validator.DataValidationField;
 import nl.tudelft.sem.template.orders.validator.DataValidator;
 import nl.tudelft.sem.template.orders.validator.UserAuthorizationValidator;
@@ -43,13 +44,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class CustomerController implements CustomerApi {
-    private final transient VendorMapper vendorMapper;
+    private final transient IVendorMapper IVendorMapper;
     private final transient IVendorService vendorService;
     private final transient IDishService dishService;
     private final transient IOrderService orderService;
     private final transient ICustomerService customerService;
-    private final transient CustomerAdapter customerAdapter;
-    private final transient VendorAdapter vendorAdapter;
+    private final transient CustomerFacade customerFacade;
+    private final transient VendorFacade vendorFacade;
     private final transient ApplicationContext applicationContext;
     private final transient PaymentMock paymentMock;
 
@@ -60,22 +61,22 @@ public class CustomerController implements CustomerApi {
      * @param vendorService   vendor service
      * @param dishService     dish service
      * @param orderService    order service
-     * @param customerAdapter customer adapter
-     * @param vendorAdapter   vendor adapter
+     * @param customerFacade customer facade
+     * @param vendorFacade   vendor facade
      */
     @Autowired
-    public CustomerController(VendorMapper vendorMapper, IVendorService vendorService,
+    public CustomerController(IVendorMapper vendorMapper, IVendorService vendorService,
                               IDishService dishService, IOrderService orderService, ICustomerService customerService,
-                              CustomerAdapter customerAdapter, VendorAdapter vendorAdapter,
+                              CustomerFacade customerFacade, VendorFacade vendorFacade,
                               ApplicationContext applicationContext,
                               PaymentMock paymentMock) {
-        this.vendorMapper = vendorMapper;
+        this.IVendorMapper = vendorMapper;
         this.vendorService = vendorService;
         this.dishService = dishService;
         this.orderService = orderService;
         this.customerService = customerService;
-        this.customerAdapter = customerAdapter;
-        this.vendorAdapter = vendorAdapter;
+        this.customerFacade = customerFacade;
+        this.vendorFacade = vendorFacade;
         this.applicationContext = applicationContext;
         this.paymentMock = paymentMock;
     }
@@ -118,7 +119,7 @@ public class CustomerController implements CustomerApi {
         }
 
         // Get the customer's delivery location
-        CustomerDTO customer = customerAdapter.requestCustomer(customerId);
+        CustomerDTO customer = customerFacade.requestCustomer(customerId);
         Address customerLocation = customerService.getDeliveryLocation(customer);
 
         if (customerLocation == null) {
@@ -126,10 +127,10 @@ public class CustomerController implements CustomerApi {
         }
 
         // Filter vendors by name, average price and distance to delivery location
-        List<VendorDTO> vendors = vendorAdapter.requestVendors();
+        List<VendorDTO> vendors = vendorFacade.requestVendors();
         List<VendorDTO> filteredVendors = vendorService.filterVendors(
                 vendors, name, minAvgPrice, maxAvgPrice, customerLocation);
-        var filteredVendorEntities = filteredVendors.stream().map(vendorMapper::toEntity).collect(Collectors.toList());
+        var filteredVendorEntities = filteredVendors.stream().map(IVendorMapper::toEntity).collect(Collectors.toList());
 
         return ResponseEntity.ok(filteredVendorEntities);
     }
@@ -222,6 +223,27 @@ public class CustomerController implements CustomerApi {
         // Get the vendor's dishes from the repository
         List<Dish> vendorDishes = dishService.findAllByVendorId(order.getVendorId());
 
+        CustomerDTO customer = customerFacade.requestCustomer(customerId);
+
+        List<String> customerAllergens = new ArrayList<>();
+        customerAllergens.addAll(customer.getAllergens());
+        List<Dish> dishesToRemove = new ArrayList<>();
+
+        // Find the dishes from the vendor that the customer is allergic to
+        for (int i = 0; i < vendorDishes.size(); i++) {
+            List<String> dishAllergens = vendorDishes.get(i).getAllergens();
+            if (dishAllergens != null) {
+                for (String allergen : dishAllergens) {
+                    if (customerAllergens.contains(allergen)) {
+                        dishesToRemove.add(vendorDishes.get(i));
+                        break;
+                    }
+                }
+            }
+        }
+
+        vendorDishes.removeAll(dishesToRemove);
+
         return ResponseEntity.ok(vendorDishes);
     }
 
@@ -256,7 +278,7 @@ public class CustomerController implements CustomerApi {
         dataValidator.setNext(userAuthorizationValidator);
         //Create and fill validation request
         ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER, orderId, dishId,
-                updateDishQtyRequest, null, null);
+                updateDishQtyRequest, null, null, null);
         try {
             dataValidator.handle(request);
         } catch (ValidationFailureException e) {
@@ -388,7 +410,7 @@ public class CustomerController implements CustomerApi {
         dataValidator.setNext(userAuthorizationValidator);
         //Create and fill validation request
         ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER,
-                orderId, dishId, updateDishQtyRequest, null, null);
+                orderId, dishId, updateDishQtyRequest, null, null, null);
         try {
             dataValidator.handle(request);
         } catch (ValidationFailureException e) {
@@ -440,17 +462,17 @@ public class CustomerController implements CustomerApi {
         DataValidator dataValidator = applicationContext.getBean(DataValidator.class,
                 List.of(DataValidationField.USER, DataValidationField.ORDER));
         UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
-
         //Set validation chain
         dataValidator.setNext(userAuthorizationValidator);
         //Create and fill validation request
         ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER,
-                orderId, null, null, null, null);
+                orderId, null, null, null, null, null);
         try {
             dataValidator.handle(request);
         } catch (ValidationFailureException e) {
             return ResponseEntity.status(e.getFailureStatus()).build();
         }
+
         Order order = orderService.findById(orderId);
 
         return ResponseEntity.ok(order);
@@ -480,7 +502,7 @@ public class CustomerController implements CustomerApi {
         dataValidator.setNext(userAuthorizationValidator);
         // Create and fill validation request
         ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER, null,
-                null, null, null, null);
+                null, null, null, null, null);
         try {
             dataValidator.handle(request);
         } catch (ValidationFailureException e) {
@@ -523,7 +545,7 @@ public class CustomerController implements CustomerApi {
         dataValidator.setNext(userAuthorizationValidator);
         //Create and fill validation request
         ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER,
-                orderId, dishId, null, null, null);
+                orderId, dishId, null, null, null, null);
         try {
             dataValidator.handle(request);
         } catch (ValidationFailureException e) {
@@ -570,7 +592,7 @@ public class CustomerController implements CustomerApi {
         dataValidator.setNext(userAuthorizationValidator);
         // Create and fill validation request
         ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER, orderId,
-                null, null, null, null);
+                null, null, null, null, null);
         try {
             dataValidator.handle(request);
         } catch (ValidationFailureException e) {
@@ -594,6 +616,48 @@ public class CustomerController implements CustomerApi {
         Order savedOrder = orderService.save(newOrder);
 
         return ResponseEntity.ok(savedOrder);
+    }
+
+    /**
+     * PUT /customer/{customerId}/order/{orderId}/requirements : Update order special requirements
+     * Update the order with the mentioned special requirements
+     *
+     * @param customerId  (required)
+     * @param orderId  (required)
+     * @param updateSpecialRequirementsRequest  (required)
+     * @return Special requirements added, updated order returned. (status code 200)
+     *         or Bad Request - Order not updated. (status code 400)
+     *         or Unauthorized - Order does not belong to user/user is not a customer. (status code 401)
+     *         or Not Found - Order not found. (status code 404)
+     *         or Internal Server Error - An unexpected error occurred on the server. (status code 500)
+     */
+    @Override
+    public ResponseEntity<Order> updateSpecialRequirements(UUID customerId, UUID orderId,
+                                                       UpdateSpecialRequirementsRequest updateSpecialRequirementsRequest) {
+        // Chain of responsibility validation
+        // Get Validators
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class,
+                List.of(DataValidationField.USER, DataValidationField.ORDER,
+                        DataValidationField.UPDATESPECIALREQUIREMENTSREQUEST));
+        UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
+        // Set validation chain
+        dataValidator.setNext(userAuthorizationValidator);
+        // Create and fill validation request
+        ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER, orderId,
+                null, null, null, null,
+                updateSpecialRequirementsRequest);
+        try {
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
+        }
+
+        Order order = orderService.findById(orderId);
+
+        order.setSpecialRequirements(updateSpecialRequirementsRequest.getSpecialRequirements());
+        Order updatedOrder = orderService.save(order);
+
+        return ResponseEntity.ok(updatedOrder);
     }
 
 
@@ -622,8 +686,8 @@ public class CustomerController implements CustomerApi {
         // Set validation chain
         dataValidator.setNext(userAuthorizationValidator);
         // Create and fill validation request
-        ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER, orderId, null,
-                null, null, null);
+        ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER, orderId,
+            null, null, null, null, null);
         try {
             dataValidator.handle(request);
         } catch (ValidationFailureException e) {
@@ -654,9 +718,4 @@ public class CustomerController implements CustomerApi {
         return ResponseEntity.badRequest().build();
 
     }
-
-
-
-
 }
-

@@ -3,6 +3,7 @@ package nl.tudelft.sem.template.orders.mappers;
 import nl.tudelft.sem.template.model.Address;
 import nl.tudelft.sem.template.model.Vendor;
 import nl.tudelft.sem.template.orders.external.VendorDTO;
+import nl.tudelft.sem.template.orders.mappers.interfaces.IVendorMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -14,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class VendorMapperTest {
 
-    private final VendorMapper vendorMapper = new VendorMapper();
+    private final IVendorMapper vendorMapper = new VendorMapper();
     private Address address;
 
     @BeforeEach
@@ -23,7 +24,7 @@ public class VendorMapperTest {
         address.setHouseNumber(1);
         address.setLatitude(50.0);
         address.setLongitude(40.0);
-        address.setZip("1234AB");
+        address.setZipCode("1234AB");
     }
 
     @Test
@@ -62,7 +63,7 @@ public class VendorMapperTest {
                     {
                         "vendorId": "550e8400-e29b-41d4-a716-446655440000",
                         "name": "Vendor 1",
-                        "blocked": false,
+                        "isBlocked": false,
                         "email": "vendor1@example.com",
                         "approved": true,
                         "location": {}
@@ -70,7 +71,7 @@ public class VendorMapperTest {
                     {
                         "vendorId": "550e8400-e29b-41d4-a716-446655440001",
                         "name": "Vendor 2",
-                        "blocked": true,
+                        "isBlocked": true,
                         "email": "vendor2@example.com",
                         "approved": false,
                         "location": {}
@@ -92,7 +93,7 @@ public class VendorMapperTest {
                     {
                         "vendorId": "550e8400-e29b-41d4-a716-446655440000",
                         "name": "Vendor 1",
-                        "blocked": false,
+                        "isBlocked": false,
                         "email": "vendor1@example.com",
                         "approved": true,
                         "location": {}

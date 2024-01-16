@@ -3,14 +3,12 @@ package nl.tudelft.sem.template.orders.validator;
 import nl.tudelft.sem.template.model.Order;
 import nl.tudelft.sem.template.orders.domain.IDishService;
 import nl.tudelft.sem.template.orders.domain.IOrderService;
-import nl.tudelft.sem.template.orders.services.VendorAdapter;
+import nl.tudelft.sem.template.orders.integration.VendorFacade;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -31,7 +29,7 @@ public class DataValidator extends BaseValidator {
     @Autowired
     private transient IDishService dishService;
     @Autowired
-    private transient VendorAdapter vendorAdapter;
+    private transient VendorFacade vendorFacade;
     private final transient List<DataValidationField> fields;
 
     /**
@@ -42,14 +40,25 @@ public class DataValidator extends BaseValidator {
     }
 
     /**
+     * Testing constructor
+     */
+    public DataValidator(IOrderService orderService, IDishService dishService, VendorFacade vendorFacade,
+                         List<DataValidationField> fields) {
+        this.orderService = orderService;
+        this.dishService = dishService;
+        this.vendorFacade = vendorFacade;
+        this.fields = fields;
+    }
+
+    /**
      * Constructor to manually set order service and dish service for testing
      */
     public DataValidator(List<DataValidationField> fields, IOrderService orderService, IDishService dishService,
-                         VendorAdapter vendorAdapter) {
+                         VendorFacade vendorFacade) {
         this.fields = fields;
         this.orderService = orderService;
         this.dishService = dishService;
-        this.vendorAdapter = vendorAdapter;
+        this.vendorFacade = vendorFacade;
     }
 
     public DataValidator() {
@@ -113,13 +122,19 @@ public class DataValidator extends BaseValidator {
             if (request.getCreateOrderRequest().getVendorId() == null) {
                 throw new ValidationFailureException(HttpStatus.BAD_REQUEST);
             }
-            if (!vendorAdapter.existsById(request.getCreateOrderRequest().getVendorId())) {
+            if (!vendorFacade.existsById(request.getCreateOrderRequest().getVendorId())) {
                 throw new ValidationFailureException(HttpStatus.NOT_FOUND);
             }
         }
 
         if (fields.contains(DataValidationField.UPDATEORDERSTATUSREQUEST)) {
             if (request.getUpdateOrderStatusRequest() == null || request.getUpdateOrderStatusRequest().getStatus() == null) {
+                throw new ValidationFailureException(HttpStatus.BAD_REQUEST);
+            }
+        }
+
+        if (fields.contains(DataValidationField.UPDATESPECIALREQUIREMENTSREQUEST)) {
+            if (request.getUpdateSpecialRequirementsRequest() == null) {
                 throw new ValidationFailureException(HttpStatus.BAD_REQUEST);
             }
         }

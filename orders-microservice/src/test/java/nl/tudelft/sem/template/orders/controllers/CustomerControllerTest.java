@@ -8,6 +8,7 @@ import nl.tudelft.sem.template.model.OrderedDish;
 import nl.tudelft.sem.template.model.PayOrderRequest;
 import nl.tudelft.sem.template.model.Payment;
 import nl.tudelft.sem.template.model.Status;
+import nl.tudelft.sem.template.model.UpdateSpecialRequirementsRequest;
 import nl.tudelft.sem.template.model.UpdateDishQtyRequest;
 import nl.tudelft.sem.template.model.Vendor;
 import nl.tudelft.sem.template.orders.domain.ICustomerService;
@@ -18,8 +19,9 @@ import nl.tudelft.sem.template.orders.external.CustomerDTO;
 import nl.tudelft.sem.template.orders.external.PaymentMock;
 import nl.tudelft.sem.template.orders.external.VendorDTO;
 import nl.tudelft.sem.template.orders.mappers.VendorMapper;
-import nl.tudelft.sem.template.orders.services.CustomerAdapter;
-import nl.tudelft.sem.template.orders.services.VendorAdapter;
+import nl.tudelft.sem.template.orders.mappers.interfaces.IVendorMapper;
+import nl.tudelft.sem.template.orders.integration.CustomerFacade;
+import nl.tudelft.sem.template.orders.integration.VendorFacade;
 import nl.tudelft.sem.template.orders.validator.DataValidator;
 import nl.tudelft.sem.template.orders.validator.DataValidationField;
 import nl.tudelft.sem.template.orders.validator.UserAuthorizationValidator;
@@ -39,6 +41,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.Optional;
 import java.util.Collections;
+import java.util.Arrays;
 import java.util.ArrayList;
 
 
@@ -50,12 +53,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyList;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 
 class CustomerControllerTest {
 
     @Mock
-    private VendorMapper vendorMapper;
+    private IVendorMapper IVendorMapper;
     @Mock
     private IVendorService vendorService;
     @Mock
@@ -65,9 +70,9 @@ class CustomerControllerTest {
     @Mock
     private ICustomerService customerService;
     @Mock
-    private CustomerAdapter customerAdapter;
+    private CustomerFacade customerFacade;
     @Mock
-    private VendorAdapter vendorAdapter;
+    private VendorFacade vendorFacade;
     @Mock
     private DataValidator dataValidator;
     @Mock
@@ -83,6 +88,8 @@ class CustomerControllerTest {
     @InjectMocks
     private CustomerController customerController;
 
+    private UpdateSpecialRequirementsRequest updateSpecialRequirementsRequest;
+
     private UUID customerId;
     private UUID orderId;
     private UUID dishId;
@@ -90,13 +97,13 @@ class CustomerControllerTest {
 
     @BeforeEach
     void setup() {
-        vendorMapper = mock(VendorMapper.class);
+        IVendorMapper = mock(VendorMapper.class);
         vendorService = mock(IVendorService.class);
         dishService = mock(IDishService.class);
         orderService = mock(IOrderService.class);
         customerService = mock(ICustomerService.class);
-        customerAdapter = mock(CustomerAdapter.class);
-        vendorAdapter = mock(VendorAdapter.class);
+        customerFacade = mock(CustomerFacade.class);
+        vendorFacade = mock(VendorFacade.class);
         applicationContext = mock(ApplicationContext.class);
         dataValidator = mock(DataValidator.class);
         paymentMock = mock(PaymentMock.class);
@@ -111,19 +118,19 @@ class CustomerControllerTest {
         when(applicationContext.getBean(eq(DataValidator.class),
                 eq(List.of(DataValidationField.USER))))
                 .thenReturn(new DataValidator(List.of(DataValidationField.USER),
-                        orderService, dishService, vendorAdapter));
+                        orderService, dishService, vendorFacade));
 
         // createOrder
         when(applicationContext.getBean(eq(DataValidator.class),
                 eq(List.of(DataValidationField.USER, DataValidationField.CREATEORDERREQUEST))))
                 .thenReturn(new DataValidator(List.of(DataValidationField.USER, DataValidationField.CREATEORDERREQUEST),
-                        orderService, dishService, vendorAdapter));
+                        orderService, dishService, vendorFacade));
 
         // getVendorDishes & getOrder
         when(applicationContext.getBean(eq(DataValidator.class),
                 eq(List.of(DataValidationField.USER, DataValidationField.ORDER))))
                 .thenReturn(new DataValidator(List.of(DataValidationField.USER, DataValidationField.ORDER),
-                        orderService, dishService, vendorAdapter));
+                        orderService, dishService, vendorFacade));
 
         // addDishToOrder
         when(applicationContext.getBean(eq(DataValidator.class),
@@ -132,7 +139,7 @@ class CustomerControllerTest {
                 .thenReturn(new DataValidator(
                         List.of(DataValidationField.USER, DataValidationField.DISH,
                                 DataValidationField.ORDER, DataValidationField.UPDATEDISHQTYREQUEST),
-                        orderService, dishService, vendorAdapter));
+                        orderService, dishService, vendorFacade));
 
 
         // removeDishFromOrder
@@ -140,7 +147,7 @@ class CustomerControllerTest {
                 eq(List.of(DataValidationField.USER, DataValidationField.ORDER, DataValidationField.DISH))))
                 .thenReturn(new DataValidator(
                         List.of(DataValidationField.USER, DataValidationField.ORDER, DataValidationField.DISH),
-                        orderService, dishService, vendorAdapter));
+                        orderService, dishService, vendorFacade));
 
 
         // updateDishQty
@@ -150,7 +157,7 @@ class CustomerControllerTest {
                 .thenReturn(new DataValidator(
                         List.of(DataValidationField.USER, DataValidationField.ORDER,
                                 DataValidationField.DISH, DataValidationField.UPDATEDISHQTYREQUEST),
-                        orderService, dishService, vendorAdapter));
+                        orderService, dishService, vendorFacade));
 
 
         // getDishFromOrder
@@ -158,14 +165,22 @@ class CustomerControllerTest {
                 eq(List.of(DataValidationField.USER, DataValidationField.ORDER, DataValidationField.DISH))))
                 .thenReturn(new DataValidator(
                         List.of(DataValidationField.USER, DataValidationField.ORDER, DataValidationField.DISH),
-                        orderService, dishService, vendorAdapter));
+                        orderService, dishService, vendorFacade));
 
+        // updateSpecialRequirements
+        when(applicationContext.getBean(eq(DataValidator.class),
+                eq(List.of(DataValidationField.USER, DataValidationField.ORDER,
+                        DataValidationField.UPDATESPECIALREQUIREMENTSREQUEST))))
+                .thenReturn(new DataValidator(
+                        List.of(DataValidationField.USER, DataValidationField.ORDER,
+                                DataValidationField.UPDATESPECIALREQUIREMENTSREQUEST),
+                        orderService, dishService, vendorFacade));
 
         when(applicationContext.getBean(UserAuthorizationValidator.class))
-                .thenReturn(new UserAuthorizationValidator(customerAdapter, vendorAdapter, orderService, dishService));
+                .thenReturn(new UserAuthorizationValidator(customerFacade, vendorFacade, orderService, dishService));
 
-        customerController = new CustomerController(vendorMapper, vendorService, dishService, orderService,
-                customerService, customerAdapter, vendorAdapter, applicationContext, paymentMock);
+        customerController = new CustomerController(IVendorMapper, vendorService, dishService, orderService,
+                customerService, customerFacade, vendorFacade, applicationContext, paymentMock);
 
         customerId = UUID.randomUUID();
         orderId = UUID.randomUUID();
@@ -175,14 +190,16 @@ class CustomerControllerTest {
         order.setCustomerId(customerId);
         order.setVendorId(UUID.randomUUID());
 
+        updateSpecialRequirementsRequest = new UpdateSpecialRequirementsRequest();
+
         when(orderService.findById(orderId)).thenReturn(order);
         when(dishService.findById(dishId)).thenReturn(new Dish());
     }
 
     @Test
     void getOrderSuccess() {
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
-        when(customerAdapter.existsById(customerId)).thenReturn(true);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
 
         ResponseEntity<Order> responseEntity = customerController.getOrder(customerId, orderId);
 
@@ -199,7 +216,7 @@ class CustomerControllerTest {
 
     @Test
     void getOrderUnauthorized() {
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(false);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(false);
 
         ResponseEntity<Order> responseEntity = customerController.getOrder(customerId, orderId);
 
@@ -208,8 +225,8 @@ class CustomerControllerTest {
 
     @Test
     void getOrderNotFoundCustomer() {
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
-        when(customerAdapter.existsById(customerId)).thenReturn(false);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(false);
 
         ResponseEntity<Order> responseEntity = customerController.getOrder(customerId, orderId);
 
@@ -218,8 +235,8 @@ class CustomerControllerTest {
 
     @Test
     void getOrderNotFoundOrder() {
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
-        when(customerAdapter.existsById(customerId)).thenReturn(true);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
         when(orderService.findById(orderId)).thenReturn(null);
 
         ResponseEntity<Order> responseEntity = customerController.getOrder(customerId, orderId);
@@ -230,8 +247,8 @@ class CustomerControllerTest {
     @Test
     void getOrderUnauthorizedCustomerMismatch() {
         UUID anotherCustomerId = UUID.randomUUID();
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
-        when(customerAdapter.existsById(customerId)).thenReturn(true);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
 
         ResponseEntity<Order> responseEntity = customerController.getOrder(anotherCustomerId, orderId);
 
@@ -246,8 +263,8 @@ class CustomerControllerTest {
         orderedDish.setDish(dish);
         order.setDishes(Collections.singletonList(orderedDish));
 
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
-        when(customerAdapter.existsById(customerId)).thenReturn(true);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
         when(orderService.findById(orderId)).thenReturn(order);
         when(dishService.findById(dishId)).thenReturn(dish);
 
@@ -267,7 +284,7 @@ class CustomerControllerTest {
 
     @Test
     void getDishFromOrderUnauthorized() {
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(false);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(false);
 
         ResponseEntity<OrderedDish> responseEntity = customerController.getDishFromOrder(customerId, orderId, dishId);
 
@@ -276,8 +293,8 @@ class CustomerControllerTest {
 
     @Test
     void getDishFromOrderNotFoundDish() {
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
-        when(customerAdapter.existsById(customerId)).thenReturn(true);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
         when(orderService.findById(orderId)).thenReturn(order);
         when(dishService.findById(dishId)).thenReturn(null);
 
@@ -288,8 +305,8 @@ class CustomerControllerTest {
 
     @Test
     void getDishFromOrderNotFoundOrder() {
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
-        when(customerAdapter.existsById(customerId)).thenReturn(true);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
         when(orderService.findById(orderId)).thenReturn(null);
 
         ResponseEntity<OrderedDish> responseEntity = customerController.getDishFromOrder(customerId, orderId, dishId);
@@ -311,8 +328,8 @@ class CustomerControllerTest {
 
         when(dishService.findById(anotherDishId)).thenReturn(anotherDish);
         when(dishService.findById(dishId)).thenReturn(dish);
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
-        when(customerAdapter.existsById(customerId)).thenReturn(true);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
 
         ResponseEntity<OrderedDish> responseEntity =
                 customerController.getDishFromOrder(customerId, orderId, anotherDishId);
@@ -327,8 +344,8 @@ class CustomerControllerTest {
         dish.setName("Chicken Tikka Masala");
         order.setDishes(Collections.emptyList());
 
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
-        when(customerAdapter.existsById(customerId)).thenReturn(true);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
         when(dishService.findById(dishId)).thenReturn(dish);
 
         ResponseEntity<OrderedDish> responseEntity =
@@ -340,20 +357,20 @@ class CustomerControllerTest {
 
     @Test
     void getVendorsSuccess() {
-        when(customerAdapter.existsById(customerId)).thenReturn(true);
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
 
         CustomerDTO customer = new CustomerDTO();
         customer.setCurrentLocation(new Address());
         when(customerService.getDeliveryLocation(customer)).thenReturn(new Address());
-        when(customerAdapter.requestCustomer(customerId)).thenReturn(customer);
+        when(customerFacade.requestCustomer(customerId)).thenReturn(customer);
 
         List<VendorDTO> vendors = Collections.singletonList(new VendorDTO());
-        when(vendorAdapter.requestVendors()).thenReturn(vendors);
+        when(vendorFacade.requestVendors()).thenReturn(vendors);
         when(vendorService.filterVendors(vendors, null, null, null, customer.getCurrentLocation()))
                 .thenReturn(vendors);
 
-        when(vendorMapper.toEntity(new VendorDTO())).thenReturn(new Vendor());
+        when(IVendorMapper.toEntity(new VendorDTO())).thenReturn(new Vendor());
 
         ResponseEntity<List<Vendor>> response = customerController.getVendors(customerId, null, null, null);
 
@@ -370,8 +387,8 @@ class CustomerControllerTest {
 
     @Test
     void getVendorsNotFound() {
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
-        when(customerAdapter.existsById(customerId)).thenReturn(false);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(false);
 
         ResponseEntity<List<Vendor>> response = customerController.getVendors(customerId, null, null, null);
 
@@ -380,8 +397,8 @@ class CustomerControllerTest {
 
     @Test
     void getVendorsUnauthorized() {
-        when(customerAdapter.existsById(customerId)).thenReturn(true);
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(false);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(false);
 
         ResponseEntity<List<Vendor>> response = customerController.getVendors(customerId, null, null, null);
 
@@ -397,7 +414,7 @@ class CustomerControllerTest {
 
     @Test
     void getVendorDishesUnauthorizedCustomer() {
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(false);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(false);
 
         ResponseEntity<List<Dish>> response = customerController.getVendorDishes(customerId, orderId);
 
@@ -406,8 +423,8 @@ class CustomerControllerTest {
 
     @Test
     void getVendorDishesCustomerNotFound() {
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
-        when(customerAdapter.existsById(customerId)).thenReturn(false);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(false);
 
         ResponseEntity<List<Dish>> response = customerController.getVendorDishes(customerId, orderId);
 
@@ -416,8 +433,8 @@ class CustomerControllerTest {
 
     @Test
     void getVendorDishesOrderNotFound() {
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
-        when(customerAdapter.existsById(customerId)).thenReturn(true);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
         when(orderService.findById(orderId)).thenReturn(null);
 
         ResponseEntity<List<Dish>> response = customerController.getVendorDishes(customerId, orderId);
@@ -427,8 +444,8 @@ class CustomerControllerTest {
 
     @Test
     void getVendorDishesSuccess() {
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
-        when(customerAdapter.existsById(customerId)).thenReturn(true);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
 
         Order order = new Order();
         order.setCustomerId(customerId);
@@ -438,6 +455,9 @@ class CustomerControllerTest {
 
         List<Dish> dishes = Collections.singletonList(new Dish());
         when(dishService.findAllByVendorId(vendorId)).thenReturn(dishes);
+
+        CustomerDTO customer = setupCustomer();
+        when(customerFacade.requestCustomer(customerId)).thenReturn(customer);
 
         ResponseEntity<List<Dish>> response = customerController.getVendorDishes(customerId, orderId);
 
@@ -451,7 +471,7 @@ class CustomerControllerTest {
                 .thenReturn(dataValidator);
 
         CustomerDTO customerDTO = new CustomerDTO();
-        when(customerAdapter.requestCustomer(customerId)).thenReturn(customerDTO);
+        when(customerFacade.requestCustomer(customerId)).thenReturn(customerDTO);
 
         when(customerService.getDeliveryLocation(customerDTO)).thenReturn(null);
 
@@ -671,7 +691,7 @@ class CustomerControllerTest {
 
     @Test
     void getPersonalOrderHistoryWithUnauthorizedCustomer() {
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(false);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(false);
 
         ResponseEntity<List<Order>> response = customerController.getPersonalOrderHistory(customerId);
 
@@ -680,8 +700,8 @@ class CustomerControllerTest {
 
     @Test
     void getPersonalOrderHistoryWithNonExistingCustomer() {
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
-        when(customerAdapter.existsById(customerId)).thenReturn(false);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(false);
 
         ResponseEntity<List<Order>> response = customerController.getPersonalOrderHistory(customerId);
 
@@ -690,8 +710,8 @@ class CustomerControllerTest {
 
     @Test
     void getPersonalOrderHistoryWithNoOrders() {
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
-        when(customerAdapter.existsById(customerId)).thenReturn(true);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
         when(orderService.findOrdersByCustomerId(customerId)).thenReturn(new ArrayList<>());
 
         ResponseEntity<List<Order>> response = customerController.getPersonalOrderHistory(customerId);
@@ -702,8 +722,8 @@ class CustomerControllerTest {
     @Test
     void getPersonalOrderHistoryWithOrders() {
         List<Order> orders = List.of(new Order());
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
-        when(customerAdapter.existsById(customerId)).thenReturn(true);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
         when(orderService.findOrdersByCustomerId(customerId)).thenReturn(orders);
 
         ResponseEntity<List<Order>> response = customerController.getPersonalOrderHistory(customerId);
@@ -721,7 +741,7 @@ class CustomerControllerTest {
 
     @Test
     void reorderWithUnauthorizedCustomer() {
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(false);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(false);
 
         ResponseEntity<Order> response = customerController.reorder(customerId, orderId, new Address());
 
@@ -730,8 +750,8 @@ class CustomerControllerTest {
 
     @Test
     void reorderWithNonExistingCustomer() {
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
-        when(customerAdapter.existsById(customerId)).thenReturn(false);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(false);
 
         ResponseEntity<Order> response = customerController.reorder(customerId, orderId, new Address());
 
@@ -740,8 +760,8 @@ class CustomerControllerTest {
 
     @Test
     void reorderWithNonExistingPreviousOrder() {
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
-        when(customerAdapter.existsById(customerId)).thenReturn(true);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
         when(orderService.findById(orderId)).thenReturn(null);
 
         ResponseEntity<Order> response = customerController.reorder(customerId, orderId, new Address());
@@ -752,8 +772,8 @@ class CustomerControllerTest {
     @Test
     void reorderWithOrderNotBelongingToCustomer() {
         Order previousOrder = createOrder();
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
-        when(customerAdapter.existsById(customerId)).thenReturn(true);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
         when(orderService.findById(orderId)).thenReturn(previousOrder);
         previousOrder.setCustomerId(UUID.randomUUID());
 
@@ -765,8 +785,8 @@ class CustomerControllerTest {
     @Test
     void reorderSuccess() {
         Order previousOrder = createOrder();
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
-        when(customerAdapter.existsById(customerId)).thenReturn(true);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
         when(orderService.findById(orderId)).thenReturn(previousOrder);
         when(orderService.save(any(Order.class))).thenReturn(new Order());
 
@@ -776,13 +796,182 @@ class CustomerControllerTest {
     }
 
     @Test
+    void updateSpecialRequirementsWhenOrderIsNull() {
+        UpdateSpecialRequirementsRequest updateSpecialRequirementsRequest = new UpdateSpecialRequirementsRequest();
+        ResponseEntity<Order> response = customerController
+                .updateSpecialRequirements(customerId, null, updateSpecialRequirementsRequest);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        verifyNoInteractions(customerFacade);
+        verifyNoInteractions(orderService);
+    }
+
+    @Test
+    void updateSpecialRequirementsWhenCustomerIsNull() {
+        ResponseEntity<Order> response = customerController
+                .updateSpecialRequirements(null, orderId, updateSpecialRequirementsRequest);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        verifyNoInteractions(customerFacade);
+        verifyNoInteractions(orderService);
+    }
+
+    @Test
+    void updateSpecialRequirementsCustomerNotFound() {
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(false);
+
+        ResponseEntity<Order> responseEntity = customerController
+                .updateSpecialRequirements(customerId, orderId, updateSpecialRequirementsRequest);
+
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void updateSpecialRequirementsCustomerInvalid() {
+        when(customerFacade.existsById(customerId)).thenReturn(true);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(false);
+
+        ResponseEntity<Order> response = customerController
+                .updateSpecialRequirements(customerId, orderId, updateSpecialRequirementsRequest);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void updateSpecialRequirementsRequestOrderIsNull() {
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
+        when(orderService.findById(orderId)).thenReturn(null);
+
+        ResponseEntity<Order> response = customerController
+                .updateSpecialRequirements(customerId, orderId, updateSpecialRequirementsRequest);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void updateSpecialRequirementsCustomerNotEqual() {
+        Order order = createOrder();
+        order.setCustomerId(UUID.randomUUID());
+
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
+        when(orderService.findById(orderId)).thenReturn(order);
+
+        ResponseEntity<Order> response = customerController
+                .updateSpecialRequirements(customerId, orderId, updateSpecialRequirementsRequest);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void updateSpecialRequirementsSuccess() {
+        Order order = createOrder();
+
+        when(customerFacade.existsById(customerId)).thenReturn(true);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(orderService.findById(orderId)).thenReturn(order);
+        when(orderService.save(order)).thenReturn(order);
+
+        updateSpecialRequirementsRequest.setSpecialRequirements("New Special Requirements");
+        Order result = createOrder();
+        result.setSpecialRequirements("New Special Requirements");
+        result.setVendorId(order.getVendorId());
+        result.setOrderTime(order.getOrderTime());
+
+        ResponseEntity<Order> response = customerController
+                .updateSpecialRequirements(customerId, orderId, updateSpecialRequirementsRequest);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(result);
+        verify(customerFacade).existsById(customerId);
+        verify(customerFacade).checkRoleById(customerId);
+        verify(orderService, times(4)).findById(orderId);
+    }
+
+    @Test
+    void getDishesWithClashingAllergens() {
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
+
+        Order order = createOrder();
+
+        when(orderService.findById(orderId)).thenReturn(order);
+
+        CustomerDTO customer = setupCustomer("Gluten");
+        when(customerFacade.requestCustomer(customerId)).thenReturn(customer);
+
+        List<Dish> vendorDishes = setupVendorDishes(
+                new String[]{"Nuts, Lactose"},
+                new String[]{"Nuts", "Lactose", "Chocolate", "Gluten"});
+
+        when(dishService.findAllByVendorId(order.getVendorId())).thenReturn(vendorDishes);
+
+        ResponseEntity<List<Dish>> response = customerController.getVendorDishes(customerId, orderId);
+
+        List<Dish> result = setupVendorDishes(new String[]{"Nuts, Lactose"});
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(result);
+
+        verify(customerFacade).checkRoleById(customerId);
+        verify(customerFacade).existsById(customerId);
+        verify(dishService).findAllByVendorId(order.getVendorId());
+    }
+
+    @Test
+    void getDishesWithNoClashingAllergens() {
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
+
+        Order order = createOrder();
+
+        when(orderService.findById(orderId)).thenReturn(order);
+
+        CustomerDTO customer = setupCustomer("Gluten");
+        when(customerFacade.requestCustomer(customerId)).thenReturn(customer);
+
+        List<Dish> vendorDishes = setupVendorDishes(new String[]{}, new String[]{"Nuts", "Lactose", "Chocolate"});
+
+        when(dishService.findAllByVendorId(order.getVendorId())).thenReturn(vendorDishes);
+
+        ResponseEntity<List<Dish>> response = customerController.getVendorDishes(customerId, orderId);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(vendorDishes);
+
+        verify(customerFacade).checkRoleById(customerId);
+        verify(customerFacade).existsById(customerId);
+        verify(dishService).findAllByVendorId(order.getVendorId());
+    }
+
+    private CustomerDTO setupCustomer(String... customerAllergens) {
+        CustomerDTO customerDTO = new CustomerDTO();
+        if (customerAllergens != null) {
+            List<String> allergens = new ArrayList<>(Arrays.asList(customerAllergens));
+            customerDTO.setAllergens(allergens);
+        }
+        return customerDTO;
+    }
+
+    private List<Dish> setupVendorDishes(String[]... dishAllergens) {
+        List<Dish> vendorDishes = new ArrayList<>();
+        for (String[] allergens : dishAllergens) {
+            Dish dish = new Dish();
+            dish.setAllergens(Arrays.asList(allergens));
+            vendorDishes.add(dish);
+        }
+        return vendorDishes;
+    }
+
+    @Test
     void payOrderSuccess() {
         when(dataValidator.handle(any(ValidatorRequest.class))).thenReturn(true);
         when(userAuthorizationValidator.handle(any(ValidatorRequest.class))).thenReturn(true);
         when(orderService.findById(orderId)).thenReturn(createOrder());
         when(paymentMock.pay(orderId, payOrderRequest)).thenReturn(true);
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
-        when(customerAdapter.existsById(customerId)).thenReturn(true);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
         when(validatorRequest.getUserUUID()).thenReturn(customerId);
         when(payOrderRequest.getPaymentOption()).thenReturn(Payment.IDEAL);
 
@@ -807,8 +996,8 @@ class CustomerControllerTest {
         when(userAuthorizationValidator.handle(any(ValidatorRequest.class))).thenReturn(true);
         when(orderService.findById(orderId)).thenReturn(createOrder());
         when(paymentMock.pay(orderId, payOrderRequest)).thenReturn(true);
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
-        when(customerAdapter.existsById(customerId)).thenReturn(true);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
         when(validatorRequest.getUserUUID()).thenReturn(customerId);
         when(payOrderRequest.getPaymentOption()).thenReturn(null);
 
@@ -822,9 +1011,9 @@ class CustomerControllerTest {
         doThrow(new ValidationFailureException(HttpStatus.BAD_REQUEST))
                 .when(dataValidator).handle(any(ValidatorRequest.class));
         when(validatorRequest.getUserUUID()).thenReturn(null);
-        when(customerAdapter.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
 
-        when(customerAdapter.existsById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
         ResponseEntity<Void> response = customerController.payOrder(customerId, orderId, payOrderRequest);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);

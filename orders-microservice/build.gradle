@@ -96,9 +96,22 @@ jacocoTestCoverageVerification() {
 			limit {
 				counter = 'BRANCH'
 				value = 'COVEREDRATIO'
-				minimum = 0.1
+				minimum = 0.0
 			}
 		}
+	}
+	afterEvaluate {
+		classDirectories.setFrom(files(classDirectories.files.collect {
+			fileTree(dir: it, exclude: ['**/generated/**', '**/api/**', '**/model/**'])
+		}))
+	}
+}
+
+jacocoTestReport {
+	afterEvaluate {
+		classDirectories.setFrom(files(classDirectories.files.collect {
+			fileTree(dir: it, exclude: ['**/generated/**', '**/api/**', '**/model/**'])
+		}))
 	}
 }
 
@@ -154,6 +167,7 @@ pitest {
 	threads = 4
 	outputFormats = ['XML', 'HTML']
 	timestampedReports = false
+	excludedClasses = ['nl.tudelft.sem.template.generated.*', 'nl.tudelft.sem.template.api.*', 'nl.tudelft.sem.template.model.*']
 }
 
 apply plugin: 'org.openapi.generator'

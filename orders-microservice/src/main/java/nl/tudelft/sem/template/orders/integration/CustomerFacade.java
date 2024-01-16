@@ -1,49 +1,52 @@
-package nl.tudelft.sem.template.orders.services;
+package nl.tudelft.sem.template.orders.integration;
 
-import nl.tudelft.sem.template.orders.external.VendorDTO;
-import nl.tudelft.sem.template.orders.mappers.VendorMapper;
+import nl.tudelft.sem.template.orders.external.CustomerDTO;
+import nl.tudelft.sem.template.orders.mappers.interfaces.ICustomerMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.List;
 import java.util.UUID;
 
+/**
+ * Client class that interacts with the Adapter (CustomerMapper) through the Interface (ICustomerMapper).
+ * Serves for communication with users microservice and uses the Adapter to convert responses
+ * to a suitable format for our usages
+ * Includes methods for business logic that involve external service calls (used for authorization).
+ */
 @Component
-public class VendorAdapter {
-
+public class CustomerFacade {
     private static final String USERS_URL = "https://gyyl7.wiremockapi.cloud";
     private static final String DELIVERY_URL = "https://localhost:8081";
     private static final HttpClient CLIENT = HttpClient.newBuilder().build();
-    private final transient VendorMapper vendorMapper;
+    private final transient ICustomerMapper customerMapper;
 
     @Autowired
-    public VendorAdapter(VendorMapper vendorMapper) {
-        this.vendorMapper = vendorMapper;
+    public CustomerFacade(ICustomerMapper customerMapper) {
+        this.customerMapper = customerMapper;
     }
 
     /**
-     * Checks if a vendor with a specified ID exists
+     * Checks if a customer with a specified ID exists
      *
-     * @param vendorId id
-     * @return true iff the vendor exists in the database
+     * @param customerId id
+     * @return true iff the customer exists in the database
      */
-    public boolean existsById(UUID vendorId) {
-        return sendGetRequest(USERS_URL + "/vendors/" + vendorId).statusCode() == 200;
+    public boolean existsById(UUID customerId) {
+        return sendGetRequest(USERS_URL + "/customers/" + customerId).statusCode() == 200;
     }
 
     /**
-     * Checks if the user with the given UUID is a customer, courier or admin.
+     * Checks if the user with the given UUID is a vendor, courier or admin.
      * If so, the user is not authorized.
      *
      * @param userId the id of the user
-     * @return true iff the user is a vendor
+     * @return true iff the user is a customer
      */
     public boolean checkRoleById(UUID userId) {
-        if (isRole(userId, "/customers/")) {
+        if (isRole(userId, "/vendors/")) {
             return false;
         }
         if (isRole(userId, "/couriers/")) {
@@ -59,21 +62,23 @@ public class VendorAdapter {
      * Helper method. Queries the Users microservice for the specified ID, using a certain path.
      *
      * @param userId user id
-     * @param path path
+     * @param path   path
      * @return true iff the status code is 200
      */
     private boolean isRole(UUID userId, String path) {
         return sendGetRequest(USERS_URL + path + userId).statusCode() == 200;
     }
 
+
     /**
-     * Request all vendors from the Users microservice
+     * Requests customer from the Users microservice
      *
-     * @return a list of VendorDTO
+     * @param customerId id of that customer
+     * @return CustomerDTO object containing all relevant attributes
      */
-    public List<VendorDTO> requestVendors() {
-        String uri = USERS_URL + "/vendors";
-        return vendorMapper.toDTO(sendGetRequest(uri).body());
+    public CustomerDTO requestCustomer(UUID customerId) {
+        String uri = USERS_URL + "/customers/" + customerId;
+        return customerMapper.toDTO(sendGetRequest(uri).body());
     }
 
     /**
@@ -94,4 +99,5 @@ public class VendorAdapter {
             throw new RuntimeException(e);
         }
     }
+
 }
