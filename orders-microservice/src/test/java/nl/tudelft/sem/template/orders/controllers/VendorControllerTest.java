@@ -3,6 +3,7 @@ package nl.tudelft.sem.template.orders.controllers;
 import nl.tudelft.sem.template.model.Dish;
 import nl.tudelft.sem.template.model.Order;
 import nl.tudelft.sem.template.orders.VendorNotFoundException;
+import nl.tudelft.sem.template.orders.integration.CustomerFacade;
 import nl.tudelft.sem.template.orders.repositories.OrderRepository;
 import nl.tudelft.sem.template.orders.services.DishService;
 import nl.tudelft.sem.template.orders.services.OrderService;
@@ -33,6 +34,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 class VendorControllerTest {
 
     private VendorFacade vendorFacade;
+    private CustomerFacade customerFacade;
     private DishService dishService;
     private VendorController vendorController;
     private OrderService orderService;
@@ -40,6 +42,7 @@ class VendorControllerTest {
     private OrderRepository orderRepository;
     private UUID vendorId;
     private UUID orderId;
+    private UUID customerId;
 
 
     @BeforeEach
@@ -48,6 +51,8 @@ class VendorControllerTest {
         dishService = mock(DishService.class);
         orderService = mock(OrderService.class);
         vendorService = mock(VendorService.class);
+        customerFacade = mock(CustomerFacade.class);
+
         ApplicationContext applicationContext = mock(ApplicationContext.class);
 
         //Validators need to be defined for the mocked application context, including each combination of used
@@ -71,6 +76,7 @@ class VendorControllerTest {
 
         vendorId = UUID.randomUUID();
         orderId = UUID.randomUUID();
+        customerId = UUID.randomUUID();
     }
 
     @Test
@@ -683,4 +689,142 @@ class VendorControllerTest {
         verify(dishService, times(3)).findById(dishId);
     }
 
+    @Test
+    void getCustomerOrderHistoryNullCustomer() {
+        ResponseEntity<List<Order>> response = vendorController.getCustomerOrderHistory(vendorId, null);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        verifyNoInteractions(customerFacade);
+        verify(vendorFacade).checkRoleById(vendorId);
+        verifyNoInteractions(vendorService);
+    }
+
+    @Test
+    void getCustomerOrderHistoryNullVendor() {
+        ResponseEntity<List<Order>> response = vendorController.getCustomerOrderHistory(null, customerId);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+
+        verifyNoInteractions(customerFacade);
+        verifyNoInteractions(vendorFacade);
+        verifyNoInteractions(vendorService);
+    }
+
+    @Test
+    void getCustomerOrderHistoryWrongCustomerRole() {
+        when(customerFacade.checkRoleById(customerId)).thenReturn(false);
+
+        ResponseEntity<List<Order>> response = vendorController.getCustomerOrderHistory(vendorId, customerId);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void getCustomerOrderHistoryWrongVendorRole() {
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(false);
+
+        ResponseEntity<List<Order>> response = vendorController.getCustomerOrderHistory(vendorId, customerId);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        verify(vendorFacade).checkRoleById(vendorId);
+    }
+
+    @Test
+    void getCustomerOrderHistoryNonExistingCustomer() {
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(false);
+
+        ResponseEntity<List<Order>> response = vendorController.getCustomerOrderHistory(vendorId, customerId);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void getCustomerOrderHistoryNonExistingVendor() {
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
+        when(vendorFacade.existsById(vendorId)).thenReturn(false);
+
+        ResponseEntity<List<Order>> response = vendorController.getCustomerOrderHistory(vendorId, customerId);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        verify(vendorFacade).checkRoleById(vendorId);
+        verify(vendorFacade).existsById(vendorId);
+        verifyNoInteractions(vendorService);
+    }
+
+    @Test
+    void getCustomerHistoryVendorHasNoOrders() {
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
+        when(vendorFacade.existsById(vendorId)).thenReturn(true);
+
+        when(vendorService.getVendorOrders(vendorId)).thenReturn(null);
+
+        ResponseEntity<List<Order>> response = vendorController.getCustomerOrderHistory(vendorId, customerId);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void getCustomerOrderHistoryCustomerHasNoOrders() {
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
+        when(vendorFacade.existsById(vendorId)).thenReturn(true);
+
+        List<Order> orderList = new ArrayList<>();
+        Order order1 = new Order();
+        order1.setVendorId(vendorId);
+        order1.setCustomerId(UUID.randomUUID());
+        orderList.add(order1);
+
+        Order order2 = new Order();
+        order2.setVendorId(vendorId);
+        order2.setCustomerId(UUID.randomUUID());
+        orderList.add(order2);
+
+        when(vendorService.getVendorOrders(vendorId)).thenReturn(orderList);
+
+        ResponseEntity<List<Order>> response = vendorController.getCustomerOrderHistory(vendorId, customerId);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void getCustomerOrderHistorySuccess() {
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
+        when(vendorFacade.existsById(vendorId)).thenReturn(true);
+
+        List<Order> orderList = new ArrayList<>();
+        Order order1 = new Order();
+        order1.setCustomerId(customerId);
+        order1.setVendorId(vendorId);
+        orderList.add(order1);
+
+        Order order2 = new Order();
+        order2.setVendorId(vendorId);
+        order2.setCustomerId(UUID.randomUUID());
+        orderList.add(order2);
+
+        when(vendorService.getVendorOrders(vendorId)).thenReturn(orderList);
+
+        ResponseEntity<List<Order>> response = vendorController.getCustomerOrderHistory(vendorId, customerId);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        List<Order> result = new ArrayList<>();
+        Order order = new Order();
+        order.setVendorId(vendorId);
+        order.setCustomerId(customerId);
+        result.add(order);
+
+        assertThat(response.getBody()).isEqualTo(result);
+    }
 }
