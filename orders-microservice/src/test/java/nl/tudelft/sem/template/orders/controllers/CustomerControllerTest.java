@@ -33,10 +33,10 @@ import org.springframework.http.ResponseEntity;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
-import java.util.Optional;
 import java.util.Collections;
+import java.util.Optional;
+import java.util.Arrays;
 import java.util.ArrayList;
-
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -422,6 +422,9 @@ class CustomerControllerTest {
         List<Dish> dishes = Collections.singletonList(new Dish());
         when(dishService.findAllByVendorId(vendorId)).thenReturn(dishes);
 
+        CustomerDTO customer = setupCustomer();
+        when(customerFacade.requestCustomer(customerId)).thenReturn(customer);
+
         ResponseEntity<List<Dish>> response = customerController.getVendorDishes(customerId, orderId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -756,6 +759,80 @@ class CustomerControllerTest {
         ResponseEntity<Order> response = customerController.reorder(customerId, orderId, new Address());
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
+    void getDishesWithClashingAllergens() {
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
+
+        Order order = createOrder();
+
+        when(orderService.findById(orderId)).thenReturn(order);
+
+        CustomerDTO customer = setupCustomer("Gluten");
+        when(customerFacade.requestCustomer(customerId)).thenReturn(customer);
+
+        List<Dish> vendorDishes = setupVendorDishes(
+                new String[]{"Nuts, Lactose"},
+                new String[]{"Nuts", "Lactose", "Chocolate", "Gluten"});
+
+        when(dishService.findAllByVendorId(order.getVendorId())).thenReturn(vendorDishes);
+
+        ResponseEntity<List<Dish>> response = customerController.getVendorDishes(customerId, orderId);
+
+        List<Dish> result = setupVendorDishes(new String[]{"Nuts, Lactose"});
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(result);
+
+        verify(customerFacade).checkRoleById(customerId);
+        verify(customerFacade).existsById(customerId);
+        verify(dishService).findAllByVendorId(order.getVendorId());
+    }
+
+    @Test
+    void getDishesWithNoClashingAllergens() {
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
+
+        Order order = createOrder();
+
+        when(orderService.findById(orderId)).thenReturn(order);
+
+        CustomerDTO customer = setupCustomer("Gluten");
+        when(customerFacade.requestCustomer(customerId)).thenReturn(customer);
+
+        List<Dish> vendorDishes = setupVendorDishes(new String[]{}, new String[]{"Nuts", "Lactose", "Chocolate"});
+
+        when(dishService.findAllByVendorId(order.getVendorId())).thenReturn(vendorDishes);
+
+        ResponseEntity<List<Dish>> response = customerController.getVendorDishes(customerId, orderId);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(vendorDishes);
+
+        verify(customerFacade).checkRoleById(customerId);
+        verify(customerFacade).existsById(customerId);
+        verify(dishService).findAllByVendorId(order.getVendorId());
+    }
+
+    private CustomerDTO setupCustomer(String... customerAllergens) {
+        CustomerDTO customerDTO = new CustomerDTO();
+        if (customerAllergens != null) {
+            List<String> allergens = new ArrayList<>(Arrays.asList(customerAllergens));
+            customerDTO.setAllergens(allergens);
+        }
+        return customerDTO;
+    }
+
+    private List<Dish> setupVendorDishes(String[]... dishAllergens) {
+        List<Dish> vendorDishes = new ArrayList<>();
+        for (String[] allergens : dishAllergens) {
+            Dish dish = new Dish();
+            dish.setAllergens(Arrays.asList(allergens));
+            vendorDishes.add(dish);
+        }
+        return vendorDishes;
     }
 
     private Order createOrder() {
