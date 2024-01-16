@@ -2,6 +2,7 @@ package nl.tudelft.sem.template.orders.validator;
 
 import nl.tudelft.sem.template.orders.domain.IDishService;
 import nl.tudelft.sem.template.orders.domain.IOrderService;
+import nl.tudelft.sem.template.orders.integration.AdminFacade;
 import nl.tudelft.sem.template.orders.integration.CustomerFacade;
 import nl.tudelft.sem.template.orders.integration.VendorFacade;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +36,8 @@ public class UserAuthorizationValidator extends BaseValidator {
     @Autowired
     private transient VendorFacade vendorFacade;
     @Autowired
+    private transient AdminFacade adminFacade;
+    @Autowired
     private transient IOrderService orderService;
     @Autowired
     private transient IDishService dishService;
@@ -53,8 +56,24 @@ public class UserAuthorizationValidator extends BaseValidator {
         this.dishService = dishService;
     }
 
+    /**
+     * Constructor to manually set fields for testing
+     */
+    public UserAuthorizationValidator(CustomerFacade customerFacade, VendorFacade vendorFacade,
+                                      IOrderService orderService, IDishService dishService, AdminFacade adminFacade) {
+        this.customerFacade = customerFacade;
+        this.vendorFacade = vendorFacade;
+        this.orderService = orderService;
+        this.dishService = dishService;
+        this.adminFacade = adminFacade;
+    }
+
     @Override
     public boolean handle(ValidatorRequest request) throws ValidationFailureException {
+        if (request.getUserType() == null) {
+            throw new IllegalArgumentException();
+        }
+
         switch (request.getUserType()) {
             case CUSTOMER:
                 //Check type first, fails on not being of type customer
@@ -92,7 +111,13 @@ public class UserAuthorizationValidator extends BaseValidator {
                 }
                 break;
             case ADMIN:
-                //TODO: Once admin functionality added, add admin validation
+                if (!adminFacade.checkRoleById(request.getUserUUID())) {
+                    throw new ValidationFailureException(HttpStatus.UNAUTHORIZED);
+                }
+
+                if (!adminFacade.existsById(request.getUserUUID())) {
+                    throw new ValidationFailureException(HttpStatus.NOT_FOUND);
+                }
                 break;
             default:
                 throw new ValidationFailureException();
