@@ -647,11 +647,12 @@ public class CustomerController implements CustomerApi {
             order.setStatus(Status.ACCEPTED);
             orderService.save(order);
             return ResponseEntity.ok().build();
-        } else {
-            order.setStatus(Status.REJECTED);
-            orderService.save(order);
-            return ResponseEntity.badRequest().build();
         }
+
+        order.setStatus(Status.REJECTED);
+        orderService.save(order);
+        return ResponseEntity.badRequest().build();
+
     }
 
 
