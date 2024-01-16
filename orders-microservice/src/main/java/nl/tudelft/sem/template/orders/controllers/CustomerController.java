@@ -3,9 +3,9 @@ package nl.tudelft.sem.template.orders.controllers;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.Optional;
 
 import nl.tudelft.sem.template.api.CustomerApi;
 import nl.tudelft.sem.template.model.Dish;
@@ -60,7 +60,6 @@ public class CustomerController implements CustomerApi {
      * @param customerFacade customer facade
      * @param vendorFacade   vendor facade
      */
-
     @Autowired
     public CustomerController(IVendorMapper vendorMapper, IVendorService vendorService,
                               IDishService dishService, IOrderService orderService, ICustomerService customerService,
