@@ -215,9 +215,7 @@ public class CustomerControllerIntegrationTest2 {
     @Test
     void testUpdateDishQtyOk() {
         Order order = createOrder();
-        UUID orderId = order.getID();
         Dish dish = createDish();
-        UUID dishId = dish.getID();
 
         OrderedDish orderedDish = new OrderedDish();
         orderedDish.setDish(dish);
@@ -228,13 +226,13 @@ public class CustomerControllerIntegrationTest2 {
         UpdateDishQtyRequest updateDishQtyRequest = new UpdateDishQtyRequest();
         int newQuantity = 2;
         updateDishQtyRequest.setQuantity(newQuantity);
-
+        UUID orderId = order.getID();
+        UUID dishId = dish.getID();
         ResponseEntity<Order> response = customerController.updateDishQty(customerId, orderId, dishId, updateDishQtyRequest);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         Order updatedOrder = response.getBody();
         assertThat(updatedOrder).isNotNull();
-
         Optional<OrderedDish> updatedOrderedDishOpt = updatedOrder.getDishes().stream()
                 .filter(d -> d.getDish().getID().equals(dishId))
                 .findFirst();
