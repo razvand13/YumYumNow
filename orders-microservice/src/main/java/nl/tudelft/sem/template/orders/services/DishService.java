@@ -6,6 +6,7 @@ import nl.tudelft.sem.template.orders.repositories.DishRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -84,6 +85,17 @@ public class DishService implements IDishService {
 
         if (dish != null && dish.getVendorId().equals(vendorId) && !dish.getIsDeleted()) {
             dish.setIsDeleted(true);
+            if (dish.getAllergens() != null) {
+                dish.setAllergens(new ArrayList<>(dish.getAllergens()));
+            } else {
+                dish.setAllergens(new ArrayList<>());
+            }
+            if (dish.getIngredients() != null) {
+                dish.setIngredients(new ArrayList<>(dish.getIngredients()));
+            } else {
+                dish.setIngredients(new ArrayList<>());
+            }
+
             dishRepository.save(dish);
             return true;
         }
@@ -102,11 +114,21 @@ public class DishService implements IDishService {
         }
 
         existingDish.setName(updatedDish.getName());
-        existingDish.setIngredients(updatedDish.getIngredients());
         existingDish.setDescription(updatedDish.getDescription());
         existingDish.setImageLink(updatedDish.getImageLink());
         existingDish.setPrice(updatedDish.getPrice());
-        existingDish.setAllergens(updatedDish.getAllergens());
+
+        if (updatedDish.getAllergens() != null && !updatedDish.getAllergens().isEmpty()) {
+            existingDish.setAllergens(new ArrayList<>(updatedDish.getAllergens()));
+        } else {
+            existingDish.setAllergens(new ArrayList<>());
+        }
+
+        if (updatedDish.getIngredients() != null && !updatedDish.getIngredients().isEmpty()) {
+            existingDish.setIngredients(new ArrayList<>(updatedDish.getIngredients()));
+        } else {
+            existingDish.setIngredients(new ArrayList<>());
+        }
 
         return dishRepository.save(existingDish);
     }

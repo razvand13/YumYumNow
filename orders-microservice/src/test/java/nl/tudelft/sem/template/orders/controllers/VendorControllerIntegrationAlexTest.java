@@ -71,7 +71,7 @@ public class VendorControllerIntegrationAlexTest {
         dishForUpdate.setVendorId(vendorUUID1);
 
         ResponseEntity<Dish> dishForUpdateResponse = vendorController.addDishToMenu(vendorUUID1, dishForUpdate);
-        testDishIdForUpdate = addedDishResponse.getBody().getID();
+        testDishIdForUpdate = Objects.requireNonNull(dishForUpdateResponse.getBody()).getID();
     }
 
     @Test
@@ -99,7 +99,7 @@ public class VendorControllerIntegrationAlexTest {
     @Test
     public void testRemoveDishFromMenu() {
         ResponseEntity<Void> response = vendorController.removeDishFromMenu(vendorUUID1, testDishIdForRemoval);
-        //assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK); //TODO: fix this
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         Dish deletedDish = dishService.findByIdNotDeleted(testDishIdForRemoval);
         assertThat(deletedDish).isNull();
 
@@ -135,8 +135,8 @@ public class VendorControllerIntegrationAlexTest {
         updatedDish.setName("Updated and catchier Dish Name");
         updatedDish.setDescription("something new!!!");
         updatedDish.setPrice(25.0);
-        //updatedDish.setAllergens(List.of("more interesting than whatever")); //TODO: fix this
-        //updatedDish.setIngredients(Arrays.asList("Salt", "Nothing")); //TODO: fix this
+        updatedDish.setAllergens(List.of("more interesting than whatever"));
+        updatedDish.setIngredients(Arrays.asList("Salt", "Nothing"));
 
         ResponseEntity<Dish> response = vendorController.updateDishDetails(vendorUUID1, testDishIdForUpdate, updatedDish);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -145,7 +145,8 @@ public class VendorControllerIntegrationAlexTest {
         assertThat(dishResponse.getName()).isEqualTo(updatedDish.getName());
         assertThat(dishResponse.getDescription()).isEqualTo(updatedDish.getDescription());
         assertThat(dishResponse.getPrice()).isEqualTo(updatedDish.getPrice());
-
+        assertThat(dishResponse.getAllergens()).isEqualTo(updatedDish.getAllergens());
+        assertThat(dishResponse.getIngredients()).isEqualTo(updatedDish.getIngredients());
     }
 
     @Test
@@ -155,6 +156,45 @@ public class VendorControllerIntegrationAlexTest {
         UUID invalidVendorUUID = UUID.randomUUID();
         ResponseEntity<Dish> response = vendorController
             .updateDishDetails(invalidVendorUUID, testDishIdForUpdate, updatedDish);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    public void testGetOwnDishes() {
+        ResponseEntity<List<Dish>> response = vendorController.getOwnDishes(vendorUUID1);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        List<Dish> dishes = response.getBody();
+        assertThat(dishes).isNotNull();
+        assertThat(dishes).hasSizeGreaterThanOrEqualTo(1);
+    }
+
+    @Test
+    public void testGetOwnDishesWithInvalidVendor() {
+        UUID invalidVendorUUID = UUID.randomUUID();
+        ResponseEntity<List<Dish>> response = vendorController.getOwnDishes(invalidVendorUUID);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    public void testGetDish() {
+        ResponseEntity<Dish> response = vendorController.getDish(vendorUUID1, testDishIdForUpdate);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        Dish dish = response.getBody();
+        assertThat(dish).isNotNull();
+        assertThat(dish.getID()).isEqualTo(testDishIdForUpdate);
+    }
+
+    @Test
+    public void testGetDishWithInvalidVendor() {
+        UUID invalidVendorUUID = UUID.randomUUID();
+        ResponseEntity<Dish> response = vendorController.getDish(invalidVendorUUID, testDishIdForUpdate);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    public void testGetDishWithInvalidDishId() {
+        UUID invalidDishId = UUID.randomUUID();
+        ResponseEntity<Dish> response = vendorController.getDish(vendorUUID1, invalidDishId);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 }
