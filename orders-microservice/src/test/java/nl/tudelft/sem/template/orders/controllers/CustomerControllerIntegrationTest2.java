@@ -5,23 +5,18 @@ import nl.tudelft.sem.template.model.Vendor;
 import nl.tudelft.sem.template.model.Order;
 import nl.tudelft.sem.template.model.OrderedDish;
 import nl.tudelft.sem.template.model.Status;
-import nl.tudelft.sem.template.model.CreateOrderRequest;
-import nl.tudelft.sem.template.model.UpdateOrderStatusRequest;
 import nl.tudelft.sem.template.model.Address;
 import nl.tudelft.sem.template.model.UpdateDishQtyRequest;
 import nl.tudelft.sem.template.model.UpdateSpecialRequirementsRequest;
-import nl.tudelft.sem.template.orders.external.CustomerDTO;
 import nl.tudelft.sem.template.orders.repositories.DishRepository;
 import nl.tudelft.sem.template.orders.repositories.OrderRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,8 +25,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Transactional
 public class CustomerControllerIntegrationTest2 {
 
-    @Autowired
-    private OrderController orderController;
     @Autowired
     private CustomerController customerController;
 
@@ -62,29 +55,6 @@ public class CustomerControllerIntegrationTest2 {
         vendor.setLocation(address);
 
         return vendor;
-    }
-
-    /**
-     * https://gyyl7.wiremockapi.cloud/customers/c00b0bcf-189a-45c7-afff-28a130e661a0
-     *
-     * @return example customer
-     */
-    CustomerDTO exampleCustomer() {
-        Address homeAddress = new Address();
-        homeAddress.setLatitude(34.092);
-        homeAddress.setLongitude(34.092);
-        homeAddress.setZipCode("2554EZ");
-        homeAddress.setHouseNumber(24);
-
-        Address currentLocation = new Address();
-        currentLocation.setLatitude(34.092);
-        currentLocation.setLongitude(34.092);
-        currentLocation.setZipCode("2554EZ");
-        currentLocation.setHouseNumber(24);
-
-        return new CustomerDTO(customerId, "Arthur Dent", "Tempie.Farrell@email.example.mocklab.io", true,
-                "Visa Debit", homeAddress, List.of("9r4x25i52y7dayiodddgk0bfb2yx3z15pgtk0atrfa6a2u0azp8sshnpt"),
-                currentLocation);
     }
 
     Order createOrder() {
@@ -122,18 +92,6 @@ public class CustomerControllerIntegrationTest2 {
         dish.setImageLink("www.images.com/chicken-and-rice");
         dish.setAllergens(List.of("Gluten"));
 
-        return dishRepo.save(dish);
-    }
-
-    Dish createDish2() {
-        Dish dish = new Dish();
-        dish.setName("Rice & Chicken");
-        dish.setVendorId(vendorId);
-        dish.setPrice(10.0);
-        dish.setIngredients(List.of("Rice", "maybe some chicken as well"));
-        dish.setDescription("yum");
-        dish.setImageLink("www.images.com/chicken-and-rice-rice-and-chicken");
-        dish.setAllergens(List.of("Chick", "en"));
         return dishRepo.save(dish);
     }
 
