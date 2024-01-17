@@ -25,11 +25,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.*;
 
 class VendorControllerTest {
 
@@ -77,6 +73,7 @@ class VendorControllerTest {
         vendorId = UUID.randomUUID();
         orderId = UUID.randomUUID();
         customerId = UUID.randomUUID();
+        orderId = UUID.randomUUID();
     }
 
     @Test
@@ -827,4 +824,16 @@ class VendorControllerTest {
 
         assertThat(response.getBody()).isEqualTo(result);
     }
+
+    @Test
+    void getVendorOrdersInternalServerError() {
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
+        when(vendorFacade.existsById(vendorId)).thenReturn(true);
+        when(vendorService.getVendorOrders(vendorId)).thenThrow(new RuntimeException());
+
+        ResponseEntity<List<Order>> response = vendorController.getVendorOrders(vendorId);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
 }

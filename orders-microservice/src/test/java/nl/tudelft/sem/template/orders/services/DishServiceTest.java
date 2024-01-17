@@ -9,11 +9,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.util.List;
-import java.util.UUID;
-import java.util.Optional;
-import java.util.Collections;
-import java.util.Arrays;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.never;
@@ -278,11 +274,49 @@ public class DishServiceTest {
         assertThat(result.getIngredients()).isEqualTo(Collections.singletonList("Milk"));
     }
 
+    @Test
+    void findByIdDeletedDish() {
+        UUID dishId = UUID.randomUUID();
+        Dish dish = createDish(dishId);
+        dish.setIsDeleted(true);
+
+        when(dishRepository.findById(dishId)).thenReturn(Optional.of(dish));
+
+        Dish result = dishService.findByIdNotDeleted(dishId);
+        assertThat(result).isNull();
+    }
+
+    @Test
+    void findAllByVendorIdDeletedDish() {
+        UUID dishId = UUID.randomUUID();
+        Dish dish = createDish(dishId);
+        dish.setIsDeleted(true);
+        UUID anotherDishId = UUID.randomUUID();
+        Dish anotherDish = createDish(anotherDishId);
+        List<Dish> dishes = new ArrayList<>();
+        dishes.add(dish);
+        dishes.add(anotherDish);
+
+        when(dishRepository.getDishesByVendorId(any(UUID.class))).thenReturn(dishes);
+
+        List<Dish> result = dishService.findAllByVendorIdNotDeleted(UUID.randomUUID());
+        assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(Collections.singletonList(createDish(anotherDishId)));
+    }
+
+    @Test
+    void isDishInOrderReturnCheck() {
+        UUID dishId = UUID.randomUUID();
+        List<Dish> dishes = Arrays.asList(createDish(dishId), createDish(UUID.randomUUID()));
+
+        boolean result = dishService.isDishInOrder(dishes, dishId);
+
+        assertThat(result).isTrue();
+    }
+
     private Dish createDish(UUID dishId) {
         Dish dish = new Dish();
         dish.setID(dishId);
         return dish;
     }
-
-
 }

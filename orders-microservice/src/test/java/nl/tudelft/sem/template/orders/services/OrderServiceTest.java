@@ -212,10 +212,53 @@ class OrderServiceTest {
         verify(orderRepository).deleteById(orderId);
     }
 
+    @Test
+    void orderedDishInOrderFilterCheck() {
+        UUID dishIdToFind = UUID.randomUUID();
+        OrderedDish dish = createOrderedDish(createDish(UUID.randomUUID(), "Wrong Dish"));
+        OrderedDish dish2 = createOrderedDish(createDish(dishIdToFind, "Right Dish"));
+
+        List<OrderedDish> dishes = new ArrayList<>();
+        dishes.add(dish);
+        dishes.add(dish2);
+
+        Order order = createOrderByPrice(0.0);
+        order.setDishes(dishes);
+
+        Optional<OrderedDish> result = orderService.orderedDishInOrder(order, dishIdToFind);
+        assertThat(result.get().getDish().getName()).isEqualTo("Right Dish");
+    }
+
+    @Test
+    void removeDishOrderFilterCheck() {
+        UUID dishIdToFind = UUID.randomUUID();
+        OrderedDish dish = createOrderedDish(createDish(UUID.randomUUID(), "Wrong Dish"));
+        OrderedDish dish2 = createOrderedDish(createDish(dishIdToFind, "Found Dish"));
+
+        List<OrderedDish> dishes = List.of(dish, dish2);
+
+        Optional<OrderedDish> result = orderService.removeDishOrder(dishes, dishIdToFind);
+        assertThat(result.get().getDish().getName()).isEqualTo("Found Dish");
+    }
+
     private Order createOrderByPrice(double price) {
         Order order = new Order();
         order.setTotalPrice(price);
         return order;
+    }
+
+    private Dish createDish(UUID dishId, String name) {
+        Dish dish = new Dish();
+        dish.setID(dishId);
+        dish.setName(name);
+        return dish;
+    }
+
+    private OrderedDish createOrderedDish(Dish dish) {
+        OrderedDish orderedDish = new OrderedDish();
+        orderedDish.setDish(dish);
+        orderedDish.setId(dish.getID());
+        return orderedDish;
     }
 
 }

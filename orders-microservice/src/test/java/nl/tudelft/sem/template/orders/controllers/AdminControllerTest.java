@@ -88,6 +88,18 @@ class AdminControllerTest {
         verify(orderService).findAll();
     }
 
+    @Test
+    void adminGetAllOrderThrowsException() {
+        when(adminFacade.checkRoleById(adminId)).thenReturn(true);
+        when(adminFacade.existsById(adminId)).thenReturn(true);
+        when(orderService.findAll()).thenThrow(RuntimeException.class);
+
+        ResponseEntity<List<Order>> response = adminController.adminGetAllOrders(adminId);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+        verify(adminFacade).checkRoleById(adminId);
+        verify(adminFacade).existsById(adminId);
+    }
 
     // Tests for adminGetOrder
 

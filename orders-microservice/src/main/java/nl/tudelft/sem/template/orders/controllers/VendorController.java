@@ -277,13 +277,9 @@ public class VendorController implements VendorApi {
             return ResponseEntity.status(e.getFailureStatus()).build();
         }
 
-        try {
-            Order order = orderService.findById(orderId);
+        Order order = orderService.findById(orderId);
 
-            return ResponseEntity.ok(order);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        return ResponseEntity.ok(order);
     }
 
     /**
