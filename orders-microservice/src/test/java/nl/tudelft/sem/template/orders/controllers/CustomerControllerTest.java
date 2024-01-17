@@ -16,6 +16,7 @@ import nl.tudelft.sem.template.orders.domain.IDishService;
 import nl.tudelft.sem.template.orders.domain.IOrderService;
 import nl.tudelft.sem.template.orders.domain.IVendorService;
 import nl.tudelft.sem.template.orders.external.CustomerDTO;
+import nl.tudelft.sem.template.orders.external.PaymentSuccessDecider;
 import nl.tudelft.sem.template.orders.external.PaymentMock;
 import nl.tudelft.sem.template.orders.external.VendorDTO;
 import nl.tudelft.sem.template.orders.mappers.VendorMapper;
@@ -25,7 +26,6 @@ import nl.tudelft.sem.template.orders.integration.VendorFacade;
 import nl.tudelft.sem.template.orders.validator.DataValidator;
 import nl.tudelft.sem.template.orders.validator.DataValidationField;
 import nl.tudelft.sem.template.orders.validator.UserAuthorizationValidator;
-import nl.tudelft.sem.template.orders.validator.ValidatorRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -72,17 +72,9 @@ class CustomerControllerTest {
     @Mock
     private VendorFacade vendorFacade;
     @Mock
-    private DataValidator dataValidator;
-    @Mock
-    private PaymentMock paymentMock;
-    @Mock
-    private PayOrderRequest payOrderRequest;
+    private PaymentSuccessDecider paymentSuccessDecider;
     @Mock
     ApplicationContext applicationContext;
-    @Mock
-    UserAuthorizationValidator userAuthorizationValidator;
-    @Mock
-    ValidatorRequest validatorRequest;
     @InjectMocks
     private CustomerController customerController;
 
@@ -92,6 +84,10 @@ class CustomerControllerTest {
     private UUID orderId;
     private UUID dishId;
     private Order order;
+    private PayOrderRequest payOrderRequest;
+    private DataValidator dataValidator;
+    private UserAuthorizationValidator userAuthorizationValidator;
+    private PaymentMock paymentMock;
 
     @BeforeEach
     void setup() {
@@ -103,11 +99,7 @@ class CustomerControllerTest {
         customerFacade = mock(CustomerFacade.class);
         vendorFacade = mock(VendorFacade.class);
         applicationContext = mock(ApplicationContext.class);
-        dataValidator = mock(DataValidator.class);
-        paymentMock = mock(PaymentMock.class);
-        userAuthorizationValidator = mock(UserAuthorizationValidator.class);
-        validatorRequest = mock(ValidatorRequest.class);
-        payOrderRequest = mock(PayOrderRequest.class);
+        paymentSuccessDecider = mock(PaymentSuccessDecider.class);
 
         when(applicationContext.getBean(eq(DataValidator.class), anyList()))
                 .thenReturn(dataValidator);
@@ -186,10 +178,12 @@ class CustomerControllerTest {
         when(applicationContext.getBean(UserAuthorizationValidator.class))
                 .thenReturn(new UserAuthorizationValidator(customerFacade, vendorFacade, orderService, dishService));
 
-        customerController = new CustomerController(IVendorMapper, vendorService, dishService, orderService,
-                customerService, customerFacade, vendorFacade, applicationContext, paymentMock);
+        paymentMock = new PaymentMock();
+        paymentMock.setPaymentSuccessDecider(paymentSuccessDecider);
+
 
         customerId = UUID.randomUUID();
+
         orderId = UUID.randomUUID();
         dishId = UUID.randomUUID();
         order = new Order();
@@ -197,7 +191,15 @@ class CustomerControllerTest {
         order.setCustomerId(customerId);
         order.setVendorId(UUID.randomUUID());
 
+        payOrderRequest = new PayOrderRequest();
+
+        userAuthorizationValidator = new UserAuthorizationValidator(customerFacade, vendorFacade, orderService, dishService);
+
         updateSpecialRequirementsRequest = new UpdateSpecialRequirementsRequest();
+
+
+        customerController = new CustomerController(IVendorMapper, vendorService, dishService, orderService,
+                customerService, customerFacade, vendorFacade, applicationContext, paymentMock);
 
         when(orderService.findById(orderId)).thenReturn(order);
         when(dishService.findById(dishId)).thenReturn(new Dish());
@@ -474,12 +476,18 @@ class CustomerControllerTest {
 
     @Test
     void getVendorsNullCustomerLocation() {
+        ArrayList<DataValidationField> fields = new ArrayList<DataValidationField>();
+        fields.add(DataValidationField.USER);
+
+        dataValidator = new DataValidator(orderService, dishService, vendorFacade, fields);
+
         when(applicationContext.getBean(eq(DataValidator.class), eq(List.of(DataValidationField.USER))))
                 .thenReturn(dataValidator);
 
         CustomerDTO customerDTO = new CustomerDTO();
         when(customerFacade.requestCustomer(customerId)).thenReturn(customerDTO);
-
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
         when(customerService.getDeliveryLocation(customerDTO)).thenReturn(null);
 
         ResponseEntity<List<Vendor>> response = customerController.getVendors(customerId, null, null, null);
@@ -973,10 +981,11 @@ class CustomerControllerTest {
 
     @Test
     void payOrderSuccess() {
-        when(paymentMock.pay(orderId, payOrderRequest)).thenReturn(true);
+        when(paymentSuccessDecider.doesPaymentSucceed(orderId)).thenReturn(true);
         when(customerFacade.checkRoleById(customerId)).thenReturn(true);
         when(customerFacade.existsById(customerId)).thenReturn(true);
-        when(payOrderRequest.getPaymentOption()).thenReturn(Payment.IDEAL);
+
+        payOrderRequest.setPaymentOption(Payment.IDEAL);
 
         ResponseEntity<Void> response = customerController.payOrder(customerId, orderId, payOrderRequest);
 
@@ -984,9 +993,19 @@ class CustomerControllerTest {
     }
 
     @Test
+    void payOrderRejected() {
+        when(paymentSuccessDecider.doesPaymentSucceed(orderId)).thenReturn(false);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
+
+        ResponseEntity<Void> response = customerController.payOrder(customerId, orderId, payOrderRequest);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
     void payOrderWithUnauthorizedUser() {
         payOrderRequest.setPaymentOption(Payment.IDEAL);
-        when(payOrderRequest.getPaymentOption()).thenReturn(Payment.IDEAL);
 
         ResponseEntity<Void> response = customerController.payOrder(UUID.randomUUID(), orderId, payOrderRequest);
 
@@ -995,14 +1014,8 @@ class CustomerControllerTest {
 
     @Test
     void payOrderWithMissingPaymentInfo() {
+        payOrderRequest.setPaymentOption(null);
 
-        ResponseEntity<Void> response = customerController.payOrder(customerId, orderId, payOrderRequest);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-    }
-
-    @Test
-    void payOrderWithPaymentFailure() {
         ResponseEntity<Void> response = customerController.payOrder(customerId, orderId, payOrderRequest);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
