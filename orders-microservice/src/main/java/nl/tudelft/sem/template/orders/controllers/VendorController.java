@@ -3,7 +3,6 @@ package nl.tudelft.sem.template.orders.controllers;
 import nl.tudelft.sem.template.api.VendorApi;
 import nl.tudelft.sem.template.model.Dish;
 import nl.tudelft.sem.template.model.Order;
-import nl.tudelft.sem.template.orders.VendorNotFoundException;
 import nl.tudelft.sem.template.orders.domain.IDishService;
 import nl.tudelft.sem.template.orders.domain.IOrderService;
 import nl.tudelft.sem.template.orders.domain.IVendorService;
@@ -76,14 +75,8 @@ public class VendorController implements VendorApi {
         }
 
         try {
-
             Dish addedDish = dishService.addDish(vendorId, dish);
             return ResponseEntity.ok(addedDish);
-        } catch (VendorNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        } catch (IllegalArgumentException e) {
-            // Bad request from service
-            return ResponseEntity.badRequest().build();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
