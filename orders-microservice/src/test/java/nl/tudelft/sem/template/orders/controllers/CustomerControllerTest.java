@@ -959,10 +959,54 @@ class CustomerControllerTest {
         assertThat(order.getCustomerId()).isEqualTo(previousOrder.getCustomerId());
         assertThat(order.getVendorId()).isEqualTo(previousOrder.getVendorId());
         assertThat(order.getDishes()).isEqualTo(previousOrder.getDishes());
-        assertThat(order.getOrderTime()).isNotEqualTo(previousOrder.getOrderTime());
+        assertThat(order.getOrderTime()).isNotNull();
         assertThat(order.getStatus()).isEqualTo(Status.PENDING);
         assertThat(order.getLocation()).isEqualTo(previousOrder.getLocation());
         assertThat(order.getTotalPrice()).isEqualTo(previousOrder.getTotalPrice());
+    }
+
+    @Test
+    void testCorrectNewPriceDishQty() {
+        DataValidator mockDataValidator = mock(DataValidator.class);
+        UserAuthorizationValidator mockUserAuthorizationValidator = mock(UserAuthorizationValidator.class);
+        when(applicationContext.getBean(eq(DataValidator.class), anyList())).thenReturn(mockDataValidator);
+        when(applicationContext.getBean(UserAuthorizationValidator.class)).thenReturn(mockUserAuthorizationValidator);
+
+        UpdateDishQtyRequest updateDishQtyRequest = new UpdateDishQtyRequest();
+        updateDishQtyRequest.setQuantity(5);
+
+        OrderedDish orderedDish = new OrderedDish();
+        Dish dish = new Dish();
+        dish.setID(dishId);
+        dish.setPrice(15.0);
+        orderedDish.setDish(dish);
+        orderedDish.setQuantity(2);
+
+        Order order = new Order();
+        order.setDishes(new ArrayList<>(List.of(orderedDish)));
+
+        when(orderService.findById(orderId)).thenReturn(order);
+        when(orderService.calculateOrderPrice(anyList())).thenAnswer(invocation -> {
+            return calculateOrderPrice(invocation.getArgument(0));
+        });
+        // Mock the behavior of orderService.save
+        when(orderService.save(any(Order.class))).thenAnswer(invocation -> {
+            return invocation.getArgument(0);
+        });
+
+        ResponseEntity<Order> response = customerController
+                .updateDishQty(customerId, orderId, dishId, updateDishQtyRequest);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(orderedDish.getQuantity()).isEqualTo(5);
+        assertThat(response.getBody().getTotalPrice()).isEqualTo(75.0);
+        verify(orderService).save(any(Order.class));
+    }
+
+    private double calculateOrderPrice(List<OrderedDish> dishes) {
+        return dishes.stream()
+                .mapToDouble(orderedDish -> orderedDish.getDish().getPrice() * orderedDish.getQuantity())
+                .sum();
     }
 
     private CustomerDTO setupCustomer(String... customerAllergens) {

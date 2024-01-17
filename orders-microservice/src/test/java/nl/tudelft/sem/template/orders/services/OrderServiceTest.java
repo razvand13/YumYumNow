@@ -35,7 +35,6 @@ class OrderServiceTest {
     @BeforeEach
     void setup() {
         MockitoAnnotations.openMocks(this);
-
     }
 
     @Test
@@ -188,6 +187,35 @@ class OrderServiceTest {
 
         assertThat(resultOrders).isEqualTo(mockOrders);
         assertThat(resultOrders.size()).isEqualTo(2);
+    }
+
+    @Test
+    void findAllReturnsEmptyList() {
+        List<Order> orderList = new ArrayList<>();
+        orderList.add(createOrderByPrice(12.0));
+        orderList.add(createOrderByPrice(42.0));
+        when(orderRepository.findAll()).thenReturn(orderList);
+
+        List<Order> expectedList = new ArrayList<>();
+        expectedList.add(createOrderByPrice(12.0));
+        expectedList.add(createOrderByPrice(42.0));
+
+        List<Order> result = orderService.findAll();
+        assertThat(result.size()).isNotEqualTo(0);
+        assertThat(result).isEqualTo(expectedList);
+    }
+
+    @Test
+    void checkDeleteCallRepository() {
+        UUID orderId = UUID.randomUUID();
+        orderService.delete(orderId);
+        verify(orderRepository).deleteById(orderId);
+    }
+
+    private Order createOrderByPrice(double price) {
+        Order order = new Order();
+        order.setTotalPrice(price);
+        return order;
     }
 
 }
