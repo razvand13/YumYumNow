@@ -148,34 +148,6 @@ class OrderServiceTest {
         assertThat(result).isNotPresent();
     }
 
-    // Utility methods for creating test objects
-    private OrderedDish createOrderedDish(double price, int quantity) {
-        Dish dish = mock(Dish.class);
-        when(dish.getPrice()).thenReturn(price);
-        OrderedDish orderedDish = new OrderedDish();
-        orderedDish.setDish(dish);
-        orderedDish.setQuantity(quantity);
-        return orderedDish;
-    }
-
-    private OrderedDish createOrderedDish(double price, int quantity, UUID dishId) {
-        Dish dish = mock(Dish.class);
-        when(dish.getPrice()).thenReturn(price);
-        when(dish.getID()).thenReturn(dishId);
-        OrderedDish orderedDish = new OrderedDish();
-        orderedDish.setDish(dish);
-        orderedDish.setQuantity(quantity);
-        return orderedDish;
-    }
-
-    private Order createOrderWithDish(UUID dishId) {
-        Order order = new Order();
-        List<OrderedDish> orderedDishes = new ArrayList<>();
-        orderedDishes.add(createOrderedDish(10.0, 2, dishId));
-        order.setDishes(orderedDishes);
-        return order;
-    }
-
     @Test
     void findOrdersByCustomerIdTest() {
         UUID customerId = UUID.randomUUID();
@@ -215,8 +187,8 @@ class OrderServiceTest {
     @Test
     void orderedDishInOrderFilterCheck() {
         UUID dishIdToFind = UUID.randomUUID();
-        OrderedDish dish = createOrderedDish(createDish(UUID.randomUUID(), "Wrong Dish"));
-        OrderedDish dish2 = createOrderedDish(createDish(dishIdToFind, "Right Dish"));
+        OrderedDish dish = createOrderedDishFromDish(createDish(UUID.randomUUID(), "Wrong Dish"));
+        OrderedDish dish2 = createOrderedDishFromDish(createDish(dishIdToFind, "Right Dish"));
 
         List<OrderedDish> dishes = new ArrayList<>();
         dishes.add(dish);
@@ -232,14 +204,16 @@ class OrderServiceTest {
     @Test
     void removeDishOrderFilterCheck() {
         UUID dishIdToFind = UUID.randomUUID();
-        OrderedDish dish = createOrderedDish(createDish(UUID.randomUUID(), "Wrong Dish"));
-        OrderedDish dish2 = createOrderedDish(createDish(dishIdToFind, "Found Dish"));
+        OrderedDish dish = createOrderedDishFromDish(createDish(UUID.randomUUID(), "Wrong Dish"));
+        OrderedDish dish2 = createOrderedDishFromDish(createDish(dishIdToFind, "Found Dish"));
 
         List<OrderedDish> dishes = List.of(dish, dish2);
 
         Optional<OrderedDish> result = orderService.removeDishOrder(dishes, dishIdToFind);
         assertThat(result.get().getDish().getName()).isEqualTo("Found Dish");
     }
+
+    // Utility methods for creating test objects
 
     private Order createOrderByPrice(double price) {
         Order order = new Order();
@@ -254,10 +228,37 @@ class OrderServiceTest {
         return dish;
     }
 
-    private OrderedDish createOrderedDish(Dish dish) {
+    private Order createOrderWithDish(UUID dishId) {
+        Order order = new Order();
+        List<OrderedDish> orderedDishes = new ArrayList<>();
+        orderedDishes.add(createOrderedDish(10.0, 2, dishId));
+        order.setDishes(orderedDishes);
+        return order;
+    }
+
+    private OrderedDish createOrderedDishFromDish(Dish dish) {
         OrderedDish orderedDish = new OrderedDish();
         orderedDish.setDish(dish);
         orderedDish.setId(dish.getID());
+        return orderedDish;
+    }
+
+    private OrderedDish createOrderedDish(double price, int quantity, UUID dishId) {
+        Dish dish = mock(Dish.class);
+        when(dish.getPrice()).thenReturn(price);
+        when(dish.getID()).thenReturn(dishId);
+        OrderedDish orderedDish = new OrderedDish();
+        orderedDish.setDish(dish);
+        orderedDish.setQuantity(quantity);
+        return orderedDish;
+    }
+
+    private OrderedDish createOrderedDish(double price, int quantity) {
+        Dish dish = mock(Dish.class);
+        when(dish.getPrice()).thenReturn(price);
+        OrderedDish orderedDish = new OrderedDish();
+        orderedDish.setDish(dish);
+        orderedDish.setQuantity(quantity);
         return orderedDish;
     }
 

@@ -484,7 +484,8 @@ class CustomerControllerTest {
 
         UpdateDishQtyRequest updateDishQtyRequest = new UpdateDishQtyRequest();
         updateDishQtyRequest.setQuantity(1);
-        ResponseEntity<Order> responseEntity = customerController.addDishToOrder(customerId, orderId, dishId, updateDishQtyRequest);
+        ResponseEntity<Order> responseEntity = customerController
+                .addDishToOrder(customerId, orderId, dishId, updateDishQtyRequest);
 
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
@@ -574,7 +575,6 @@ class CustomerControllerTest {
                 .thenReturn(mockDataValidator);
         when(applicationContext.getBean(UserAuthorizationValidator.class)).thenReturn(mockUserAuthorizationValidator);
 
-        Order mockOrder = new Order();
         OrderedDish existingOrderedDish = new OrderedDish();
         Dish dish = new Dish();
         dish.setID(dishId);
@@ -586,6 +586,7 @@ class CustomerControllerTest {
         remainingDish.setID(remainingDishId);
         remainingOrderedDish.setDish(remainingDish);
 
+        Order mockOrder = new Order();
         mockOrder.setDishes(new ArrayList<>(List.of(remainingOrderedDish, existingOrderedDish)));
         when(orderService.findById(orderId)).thenReturn(mockOrder);
         when(orderService.calculateOrderPrice(anyList())).thenReturn(100.0);
@@ -650,7 +651,8 @@ class CustomerControllerTest {
 
         UpdateDishQtyRequest updateDishQtyRequest = new UpdateDishQtyRequest();
         updateDishQtyRequest.setQuantity(1);
-        ResponseEntity<Order> responseEntity = customerController.updateDishQty(customerId, orderId, dishId, updateDishQtyRequest);
+        ResponseEntity<Order> responseEntity = customerController
+                .updateDishQty(customerId, orderId, dishId, updateDishQtyRequest);
 
         assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
@@ -1149,6 +1151,7 @@ class CustomerControllerTest {
 
         return address;
     }
+
     private List<Dish> setupVendorDishes(String[]... dishAllergens) {
         List<Dish> vendorDishes = new ArrayList<>();
         for (String[] allergens : dishAllergens) {
