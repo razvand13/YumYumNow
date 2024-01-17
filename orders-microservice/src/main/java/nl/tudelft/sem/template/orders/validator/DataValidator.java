@@ -139,6 +139,12 @@ public class DataValidator extends BaseValidator {
             }
         }
 
+        if (fields.contains(DataValidationField.PAYORDERREQUEST)) {
+            if (request.getPayOrderRequest().getPaymentOption() == null) {
+                throw new ValidationFailureException(HttpStatus.BAD_REQUEST);
+            }
+        }
+
         return super.checkNext(request);
     }
 }

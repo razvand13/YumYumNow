@@ -1,6 +1,7 @@
 package nl.tudelft.sem.template.orders.validator;
 
 import nl.tudelft.sem.template.model.CreateOrderRequest;
+import nl.tudelft.sem.template.model.PayOrderRequest;
 import nl.tudelft.sem.template.model.UpdateDishQtyRequest;
 import nl.tudelft.sem.template.model.UpdateOrderStatusRequest;
 import nl.tudelft.sem.template.model.UpdateSpecialRequirementsRequest;
@@ -16,6 +17,7 @@ public class ValidatorRequest {
     private CreateOrderRequest createOrderRequest;
     private UpdateOrderStatusRequest updateOrderStatusRequest;
     private UpdateSpecialRequirementsRequest updateSpecialRequirementsRequest;
+    private PayOrderRequest payOrderRequest;
 
     public ValidatorRequest() {
 
@@ -34,7 +36,8 @@ public class ValidatorRequest {
     public ValidatorRequest(UUID userUUID, UserType userType, UUID orderUUID, UUID dishUUID,
                             UpdateDishQtyRequest updateDishQtyRequest, CreateOrderRequest createOrderRequest,
                             UpdateOrderStatusRequest updateOrderStatusRequest,
-                            UpdateSpecialRequirementsRequest updateSpecialRequirementsRequest) {
+                            UpdateSpecialRequirementsRequest updateSpecialRequirementsRequest,
+                            PayOrderRequest payOrderRequest) {
         this.userUUID = userUUID;
         this.userType = userType;
         this.orderUUID = orderUUID;
@@ -43,6 +46,7 @@ public class ValidatorRequest {
         this.createOrderRequest = createOrderRequest;
         this.updateOrderStatusRequest = updateOrderStatusRequest;
         this.updateSpecialRequirementsRequest = updateSpecialRequirementsRequest;
+        this.payOrderRequest = payOrderRequest;
     }
 
     public UUID getUserUUID() {
@@ -107,5 +111,13 @@ public class ValidatorRequest {
 
     public void setUpdateSpecialRequirementsRequest(UpdateSpecialRequirementsRequest updateSpecialRequirementsRequest) {
         this.updateSpecialRequirementsRequest = updateSpecialRequirementsRequest;
+    }
+
+    public PayOrderRequest getPayOrderRequest() {
+        return payOrderRequest;
+    }
+
+    public void setPayOrderRequest(PayOrderRequest payOrderRequest) {
+        this.payOrderRequest = payOrderRequest;
     }
 }
