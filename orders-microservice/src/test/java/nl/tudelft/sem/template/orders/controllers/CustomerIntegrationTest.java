@@ -17,8 +17,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -341,4 +343,49 @@ public class CustomerIntegrationTest {
         assertThat(body).isNull();
         assertThat(statusCode).isEqualTo(HttpStatus.BAD_REQUEST);
     }
+
+    @Test
+    void testUpdateDishQtyOk() {
+        Order order = createOrder();
+        UUID orderId = order.getID();
+        Dish dish = createDish();
+        UUID dishId = dish.getID();
+
+        OrderedDish orderedDish = new OrderedDish();
+        orderedDish.setDish(dish);
+        orderedDish.setQuantity(1);
+        order.addDishesItem(orderedDish);
+        orderRepo.save(order);
+
+        UpdateDishQtyRequest updateDishQtyRequest = new UpdateDishQtyRequest();
+        int newQuantity = 2;
+        updateDishQtyRequest.setQuantity(newQuantity);
+
+        ResponseEntity<Order> response = customerController.updateDishQty(customerId, orderId, dishId, updateDishQtyRequest);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        Order updatedOrder = response.getBody();
+        assertThat(updatedOrder).isNotNull();
+
+        Optional<OrderedDish> updatedOrderedDishOpt = updatedOrder.getDishes().stream()
+                .filter(d -> d.getDish().getID().equals(dishId))
+                .findFirst();
+
+        assertThat(updatedOrderedDishOpt.isPresent()).isTrue();
+        OrderedDish updatedOrderedDish = updatedOrderedDishOpt.get();
+        assertThat(updatedOrderedDish.getQuantity()).isEqualTo(newQuantity);
+    }
+
+    @Test
+    void testGetPersonalOrderHistoryNoOrdersFound() {
+        UUID customerIdWithNoOrders = UUID.randomUUID();
+
+        ResponseEntity<List<Order>> response = customerController.getPersonalOrderHistory(customerIdWithNoOrders);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+
+        assertThat(response.getBody()).isNull();
+    }
+
+
 }
