@@ -225,7 +225,7 @@ public class CustomerController implements CustomerApi {
         CustomerDTO customer = customerFacade.requestCustomer(customerId);
 
         List<String> customerAllergens = new ArrayList<>();
-        customerAllergens.addAll(customer.getAllergens());
+        customerAllergens.add(customer.getAllergens());
         List<Dish> dishesToRemove = new ArrayList<>();
 
         // Find the dishes from the vendor that the customer is allergic to

@@ -21,7 +21,7 @@ import java.util.UUID;
 @Component
 public class VendorFacade {
 
-    private static final String USERS_URL = "https://gyyl7.wiremockapi.cloud";
+    private static final String USERS_URL = "http://localhost:8088";
     private static final String DELIVERY_URL = "https://localhost:8081";
     private static final HttpClient CLIENT = HttpClient.newBuilder().build();
     private final transient IVendorMapper IVendorMapper;

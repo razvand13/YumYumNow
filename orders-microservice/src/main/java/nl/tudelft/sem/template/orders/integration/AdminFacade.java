@@ -11,7 +11,7 @@ import java.util.UUID;
 @Component
 public class AdminFacade {
 
-    private static final String USERS_URL = "https://localhost:8088";
+    private static final String USERS_URL = "http://localhost:8088";
     private static final HttpClient CLIENT = HttpClient.newBuilder().build();
 
     /**

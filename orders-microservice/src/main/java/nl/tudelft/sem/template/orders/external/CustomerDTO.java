@@ -1,11 +1,9 @@
 package nl.tudelft.sem.template.orders.external;
 
-import java.util.List;
 import java.util.UUID;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.ToString;
 import nl.tudelft.sem.template.model.Address;
 
@@ -20,7 +18,7 @@ public class CustomerDTO {
     private boolean isBlocked;
     private String payment;
     private Address homeAddress;
-    private List<String> allergens;
+    private String allergens;
     private Address currentLocation;
 
     public CustomerDTO() {
@@ -40,7 +38,7 @@ public class CustomerDTO {
      * @param currentLocation current location
      */
     public CustomerDTO(UUID customerId, String name, String email, boolean isBlocked,
-                       String payment, Address homeAddress, List<String> allergens,
+                       String payment, Address homeAddress, String allergens,
                        Address currentLocation) {
         this.customerId = customerId;
         this.name = name;
@@ -83,7 +81,7 @@ public class CustomerDTO {
         this.homeAddress = homeAddress;
     }
 
-    public void setAllergens(List<String> allergens) {
+    public void setAllergens(String allergens) {
         this.allergens = allergens;
     }
 
