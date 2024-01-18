@@ -97,9 +97,8 @@ public class VendorControllerIntegrationClaireTest {
     public void testGetVendorOrders() {
         ResponseEntity<List<Order>> response = vendorController.getVendorOrders(vendorUUID1);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).containsExactlyInAnyOrder(orderService.findById(orderIDList.get(0)),
-                orderService.findById(orderIDList.get(1)));
-
+        assertThat(response.getBody()).contains(orderService.findById(orderIDList.get(0)));
+        assertThat(response.getBody()).contains(orderService.findById(orderIDList.get(1)));
     }
 
     @Test

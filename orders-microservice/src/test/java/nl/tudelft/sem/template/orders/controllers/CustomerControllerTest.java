@@ -103,6 +103,7 @@ class CustomerControllerTest {
         vendorFacade = mock(VendorFacade.class);
         applicationContext = mock(ApplicationContext.class);
         dataValidator = mock(DataValidator.class);
+        paymentSuccessDecider = mock(PaymentSuccessDecider.class);
 
         when(applicationContext.getBean(eq(DataValidator.class), anyList()))
                 .thenReturn(dataValidator);
