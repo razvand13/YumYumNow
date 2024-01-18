@@ -2,6 +2,7 @@ package nl.tudelft.sem.template.orders.domain;
 
 import nl.tudelft.sem.template.model.Address;
 import nl.tudelft.sem.template.model.Order;
+import nl.tudelft.sem.template.model.Vendor;
 import nl.tudelft.sem.template.orders.external.VendorDTO;
 
 import java.util.List;
@@ -16,4 +17,6 @@ public interface IVendorService {
                                   Integer minAvgPrice, Integer maxAvgPrice, Address customerLocation);
 
     List<Order> getVendorOrders(UUID vendorID);
+
+    List<Vendor> getFilteredVendorEntities(String name, Integer minAvgPrice, Integer maxAvgPrice, Address customerLocation);
 }
