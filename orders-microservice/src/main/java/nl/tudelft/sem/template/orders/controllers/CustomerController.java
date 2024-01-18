@@ -303,7 +303,6 @@ public class CustomerController implements CustomerApi {
             order.addDishesItem(newOrderedDish);
         }
 
-
         // Recalculate total price
         double newTotalPrice = orderService.calculateOrderPrice(order.getDishes());
 
