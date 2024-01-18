@@ -1,27 +1,20 @@
-# Lab Template
+# Orders Microservice for team-14a
 
-This template contains two microservices:
-- authentication-microservice
-- example-microservice
+This project contains the implementation of the Orders Microservice for YumYumNow of team 14a.
 
-The `authentication-microservice` is responsible for registering new users and authenticating current ones. After successful authentication, this microservice will provide a JWT token which can be used to bypass the security on the `example-microservice`. This token contains the *NetID* of the user that authenticated. If your scenario includes different roles, these will have to be added to the authentication-microservice and to the JWT token. To do this, you will have to:
-- Add a concept of roles to the `AppUser`
-- Add the roles to the `UserDetails` in `JwtUserDetailsService`
-- Add the roles as claims to the JWT token in `JwtTokenGenerator`
+YumYumNow is a food delivery application that connects customers, vendors and couriers. We are responsible for creating the microservice that handles the CRUD functionality for orders and dishes, allowing customers to order certain dishes from specific vendors.
 
-The `example-microservice` is just an example and needs to be modified to suit the domain you are modeling based on your scenario.
+This application simulates authorization by sending GET requests to the Users Microservice, for specific roles with specific id's. 
 
-The `domain` and `application` packages contain the code for the domain layer and application layer. The code for the framework layer is the root package as *Spring* has some limitations on were certain files are located in terms of autowiring.
+# Team Members
 
-## Running the microservices
+- Razvan Dinu : R.D.Dinu-1@student.tudelft.nl
+- Alexis Fimeyer : A.H.P.A.FIMEYER@student.tudelft.nl
+- Mate Rodić : M.Rodic@student.tudelft.nl
+- Ruben Schnell : R.H.Schnell@student.tudelft.nl
+- Claire (Clayton) Stokka : C.C.Stokka@student.tudelft.nl
+- Alex Tăbăcaru : A.I.Tabacaru@student.tudelft.nl
 
-You can run the two microservices individually by starting the Spring applications. Then, you can use *Postman* to perform the different requests:
+# Final Report
 
-Register:
-![image](instructions/register.png)
-
-Authenticate:
-![image](instructions/authenticate.png)
-
-Hello:
-![image](instructions/hello.png)
+The final report is present both here in the `documents` folder, as well as the `documents` repository provided by the course staff.
