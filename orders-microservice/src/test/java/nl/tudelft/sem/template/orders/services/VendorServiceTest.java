@@ -43,7 +43,7 @@ class VendorServiceTest {
         dishRepository = mock(DishRepository.class);
         orderRepository = mock(OrderRepository.class);
         vendorFacade = mock(VendorFacade.class);
-        vendorMapper = mock(VendorMapper.class);
+        vendorMapper = new VendorMapper();
         paymentMock = new PaymentMock();
         vendorService = new VendorService(dishRepository, orderRepository, paymentMock, vendorFacade, vendorMapper);
         vendorLocation = new Address();
@@ -225,6 +225,7 @@ class VendorServiceTest {
 
         List<Vendor> filteredVendors = vendorService.getFilteredVendorEntities(nameFilter,
                 minAvgPrice, maxAvgPrice, customerLocation);
+
 
         assertThat(filteredVendors).hasSize(1);
         assertThat(filteredVendors.get(0).getName()).isEqualTo(nameFilter);
