@@ -8,8 +8,6 @@ import nl.tudelft.sem.template.model.Status;
 import nl.tudelft.sem.template.model.CreateOrderRequest;
 import nl.tudelft.sem.template.model.UpdateOrderStatusRequest;
 import nl.tudelft.sem.template.model.Address;
-import nl.tudelft.sem.template.model.UpdateDishQtyRequest;
-import nl.tudelft.sem.template.model.UpdateSpecialRequirementsRequest;
 import nl.tudelft.sem.template.orders.external.CustomerDTO;
 import nl.tudelft.sem.template.orders.repositories.DishRepository;
 import nl.tudelft.sem.template.orders.repositories.OrderRepository;

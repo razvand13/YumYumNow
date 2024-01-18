@@ -8,6 +8,8 @@ import nl.tudelft.sem.template.model.Address;
 import nl.tudelft.sem.template.model.UpdateDishQtyRequest;
 import nl.tudelft.sem.template.model.CreateOrderRequest;
 import nl.tudelft.sem.template.model.OrderedDish;
+import nl.tudelft.sem.template.model.PayOrderRequest;
+import nl.tudelft.sem.template.model.Payment;
 import nl.tudelft.sem.template.model.Status;
 import nl.tudelft.sem.template.model.UpdateSpecialRequirementsRequest;
 import nl.tudelft.sem.template.orders.domain.ICustomerService;
@@ -15,6 +17,8 @@ import nl.tudelft.sem.template.orders.domain.IDishService;
 import nl.tudelft.sem.template.orders.domain.IOrderService;
 import nl.tudelft.sem.template.orders.domain.IVendorService;
 import nl.tudelft.sem.template.orders.external.CustomerDTO;
+import nl.tudelft.sem.template.orders.external.PaymentSuccessDecider;
+import nl.tudelft.sem.template.orders.external.PaymentMock;
 import nl.tudelft.sem.template.orders.external.VendorDTO;
 import nl.tudelft.sem.template.orders.mappers.VendorMapper;
 import nl.tudelft.sem.template.orders.mappers.interfaces.IVendorMapper;
@@ -32,7 +36,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-import javax.management.RuntimeMBeanException;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -71,7 +74,7 @@ class CustomerControllerTest {
     @Mock
     private VendorFacade vendorFacade;
     @Mock
-    private DataValidator dataValidator;
+    private PaymentSuccessDecider paymentSuccessDecider;
     @Mock
     ApplicationContext applicationContext;
     @InjectMocks
@@ -84,6 +87,10 @@ class CustomerControllerTest {
     private UUID orderId;
     private UUID dishId;
     private Order order;
+    private PayOrderRequest payOrderRequest;
+    private DataValidator dataValidator;
+    private UserAuthorizationValidator userAuthorizationValidator;
+    private PaymentMock paymentMock;
 
     @BeforeEach
     void setup() {
@@ -162,13 +169,24 @@ class CustomerControllerTest {
                                 DataValidationField.UPDATESPECIALREQUIREMENTSREQUEST),
                         orderService, dishService, vendorFacade));
 
+        // payOrderRequest
+        when(applicationContext.getBean(DataValidator.class,
+                List.of(DataValidationField.USER, DataValidationField.ORDER,
+                        DataValidationField.PAYORDERREQUEST)))
+                .thenReturn(new DataValidator(
+                        List.of(DataValidationField.USER, DataValidationField.ORDER,
+                                DataValidationField.PAYORDERREQUEST),
+                        orderService, dishService, vendorFacade));
+
         when(applicationContext.getBean(UserAuthorizationValidator.class))
                 .thenReturn(new UserAuthorizationValidator(customerFacade, vendorFacade, orderService, dishService));
 
-        customerController = new CustomerController(IVendorMapper, vendorService, dishService, orderService,
-                customerService, customerFacade, vendorFacade, applicationContext);
+        paymentMock = new PaymentMock();
+        paymentMock.setPaymentSuccessDecider(paymentSuccessDecider);
+
 
         customerId = UUID.randomUUID();
+
         orderId = UUID.randomUUID();
         dishId = UUID.randomUUID();
         order = new Order();
@@ -176,8 +194,15 @@ class CustomerControllerTest {
         order.setCustomerId(customerId);
         order.setVendorId(UUID.randomUUID());
 
+        payOrderRequest = new PayOrderRequest();
+
+        userAuthorizationValidator = new UserAuthorizationValidator(customerFacade, vendorFacade, orderService, dishService);
+
         updateSpecialRequirementsRequest = new UpdateSpecialRequirementsRequest();
         createOrderRequest = new CreateOrderRequest();
+
+        customerController = new CustomerController(IVendorMapper, vendorService, dishService, orderService,
+                customerService, customerFacade, vendorFacade, applicationContext, paymentMock);
 
         when(orderService.findById(orderId)).thenReturn(order);
         when(dishService.findById(dishId)).thenReturn(new Dish());
@@ -454,6 +479,11 @@ class CustomerControllerTest {
 
     @Test
     void getVendorsNullCustomerLocation() {
+        ArrayList<DataValidationField> fields = new ArrayList<DataValidationField>();
+        fields.add(DataValidationField.USER);
+
+        dataValidator = new DataValidator(orderService, dishService, vendorFacade, fields);
+
         when(applicationContext.getBean(eq(DataValidator.class), eq(List.of(DataValidationField.USER))))
                 .thenReturn(dataValidator);
 
@@ -972,6 +1002,57 @@ class CustomerControllerTest {
         verify(customerFacade).checkRoleById(customerId);
         verify(customerFacade).existsById(customerId);
         verify(dishService).findAllByVendorId(order.getVendorId());
+    }
+
+    @Test
+    void payOrderSuccess() {
+        when(paymentSuccessDecider.doesPaymentSucceed(orderId)).thenReturn(true);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
+
+        payOrderRequest.setPaymentOption(Payment.IDEAL);
+
+        ResponseEntity<Void> response = customerController.payOrder(customerId, orderId, payOrderRequest);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
+    void payOrderRejected() {
+        when(paymentSuccessDecider.doesPaymentSucceed(orderId)).thenReturn(false);
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
+
+        ResponseEntity<Void> response = customerController.payOrder(customerId, orderId, payOrderRequest);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void payOrderWithUnauthorizedUser() {
+        payOrderRequest.setPaymentOption(Payment.IDEAL);
+
+        ResponseEntity<Void> response = customerController.payOrder(UUID.randomUUID(), orderId, payOrderRequest);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void payOrderWithMissingPaymentInfo() {
+        payOrderRequest.setPaymentOption(null);
+
+        ResponseEntity<Void> response = customerController.payOrder(customerId, orderId, payOrderRequest);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void payOrderWithNotFound() {
+        when(orderService.findById(orderId)).thenReturn(null);
+
+        ResponseEntity<Void> response = customerController.payOrder(customerId, orderId, payOrderRequest);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
     @Test
