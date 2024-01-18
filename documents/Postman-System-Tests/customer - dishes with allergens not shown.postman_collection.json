@@ -1,0 +1,1234 @@
+{
+	"info": {
+		"_postman_id": "9f652ecd-5392-41cc-8a9c-1937d0b41187",
+		"name": "customer - dishes with allergens not shown",
+		"description": "This test documents a regular flow of how a customer would not see dishes that have allergens that they are allergic to\n\nFirst, we need to create a vendor and a customer by calling the users microservice\n\nThen, we need to add a dish with the same allergens as the customer to the created vendor's menu\n\nAfter that, the customer should query all of the vendors in his range\n\nNext, we create the order for the created customer for the retrieved vendor\n\nNext, we query all of the dishes for the selected vendor\n\nWe should see no dishes/ the dish with that was added should not be there\n\nHere, we test only that a vendor in range is retrieved and that a dish with allergens that the customer has is NOT shown.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "31458650"
+	},
+	"item": [
+		{
+			"name": "test customer",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var response = pm.response.json();\r",
+							"if (response && response.customerId) {\r",
+							"    pm.globals.set(\"customerId\", response.customerId);\r",
+							"}\r",
+							"\r",
+							"pm.test(\"Status code is 201\", function () {\r",
+							"    pm.response.to.have.status(201);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Response must have customerId\", function () {\r",
+							"    var jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData).to.have.property('customerId');\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Name is 'Test Customer'\", function () {\r",
+							"    var responseJson = pm.response.json();\r",
+							"    pm.expect(responseJson.name).to.eql(\"Test Customer\");\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Home Address is correct\", function () {\r",
+							"    var responseJson = pm.response.json();\r",
+							"    pm.expect(responseJson.homeAddress.latitude).to.eql(34.092);\r",
+							"    pm.expect(responseJson.homeAddress.longitude).to.eql(34.092);\r",
+							"    pm.expect(responseJson.homeAddress.zipCode).to.eql(\"2554EZ\");\r",
+							"    pm.expect(responseJson.homeAddress.houseNumber).to.eql(24);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Current Address is correct\", function () {\r",
+							"    var responseJson = pm.response.json();\r",
+							"    pm.expect(responseJson.currentLocation.latitude).to.eql(34.092);\r",
+							"    pm.expect(responseJson.currentLocation.longitude).to.eql(34.092);\r",
+							"    pm.expect(responseJson.currentLocation.zipCode).to.eql(\"2554EZ\");\r",
+							"    pm.expect(responseJson.currentLocation.houseNumber).to.eql(24);\r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "",
+						"value": "3",
+						"type": "text",
+						"disabled": true
+					},
+					{
+						"key": "X-User-Id",
+						"value": "061427b7-a4d3-47de-86dc-764a227d6d72",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"name\": \"Test Customer\",\r\n  \"email\": \"customer@customer.com\",\r\n  \"homeAddress\": {\r\n    \"latitude\": 34.092,\r\n    \"longitude\": 34.092,\r\n    \"zipCode\": \"2554EZ\",\r\n    \"houseNumber\": 24\r\n  },\r\n  \"allergens\": \"Salt\",\r\n  \"currentLocation\": {\r\n    \"latitude\": 34.092,\r\n    \"longitude\": 34.092,\r\n    \"zipCode\": \"2554EZ\",\r\n    \"houseNumber\": 24\r\n  }\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:8088/customers",
+				"description": "Create test customer"
+			},
+			"response": []
+		},
+		{
+			"name": "test vendor in range",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var response = pm.response.json();\r",
+							"if (response && response.vendorId) {\r",
+							"    pm.globals.set(\"vendorIdInRange\", response.vendorId);\r",
+							"}\r",
+							"\r",
+							"pm.test(\"Status code is 201\", function () {\r",
+							"    pm.response.to.have.status(201);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Response must have vendorId\", function () {\r",
+							"    var jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData).to.have.property('vendorId');\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Name is 'Test Restaurant in Range'\", function () {\r",
+							"    var responseJson = pm.response.json();\r",
+							"    pm.expect(responseJson.name).to.eql(\"Test Restaurant In Range\");\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Address is correct\", function () {\r",
+							"    var responseJson = pm.response.json();\r",
+							"    pm.expect(responseJson.location.latitude).to.eql(34.092);\r",
+							"    pm.expect(responseJson.location.longitude).to.eql(34.092);\r",
+							"    pm.expect(responseJson.location.zipCode).to.eql(\"2554EZ\");\r",
+							"    pm.expect(responseJson.location.houseNumber).to.eql(24);\r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"name\": \"Test Restaurant In Range\",\r\n  \"isBlocked\": false,\r\n  \"email\": \"restaurant@restaurant.com\",\r\n  \"isApproved\": false,\r\n  \"location\": {\r\n    \"latitude\": 34.092,\r\n    \"longitude\": 34.092,\r\n    \"zipCode\": \"2554EZ\",\r\n    \"houseNumber\": 24\r\n  },\r\n  \"schedule\": null\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:8088/vendors"
+			},
+			"response": []
+		},
+		{
+			"name": "adds a dish with allergens",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var response = pm.response.json();\r",
+							"if (response && response.ID) {\r",
+							"    pm.globals.set(\"dishId1\", response.ID);\r",
+							"}\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Dish 1\",\n  \"imageLink\": \"httpimagelink.com\",\n  \"price\": \"23.43\",\n  \"isDeleted\": false,\n  \"allergens\": [\n    \"Salt\",\n    \"Vinegar\"\n  ],\n  \"ingredients\": [\n    \"Pizza\",\n    \"Mozarella\"\n  ],\n  \"description\": \"Nice example dish\",\n  \"vendorId\": \"{{vendorIdInRange}}\"\n}",
+					"options": {
+						"raw": {
+							"headerFamily": "json",
+							"language": "json"
+						}
+					}
+				},
+				"url": "{{baseUrl}}/vendor/{{vendorIdInRange}}/dish"
+			},
+			"response": [
+				{
+					"name": "New dish has been added to the vendor menu",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ID\": \"<uuid>\",\n  \"name\": \"<string>\",\n  \"imageLink\": \"<string>\",\n  \"price\": \"<double>\",\n  \"isDeleted\": false,\n  \"allergens\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"ingredients\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"description\": \"<string>\",\n  \"vendorId\": \"<uuid>\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								}
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n  \"ID\": \"<uuid>\",\n  \"name\": \"<string>\",\n  \"imageLink\": \"<string>\",\n  \"price\": \"<double>\",\n  \"isDeleted\": false,\n  \"allergens\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"ingredients\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"description\": \"<string>\",\n  \"vendorId\": \"<uuid>\"\n}"
+				},
+				{
+					"name": "Bad Request - Incorrect dish details format or missing required fields.",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ID\": \"<uuid>\",\n  \"name\": \"<string>\",\n  \"imageLink\": \"<string>\",\n  \"price\": \"<double>\",\n  \"isDeleted\": false,\n  \"allergens\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"ingredients\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"description\": \"<string>\",\n  \"vendorId\": \"<uuid>\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								}
+							]
+						}
+					},
+					"status": "Bad Request",
+					"code": 400,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "Unauthorized - User is not a vendor",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ID\": \"<uuid>\",\n  \"name\": \"<string>\",\n  \"imageLink\": \"<string>\",\n  \"price\": \"<double>\",\n  \"isDeleted\": false,\n  \"allergens\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"ingredients\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"description\": \"<string>\",\n  \"vendorId\": \"<uuid>\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								}
+							]
+						}
+					},
+					"status": "Unauthorized",
+					"code": 401,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "Vendor not found",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ID\": \"<uuid>\",\n  \"name\": \"<string>\",\n  \"imageLink\": \"<string>\",\n  \"price\": \"<double>\",\n  \"isDeleted\": false,\n  \"allergens\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"ingredients\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"description\": \"<string>\",\n  \"vendorId\": \"<uuid>\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								}
+							]
+						}
+					},
+					"status": "Not Found",
+					"code": 404,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "Internal Server Error - An unexpected error occurred on the server.",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ID\": \"<uuid>\",\n  \"name\": \"<string>\",\n  \"imageLink\": \"<string>\",\n  \"price\": \"<double>\",\n  \"isDeleted\": false,\n  \"allergens\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"ingredients\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"description\": \"<string>\",\n  \"vendorId\": \"<uuid>\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								}
+							]
+						}
+					},
+					"status": "Internal Server Error",
+					"code": 500,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				}
+			]
+		},
+		{
+			"name": "Get list of vendors",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Check specific restaurant details\", function () {\r",
+							"    var responseJson = pm.response.json();\r",
+							"    var restaurant = responseJson[0];\r",
+							"\r",
+							"    pm.expect(restaurant.name).to.eql(\"Test Restaurant In Range\");\r",
+							"    pm.expect(restaurant.location.houseNumber).to.eql(24);\r",
+							"    pm.expect(restaurant.location.zipCode).to.eql(\"2554EZ\");\r",
+							"    pm.expect(restaurant.location.longitude).to.eql(34.09);\r",
+							"    pm.expect(restaurant.location.latitude).to.eql(34.09);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Status code is 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/customer/{{customerId}}/vendors",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"customer",
+						"{{customerId}}",
+						"vendors"
+					],
+					"query": [
+						{
+							"key": "name",
+							"value": "<string>",
+							"disabled": true
+						},
+						{
+							"key": "minAvgPrice",
+							"value": "<integer>",
+							"disabled": true
+						},
+						{
+							"key": "maxAvgPrice",
+							"value": "<integer>",
+							"disabled": true
+						}
+					]
+				},
+				"description": "Get a list of vendors within a specified radius around the customer's current location or default address.  The radius is predefined - 5 kilometers). The current location is retrieved from the users microservice. If there is no current location, we check if the user has a home address and use that. If there is no home address either, we send an error response. Additionaly, searching and filtering restaurants through query parameters is possible.\n"
+			},
+			"response": [
+				{
+					"name": "List of vendors.",
+					"originalRequest": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/customer/:customerId/vendors?name=<string>&minAvgPrice=<integer>&maxAvgPrice=<integer>",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"customer",
+								":customerId",
+								"vendors"
+							],
+							"query": [
+								{
+									"key": "name",
+									"value": "<string>"
+								},
+								{
+									"key": "minAvgPrice",
+									"value": "<integer>"
+								},
+								{
+									"key": "maxAvgPrice",
+									"value": "<integer>"
+								}
+							],
+							"variable": [
+								{
+									"key": "customerId"
+								}
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "[\n  {\n    \"ID\": \"<uuid>\",\n    \"name\": \"<string>\",\n    \"location\": {\n      \"houseNumber\": \"<integer>\",\n      \"zip\": \"<string>\",\n      \"longitude\": \"<double>\",\n      \"latitude\": \"<double>\"\n    }\n  },\n  {\n    \"ID\": \"<uuid>\",\n    \"name\": \"<string>\",\n    \"location\": {\n      \"houseNumber\": \"<integer>\",\n      \"zip\": \"<string>\",\n      \"longitude\": \"<double>\",\n      \"latitude\": \"<double>\"\n    }\n  }\n]"
+				},
+				{
+					"name": "Bad Request - Invalid request parameters.",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/customer/:customerId/vendors?name=<string>&minAvgPrice=<integer>&maxAvgPrice=<integer>",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"customer",
+								":customerId",
+								"vendors"
+							],
+							"query": [
+								{
+									"key": "name",
+									"value": "<string>"
+								},
+								{
+									"key": "minAvgPrice",
+									"value": "<integer>"
+								},
+								{
+									"key": "maxAvgPrice",
+									"value": "<integer>"
+								}
+							],
+							"variable": [
+								{
+									"key": "customerId"
+								}
+							]
+						}
+					},
+					"status": "Bad Request",
+					"code": 400,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "Unauthorized - Not a customer user.",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/customer/:customerId/vendors?name=<string>&minAvgPrice=<integer>&maxAvgPrice=<integer>",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"customer",
+								":customerId",
+								"vendors"
+							],
+							"query": [
+								{
+									"key": "name",
+									"value": "<string>"
+								},
+								{
+									"key": "minAvgPrice",
+									"value": "<integer>"
+								},
+								{
+									"key": "maxAvgPrice",
+									"value": "<integer>"
+								}
+							],
+							"variable": [
+								{
+									"key": "customerId"
+								}
+							]
+						}
+					},
+					"status": "Unauthorized",
+					"code": 401,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "Not Found - User does not exist.",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/customer/:customerId/vendors?name=<string>&minAvgPrice=<integer>&maxAvgPrice=<integer>",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"customer",
+								":customerId",
+								"vendors"
+							],
+							"query": [
+								{
+									"key": "name",
+									"value": "<string>"
+								},
+								{
+									"key": "minAvgPrice",
+									"value": "<integer>"
+								},
+								{
+									"key": "maxAvgPrice",
+									"value": "<integer>"
+								}
+							],
+							"variable": [
+								{
+									"key": "customerId"
+								}
+							]
+						}
+					},
+					"status": "Not Found",
+					"code": 404,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "Internal Server Error - An unexpected error occurred on the server.",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/customer/:customerId/vendors?name=<string>&minAvgPrice=<integer>&maxAvgPrice=<integer>",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"customer",
+								":customerId",
+								"vendors"
+							],
+							"query": [
+								{
+									"key": "name",
+									"value": "<string>"
+								},
+								{
+									"key": "minAvgPrice",
+									"value": "<integer>"
+								},
+								{
+									"key": "maxAvgPrice",
+									"value": "<integer>"
+								}
+							],
+							"variable": [
+								{
+									"key": "customerId"
+								}
+							]
+						}
+					},
+					"status": "Internal Server Error",
+					"code": 500,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				}
+			]
+		},
+		{
+			"name": "Create a new order",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var response = pm.response.json();\r",
+							"if (response && response.ID) {\r",
+							"    pm.globals.set(\"orderId\", response.ID);\r",
+							"}\r",
+							"\r",
+							"pm.test(\"Status code is 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Validate response structure and content\", function () {\r",
+							"    var jsonData = pm.response.json();\r",
+							"\r",
+							"    pm.expect(jsonData).to.have.property('dishes', null);\r",
+							"    pm.expect(jsonData).to.have.property('location');\r",
+							"    pm.expect(jsonData.location).to.have.property('houseNumber', 4);\r",
+							"    pm.expect(jsonData.location).to.have.property('zipCode', \"2614HT\");\r",
+							"    pm.expect(jsonData.location).to.have.property('longitude', 21.892);\r",
+							"    pm.expect(jsonData.location).to.have.property('latitude', 54.562);\r",
+							"    pm.expect(jsonData).to.have.property('specialRequirements', null);\r",
+							"    pm.expect(jsonData).to.have.property('status', 'pending');\r",
+							"    pm.expect(jsonData).to.have.property('totalPrice', null);\r",
+							"    pm.expect(jsonData).to.have.property('orderTime');\r",
+							"    pm.expect(jsonData).to.have.property('ID');\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Check if vendorId matches global variable\", function () {\r",
+							"    var jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData).to.have.property('vendorId');\r",
+							"    pm.expect(jsonData.vendorId).to.eql(pm.globals.get(\"vendorIdInRange\"));\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Check if customerId matches global variable\", function () {\r",
+							"    var jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData).to.have.property('customerId');\r",
+							"    pm.expect(jsonData.customerId).to.eql(pm.globals.get(\"customerId\"));\r",
+							"});\r",
+							"\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"vendorId\": \"{{vendorIdInRange}}\",\n  \"address\": {\n    \"houseNumber\": 4,\n    \"zipCode\": \"2614HT\",\n    \"longitude\": \"21.892\",\n    \"latitude\": \"54.562\"\n  }\n}",
+					"options": {
+						"raw": {
+							"headerFamily": "json",
+							"language": "json"
+						}
+					}
+				},
+				"url": "{{baseUrl}}/customer/{{customerId}}/order",
+				"description": "Creates a new order for the customer with a specified vendor. This is done by selecting a vendor from the list of all vendors basically, so we are sure that the customer is in the range of the vendor."
+			},
+			"response": [
+				{
+					"name": "Newly created order object with orderId, customerId, vendorId and address populated.",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"vendorId\": \"<uuid>\",\n  \"address\": {\n    \"houseNumber\": \"<integer>\",\n    \"zip\": \"<string>\",\n    \"longitude\": \"<double>\",\n    \"latitude\": \"<double>\"\n  }\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/customer/:customerId/order",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"customer",
+								":customerId",
+								"order"
+							],
+							"variable": [
+								{
+									"key": "customerId"
+								}
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n  \"ID\": \"<uuid>\",\n  \"dishes\": [\n    {\n      \"id\": \"<uuid>\",\n      \"dish\": {\n        \"ID\": \"<uuid>\",\n        \"name\": \"<string>\",\n        \"imageLink\": \"<string>\",\n        \"price\": \"<double>\",\n        \"isDeleted\": false,\n        \"allergens\": [\n          \"<string>\",\n          \"<string>\"\n        ],\n        \"ingredients\": [\n          \"<string>\",\n          \"<string>\"\n        ],\n        \"description\": \"<string>\",\n        \"vendorId\": \"<uuid>\"\n      },\n      \"quantity\": 0\n    },\n    {\n      \"id\": \"<uuid>\",\n      \"dish\": {\n        \"ID\": \"<uuid>\",\n        \"name\": \"<string>\",\n        \"imageLink\": \"<string>\",\n        \"price\": \"<double>\",\n        \"isDeleted\": false,\n        \"allergens\": [\n          \"<string>\",\n          \"<string>\"\n        ],\n        \"ingredients\": [\n          \"<string>\",\n          \"<string>\"\n        ],\n        \"description\": \"<string>\",\n        \"vendorId\": \"<uuid>\"\n      },\n      \"quantity\": 0\n    }\n  ],\n  \"location\": {\n    \"houseNumber\": \"<integer>\",\n    \"zip\": \"<string>\",\n    \"longitude\": \"<double>\",\n    \"latitude\": \"<double>\"\n  },\n  \"specialRequirements\": \"<string>\",\n  \"status\": \"onTransit\",\n  \"totalPrice\": \"<double>\",\n  \"orderTime\": \"<dateTime>\",\n  \"vendorId\": \"<uuid>\",\n  \"customerId\": \"<uuid>\"\n}"
+				},
+				{
+					"name": "Bad Request - No location present (and no default address for customer) or other input errors (invalid format).",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"vendorId\": \"<uuid>\",\n  \"address\": {\n    \"houseNumber\": \"<integer>\",\n    \"zip\": \"<string>\",\n    \"longitude\": \"<double>\",\n    \"latitude\": \"<double>\"\n  }\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/customer/:customerId/order",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"customer",
+								":customerId",
+								"order"
+							],
+							"variable": [
+								{
+									"key": "customerId"
+								}
+							]
+						}
+					},
+					"status": "Bad Request",
+					"code": 400,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "Unauthorized - Not a customer user.",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"vendorId\": \"<uuid>\",\n  \"address\": {\n    \"houseNumber\": \"<integer>\",\n    \"zip\": \"<string>\",\n    \"longitude\": \"<double>\",\n    \"latitude\": \"<double>\"\n  }\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/customer/:customerId/order",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"customer",
+								":customerId",
+								"order"
+							],
+							"variable": [
+								{
+									"key": "customerId"
+								}
+							]
+						}
+					},
+					"status": "Unauthorized",
+					"code": 401,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "Not Found - User does not exist.",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"vendorId\": \"<uuid>\",\n  \"address\": {\n    \"houseNumber\": \"<integer>\",\n    \"zip\": \"<string>\",\n    \"longitude\": \"<double>\",\n    \"latitude\": \"<double>\"\n  }\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/customer/:customerId/order",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"customer",
+								":customerId",
+								"order"
+							],
+							"variable": [
+								{
+									"key": "customerId"
+								}
+							]
+						}
+					},
+					"status": "Not Found",
+					"code": 404,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "Internal Server Error - An unexpected error occurred on the server.",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"vendorId\": \"<uuid>\",\n  \"address\": {\n    \"houseNumber\": \"<integer>\",\n    \"zip\": \"<string>\",\n    \"longitude\": \"<double>\",\n    \"latitude\": \"<double>\"\n  }\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/customer/:customerId/order",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"customer",
+								":customerId",
+								"order"
+							],
+							"variable": [
+								{
+									"key": "customerId"
+								}
+							]
+						}
+					},
+					"status": "Internal Server Error",
+					"code": 500,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				}
+			]
+		},
+		{
+			"name": "Get all dishes of the selected vendor for the order.",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Dish with allergens not in list\", function () {\r",
+							"    var jsonData = pm.response.json();\r",
+							"    var excludedDishId = pm.globals.get(\"dishId1\");\r",
+							"    \r",
+							"    pm.expect(jsonData.some(dish => dish.ID === excludedDishId)).to.be.false;\r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": "{{baseUrl}}/customer/{{customerId}}/order/{{orderId}}/vendor",
+				"description": "Get a list of all of the dishes of the vendor associated with the order (the selected vendor) as a customer. Only show dishes that don't include the customer's allergies.\n"
+			},
+			"response": [
+				{
+					"name": "A list of dishes offered by the vendor.",
+					"originalRequest": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/customer/:customerId/order/:orderId/vendor",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"customer",
+								":customerId",
+								"order",
+								":orderId",
+								"vendor"
+							],
+							"variable": [
+								{
+									"key": "customerId",
+									"value": "{{customerId}}"
+								},
+								{
+									"key": "orderId",
+									"value": "{{orderId}}"
+								}
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "[\n  {\n    \"ID\": \"<uuid>\",\n    \"name\": \"<string>\",\n    \"imageLink\": \"<string>\",\n    \"price\": \"<double>\",\n    \"isDeleted\": false,\n    \"allergens\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"ingredients\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"description\": \"<string>\",\n    \"vendorId\": \"<uuid>\"\n  },\n  {\n    \"ID\": \"<uuid>\",\n    \"name\": \"<string>\",\n    \"imageLink\": \"<string>\",\n    \"price\": \"<double>\",\n    \"isDeleted\": false,\n    \"allergens\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"ingredients\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"description\": \"<string>\",\n    \"vendorId\": \"<uuid>\"\n  }\n]"
+				},
+				{
+					"name": "Bad Request - Invalid request parameters.",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/customer/:customerId/order/:orderId/vendor",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"customer",
+								":customerId",
+								"order",
+								":orderId",
+								"vendor"
+							],
+							"variable": [
+								{
+									"key": "customerId",
+									"value": ""
+								},
+								{
+									"key": "orderId",
+									"value": "null"
+								}
+							]
+						}
+					},
+					"status": "Bad Request",
+					"code": 400,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "Unauthorized - User is not a customer/order does not belong to user.",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/customer/:customerId/order/:orderId/vendor",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"customer",
+								":customerId",
+								"order",
+								":orderId",
+								"vendor"
+							],
+							"variable": [
+								{
+									"key": "customerId",
+									"value": "{{vendorId}}"
+								},
+								{
+									"key": "orderId",
+									"value": "{{orderId}}"
+								}
+							]
+						}
+					},
+					"status": "Unauthorized",
+					"code": 401,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "User or order not found",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/customer/:customerId/order/:orderId/vendor",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"customer",
+								":customerId",
+								"order",
+								":orderId",
+								"vendor"
+							],
+							"variable": [
+								{
+									"key": "customerId"
+								},
+								{
+									"key": "orderId"
+								}
+							]
+						}
+					},
+					"status": "Not Found",
+					"code": 404,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "Internal Server Error - An unexpected error occurred on the server.",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/customer/:customerId/order/:orderId/vendor",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"customer",
+								":customerId",
+								"order",
+								":orderId",
+								"vendor"
+							],
+							"variable": [
+								{
+									"key": "customerId"
+								},
+								{
+									"key": "orderId"
+								}
+							]
+						}
+					},
+					"status": "Internal Server Error",
+					"code": 500,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				}
+			]
+		}
+	]
+}
