@@ -28,7 +28,7 @@ public class CustomerDTOTest {
         List<String> allergens = Arrays.asList("Peanuts", "Shellfish");
 
         customer = new CustomerDTO(
-                customerId, name, email, isBlocked, payment, new Address(), allergens, new Address());
+                customerId, name, email, isBlocked, payment, new Address(), allergens.get(0), new Address());
     }
 
     @Test
@@ -45,7 +45,7 @@ public class CustomerDTOTest {
         assertThat(customer.isBlocked()).isFalse();
         assertThat(customer.getPayment()).isEqualTo("Credit Card");
         assertThat(customer.getHomeAddress()).isNotNull();
-        assertThat(customer.getAllergens()).containsExactly("Peanuts", "Shellfish");
+        assertThat(customer.getAllergens()).isEqualTo("Peanuts");
         assertThat(customer.getCurrentLocation()).isNotNull();
     }
 }

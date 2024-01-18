@@ -41,7 +41,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.Optional;
 import java.util.Collections;
-import java.util.Optional;
 import java.util.Arrays;
 import java.util.ArrayList;
 
@@ -469,7 +468,7 @@ class CustomerControllerTest {
         List<Dish> dishes = Collections.singletonList(new Dish());
         when(dishService.findAllByVendorId(vendorId)).thenReturn(dishes);
 
-        CustomerDTO customer = setupCustomer();
+        CustomerDTO customer = setupCustomer("");
         when(customerFacade.requestCustomer(customerId)).thenReturn(customer);
 
         ResponseEntity<List<Dish>> response = customerController.getVendorDishes(customerId, orderId);
@@ -1210,11 +1209,11 @@ class CustomerControllerTest {
                 .sum();
     }
 
-    private CustomerDTO setupCustomer(String... customerAllergens) {
+    private CustomerDTO setupCustomer(String customerAllergens) {
         CustomerDTO customerDTO = new CustomerDTO();
         if (customerAllergens != null) {
             List<String> allergens = new ArrayList<>(Arrays.asList(customerAllergens));
-            customerDTO.setAllergens(allergens);
+            customerDTO.setAllergens(allergens.get(0));
         }
         return customerDTO;
     }
