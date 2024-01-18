@@ -39,7 +39,7 @@ public class VendorFacade {
      * @return true iff the vendor exists in the database
      */
     public boolean existsById(UUID vendorId) {
-        return sendGetRequest(USERS_URL + "/vendors/" + vendorId).statusCode() == 200;
+        return sendGetRequest(USERS_URL + "/vendors/" + vendorId, vendorId).statusCode() == 200;
     }
 
     /**
@@ -70,7 +70,7 @@ public class VendorFacade {
      * @return true iff the status code is 200
      */
     private boolean isRole(UUID userId, String path) {
-        return sendGetRequest(USERS_URL + path + userId).statusCode() == 200;
+        return sendGetRequest(USERS_URL + path + userId, userId).statusCode() == 200;
     }
 
     /**
@@ -78,9 +78,9 @@ public class VendorFacade {
      *
      * @return a list of VendorDTO
      */
-    public List<VendorDTO> requestVendors() {
+    public List<VendorDTO> requestVendors(UUID userId) {
         String uri = USERS_URL + "/vendors";
-        return IVendorMapper.toDTO(sendGetRequest(uri).body());
+        return IVendorMapper.toDTO(sendGetRequest(uri, userId).body());
     }
 
     /**
@@ -89,9 +89,10 @@ public class VendorFacade {
      * @param uri uri
      * @return the request that was created
      */
-    private HttpResponse<String> sendGetRequest(String uri) {
+    private HttpResponse<String> sendGetRequest(String uri, UUID userId) {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(uri))
+                .header("X-User-Id", userId.toString())
                 .GET()
                 .build();
         try {

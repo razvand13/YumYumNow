@@ -375,7 +375,7 @@ class CustomerControllerTest {
         when(customerFacade.requestCustomer(customerId)).thenReturn(customer);
 
         List<VendorDTO> vendors = Collections.singletonList(new VendorDTO());
-        when(vendorFacade.requestVendors()).thenReturn(vendors);
+        when(vendorFacade.requestVendors(customerId)).thenReturn(vendors);
         when(vendorService.filterVendors(vendors, null, null, null, customer.getCurrentLocation()))
                 .thenReturn(vendors);
 

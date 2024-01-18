@@ -21,12 +21,13 @@ public class AdminFacade {
      * @return true iff the admin exists in the database
      */
     public boolean existsById(UUID adminId) {
-        return sendGetRequest(USERS_URL + "/admins/" + adminId).statusCode() == 200;
+        return sendGetRequest(USERS_URL + "/admins/" + adminId, adminId).statusCode() == 200;
     }
 
-    private HttpResponse<String> sendGetRequest(String uri) {
+    private HttpResponse<String> sendGetRequest(String uri, UUID userId) {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(uri))
+                .header("X-User-Id", userId.toString())
                 .GET()
                 .build();
         try {
@@ -65,6 +66,6 @@ public class AdminFacade {
      * @return true if the status code is 200
      */
     private boolean isRole(UUID userId, String path) {
-        return sendGetRequest(USERS_URL + path + userId).statusCode() == 200;
+        return sendGetRequest(USERS_URL + path + userId, userId).statusCode() == 200;
     }
 }

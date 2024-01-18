@@ -35,7 +35,7 @@ public class CustomerFacade {
      * @return true iff the customer exists in the database
      */
     public boolean existsById(UUID customerId) {
-        return sendGetRequest(USERS_URL + "/customers/" + customerId).statusCode() == 200;
+        return sendGetRequest(USERS_URL + "/customers/" + customerId, customerId).statusCode() == 200;
     }
 
     /**
@@ -66,7 +66,7 @@ public class CustomerFacade {
      * @return true iff the status code is 200
      */
     private boolean isRole(UUID userId, String path) {
-        return sendGetRequest(USERS_URL + path + userId).statusCode() == 200;
+        return sendGetRequest(USERS_URL + path + userId, userId).statusCode() == 200;
     }
 
 
@@ -78,7 +78,7 @@ public class CustomerFacade {
      */
     public CustomerDTO requestCustomer(UUID customerId) {
         String uri = USERS_URL + "/customers/" + customerId;
-        return customerMapper.toDTO(sendGetRequest(uri).body());
+        return customerMapper.toDTO(sendGetRequest(uri, customerId).body());
     }
 
     /**
@@ -87,9 +87,10 @@ public class CustomerFacade {
      * @param uri uri
      * @return the request that was created
      */
-    private HttpResponse<String> sendGetRequest(String uri) {
+    private HttpResponse<String> sendGetRequest(String uri, UUID userId) {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(uri))
+                .header("X-User-Id", userId.toString())
                 .GET()
                 .build();
         try {

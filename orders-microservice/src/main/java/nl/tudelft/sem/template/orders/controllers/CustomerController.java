@@ -126,7 +126,7 @@ public class CustomerController implements CustomerApi {
         }
 
         // Filter vendors by name, average price and distance to delivery location
-        List<VendorDTO> vendors = vendorFacade.requestVendors();
+        List<VendorDTO> vendors = vendorFacade.requestVendors(customerId);
         List<VendorDTO> filteredVendors = vendorService.filterVendors(
                 vendors, name, minAvgPrice, maxAvgPrice, customerLocation);
         var filteredVendorEntities = filteredVendors.stream().map(IVendorMapper::toEntity).collect(Collectors.toList());
