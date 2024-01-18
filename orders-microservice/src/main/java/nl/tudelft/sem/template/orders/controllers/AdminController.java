@@ -4,7 +4,14 @@ import nl.tudelft.sem.template.api.AdminApi;
 import nl.tudelft.sem.template.orders.domain.IOrderService;
 import nl.tudelft.sem.template.model.Order;
 import nl.tudelft.sem.template.orders.integration.AdminFacade;
+import nl.tudelft.sem.template.orders.validator.DataValidationField;
+import nl.tudelft.sem.template.orders.validator.DataValidator;
+import nl.tudelft.sem.template.orders.validator.UserAuthorizationValidator;
+import nl.tudelft.sem.template.orders.validator.UserType;
+import nl.tudelft.sem.template.orders.validator.ValidationFailureException;
+import nl.tudelft.sem.template.orders.validator.ValidatorRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,12 +24,15 @@ public class AdminController implements AdminApi {
 
 
     private final transient IOrderService orderService;
-    private final transient AdminFacade adminFacade;
+    private final transient ApplicationContext applicationContext;
 
+    /**
+     * Constructs an AdminController. Should only be called manually during testing
+     */
     @Autowired
-    public AdminController(IOrderService orderService, AdminFacade adminFacade) {
+    public AdminController(IOrderService orderService, ApplicationContext applicationContext) {
         this.orderService = orderService;
-        this.adminFacade = adminFacade;
+        this.applicationContext = applicationContext;
     }
 
     /**
@@ -39,18 +49,20 @@ public class AdminController implements AdminApi {
 
     @Override
     public ResponseEntity<List<Order>> adminGetAllOrders(UUID adminId) {
-        if (adminId == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
-
-        //verify that user is admin
-        if (!adminFacade.checkRoleById(adminId)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        // verify that admin exists
-        if (!adminFacade.existsById(adminId)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        //Chain of responsibility validation
+        //Get Validators
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class, List.of(DataValidationField.USER));
+        UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
+        //Set validation chain
+        dataValidator.setNext(userAuthorizationValidator);
+        //Create and fill validation request
+        ValidatorRequest request = new ValidatorRequest();
+        request.setUserUUID(adminId);
+        request.setUserType(UserType.ADMIN);
+        try {
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
         }
 
         try {
@@ -75,29 +87,26 @@ public class AdminController implements AdminApi {
      */
     @Override
     public ResponseEntity<Order> adminGetOrder(UUID adminId, UUID orderId) {
-        if (adminId == null || orderId == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
-
-        //verify that user is admin
-        if (!adminFacade.checkRoleById(adminId)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        // verify that admin exists
-        if (!adminFacade.existsById(adminId)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
-
+        //Chain of responsibility validation
+        //Get Validators
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class,
+                List.of(DataValidationField.USER, DataValidationField.ORDER));
+        UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
+        //Set validation chain
+        dataValidator.setNext(userAuthorizationValidator);
+        //Create and fill validation request
+        ValidatorRequest request = new ValidatorRequest();
+        request.setUserUUID(adminId);
+        request.setUserType(UserType.ADMIN);
+        request.setOrderUUID(orderId);
         try {
-            Order order = orderService.findById(orderId);
-            if (order == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-            }
-            return ResponseEntity.ok(order);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
         }
+
+        Order order = orderService.findById(orderId);
+        return ResponseEntity.ok(order);
     }
 
 
@@ -116,25 +125,26 @@ public class AdminController implements AdminApi {
      */
     @Override
     public ResponseEntity<Order> adminUpdateOrder(UUID adminId, UUID orderId, Order updatedOrder) {
-        if (adminId == null || orderId == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
-
-        //verify that user is admin
-        if (!adminFacade.checkRoleById(adminId)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        // verify that admin exists
-        if (!adminFacade.existsById(adminId)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        //Chain of responsibility validation
+        //Get Validators
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class,
+                List.of(DataValidationField.USER, DataValidationField.ORDER));
+        UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
+        //Set validation chain
+        dataValidator.setNext(userAuthorizationValidator);
+        //Create and fill validation request
+        ValidatorRequest request = new ValidatorRequest();
+        request.setUserUUID(adminId);
+        request.setUserType(UserType.ADMIN);
+        request.setOrderUUID(orderId);
+        try {
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
         }
 
         try {
-            Order existingOrder = orderService.findById(orderId);
-            if (existingOrder == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-            }
+            updatedOrder.setID(orderId);
 
             Order savedOrder = orderService.save(updatedOrder);
             return ResponseEntity.ok(savedOrder);
@@ -157,26 +167,25 @@ public class AdminController implements AdminApi {
      */
     @Override
     public ResponseEntity<Void> adminRemoveOrder(UUID adminId, UUID orderId) {
-        if (adminId == null || orderId == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
-
-        //verify that user is admin
-        if (!adminFacade.checkRoleById(adminId)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        // verify that admin exists
-        if (!adminFacade.existsById(adminId)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        //Chain of responsibility validation
+        //Get Validators
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class,
+                List.of(DataValidationField.USER, DataValidationField.ORDER));
+        UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
+        //Set validation chain
+        dataValidator.setNext(userAuthorizationValidator);
+        //Create and fill validation request
+        ValidatorRequest request = new ValidatorRequest();
+        request.setUserUUID(adminId);
+        request.setUserType(UserType.ADMIN);
+        request.setOrderUUID(orderId);
+        try {
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
         }
 
         try {
-            Order order = orderService.findById(orderId);
-            if (order == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-            }
-
             orderService.delete(orderId);
             return ResponseEntity.ok().build();
         } catch (Exception e) {

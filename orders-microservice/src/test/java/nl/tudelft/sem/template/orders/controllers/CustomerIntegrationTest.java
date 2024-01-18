@@ -8,8 +8,6 @@ import nl.tudelft.sem.template.model.Status;
 import nl.tudelft.sem.template.model.CreateOrderRequest;
 import nl.tudelft.sem.template.model.UpdateOrderStatusRequest;
 import nl.tudelft.sem.template.model.Address;
-import nl.tudelft.sem.template.model.UpdateDishQtyRequest;
-import nl.tudelft.sem.template.model.UpdateSpecialRequirementsRequest;
 import nl.tudelft.sem.template.orders.external.CustomerDTO;
 import nl.tudelft.sem.template.orders.repositories.DishRepository;
 import nl.tudelft.sem.template.orders.repositories.OrderRepository;
@@ -20,7 +18,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -344,6 +341,27 @@ public class CustomerIntegrationTest {
         assertThat(statusCode).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
+    @Test
+    void testCreateOrderStatus() {
+        CreateOrderRequest createOrderRequest = new CreateOrderRequest();
+        createOrderRequest.setVendorId(vendorId);
+        createOrderRequest.setAddress(new Address());
 
+        ResponseEntity<Order> response = customerController.createOrder(customerId, createOrderRequest);
+        Order order = response.getBody();
 
+        assertThat(order.getStatus()).isEqualTo(Status.PENDING);
+    }
+
+    @Test
+    void testCreateOrderTime() {
+        CreateOrderRequest createOrderRequest = new CreateOrderRequest();
+        createOrderRequest.setVendorId(vendorId);
+        createOrderRequest.setAddress(new Address());
+
+        ResponseEntity<Order> response = customerController.createOrder(customerId, createOrderRequest);
+        Order order = response.getBody();
+
+        assertThat(order.getOrderTime()).isNotNull();
+    }
 }

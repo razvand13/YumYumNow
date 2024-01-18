@@ -1,16 +1,17 @@
 package nl.tudelft.sem.template.orders.controllers;
 
 
-import nl.tudelft.sem.template.model.Address;
+import nl.tudelft.sem.template.model.Vendor;
 import nl.tudelft.sem.template.model.Dish;
 import nl.tudelft.sem.template.model.Order;
+import nl.tudelft.sem.template.model.Address;
+import nl.tudelft.sem.template.model.UpdateDishQtyRequest;
+import nl.tudelft.sem.template.model.CreateOrderRequest;
 import nl.tudelft.sem.template.model.OrderedDish;
 import nl.tudelft.sem.template.model.PayOrderRequest;
 import nl.tudelft.sem.template.model.Payment;
 import nl.tudelft.sem.template.model.Status;
 import nl.tudelft.sem.template.model.UpdateSpecialRequirementsRequest;
-import nl.tudelft.sem.template.model.UpdateDishQtyRequest;
-import nl.tudelft.sem.template.model.Vendor;
 import nl.tudelft.sem.template.orders.domain.ICustomerService;
 import nl.tudelft.sem.template.orders.domain.IDishService;
 import nl.tudelft.sem.template.orders.domain.IOrderService;
@@ -40,6 +41,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.Optional;
 import java.util.Collections;
+import java.util.Optional;
 import java.util.Arrays;
 import java.util.ArrayList;
 
@@ -78,6 +80,7 @@ class CustomerControllerTest {
     @InjectMocks
     private CustomerController customerController;
 
+    private CreateOrderRequest createOrderRequest;
     private UpdateSpecialRequirementsRequest updateSpecialRequirementsRequest;
 
     private UUID customerId;
@@ -99,6 +102,7 @@ class CustomerControllerTest {
         customerFacade = mock(CustomerFacade.class);
         vendorFacade = mock(VendorFacade.class);
         applicationContext = mock(ApplicationContext.class);
+        dataValidator = mock(DataValidator.class);
         paymentSuccessDecider = mock(PaymentSuccessDecider.class);
 
         when(applicationContext.getBean(eq(DataValidator.class), anyList()))
@@ -196,7 +200,7 @@ class CustomerControllerTest {
         userAuthorizationValidator = new UserAuthorizationValidator(customerFacade, vendorFacade, orderService, dishService);
 
         updateSpecialRequirementsRequest = new UpdateSpecialRequirementsRequest();
-
+        createOrderRequest = new CreateOrderRequest();
 
         customerController = new CustomerController(IVendorMapper, vendorService, dishService, orderService,
                 customerService, customerFacade, vendorFacade, applicationContext, paymentMock);
@@ -476,18 +480,12 @@ class CustomerControllerTest {
 
     @Test
     void getVendorsNullCustomerLocation() {
-        ArrayList<DataValidationField> fields = new ArrayList<DataValidationField>();
-        fields.add(DataValidationField.USER);
-
-        dataValidator = new DataValidator(orderService, dishService, vendorFacade, fields);
-
         when(applicationContext.getBean(eq(DataValidator.class), eq(List.of(DataValidationField.USER))))
                 .thenReturn(dataValidator);
 
         CustomerDTO customerDTO = new CustomerDTO();
         when(customerFacade.requestCustomer(customerId)).thenReturn(customerDTO);
-        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
-        when(customerFacade.existsById(customerId)).thenReturn(true);
+
         when(customerService.getDeliveryLocation(customerDTO)).thenReturn(null);
 
         ResponseEntity<List<Vendor>> response = customerController.getVendors(customerId, null, null, null);
@@ -504,6 +502,18 @@ class CustomerControllerTest {
                 .addDishToOrder(customerId, orderId, dishId, new UpdateDishQtyRequest());
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void addDishToOrderUnauthorized() {
+        when(customerFacade.checkRoleById(customerId)).thenReturn(false);
+
+        UpdateDishQtyRequest updateDishQtyRequest = new UpdateDishQtyRequest();
+        updateDishQtyRequest.setQuantity(1);
+        ResponseEntity<Order> responseEntity = customerController
+                .addDishToOrder(customerId, orderId, dishId, updateDishQtyRequest);
+
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
     @Test
@@ -564,9 +574,6 @@ class CustomerControllerTest {
         assertThat(addedDish.getQuantity()).isEqualTo(2);
     }
 
-
-
-
     @Test
     void removeDishFromOrderOrderNotFound() {
         when(orderService.findById(orderId)).thenReturn(null);
@@ -574,6 +581,15 @@ class CustomerControllerTest {
         ResponseEntity<Order> response = customerController.removeDishFromOrder(customerId, orderId, dishId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void removeDishFromOrderUnauthorized() {
+        when(customerFacade.checkRoleById(customerId)).thenReturn(false);
+
+        ResponseEntity<Order> responseEntity = customerController.removeDishFromOrder(customerId, orderId, dishId);
+
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
     @Test
@@ -585,18 +601,30 @@ class CustomerControllerTest {
                 .thenReturn(mockDataValidator);
         when(applicationContext.getBean(UserAuthorizationValidator.class)).thenReturn(mockUserAuthorizationValidator);
 
-        Order mockOrder = new Order();
         OrderedDish existingOrderedDish = new OrderedDish();
         Dish dish = new Dish();
         dish.setID(dishId);
         existingOrderedDish.setDish(dish);
-        mockOrder.setDishes(new ArrayList<>(List.of(existingOrderedDish)));
+
+        UUID remainingDishId = UUID.randomUUID();
+        OrderedDish remainingOrderedDish = new OrderedDish();
+        Dish remainingDish = new Dish();
+        remainingDish.setID(remainingDishId);
+        remainingOrderedDish.setDish(remainingDish);
+
+        Order mockOrder = new Order();
+        mockOrder.setDishes(new ArrayList<>(List.of(remainingOrderedDish, existingOrderedDish)));
         when(orderService.findById(orderId)).thenReturn(mockOrder);
         when(orderService.calculateOrderPrice(anyList())).thenReturn(100.0);
+
+        when(orderService.save(any(Order.class))).thenAnswer(invocation -> {
+            return invocation.getArgument(0);
+        });
 
         ResponseEntity<Order> response = customerController.removeDishFromOrder(customerId, orderId, dishId);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().getDishes().get(0).getDish().getID()).isEqualTo(remainingDishId);
         verify(orderService).save(any(Order.class));
     }
 
@@ -641,6 +669,18 @@ class CustomerControllerTest {
                 .updateDishQty(customerId, orderId, dishId, updateDishQtyRequest);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void updateDishQtyUnauthorized() {
+        when(customerFacade.checkRoleById(customerId)).thenReturn(false);
+
+        UpdateDishQtyRequest updateDishQtyRequest = new UpdateDishQtyRequest();
+        updateDishQtyRequest.setQuantity(1);
+        ResponseEntity<Order> responseEntity = customerController
+                .updateDishQty(customerId, orderId, dishId, updateDishQtyRequest);
+
+        assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
     @Test
@@ -960,25 +1000,6 @@ class CustomerControllerTest {
         verify(dishService).findAllByVendorId(order.getVendorId());
     }
 
-    private CustomerDTO setupCustomer(String... customerAllergens) {
-        CustomerDTO customerDTO = new CustomerDTO();
-        if (customerAllergens != null) {
-            List<String> allergens = new ArrayList<>(Arrays.asList(customerAllergens));
-            customerDTO.setAllergens(allergens);
-        }
-        return customerDTO;
-    }
-
-    private List<Dish> setupVendorDishes(String[]... dishAllergens) {
-        List<Dish> vendorDishes = new ArrayList<>();
-        for (String[] allergens : dishAllergens) {
-            Dish dish = new Dish();
-            dish.setAllergens(Arrays.asList(allergens));
-            vendorDishes.add(dish);
-        }
-        return vendorDishes;
-    }
-
     @Test
     void payOrderSuccess() {
         when(paymentSuccessDecider.doesPaymentSucceed(orderId)).thenReturn(true);
@@ -1028,6 +1049,194 @@ class CustomerControllerTest {
         ResponseEntity<Void> response = customerController.payOrder(customerId, orderId, payOrderRequest);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void testReorderAttributes() {
+        Order previousOrder = createOrder();
+        previousOrder.setLocation(createTestingAddress(42));
+        previousOrder.setTotalPrice(12.5);
+        previousOrder.setSpecialRequirements("Leave at the door");
+        previousOrder.setStatus(Status.ACCEPTED);
+
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
+        when(orderService.findById(orderId)).thenReturn(previousOrder);
+
+        // Mock the behavior of orderService.save
+        when(orderService.save(any(Order.class))).thenAnswer(invocation -> {
+            return invocation.getArgument(0);
+        });
+
+        ResponseEntity<Order> response = customerController.reorder(customerId, orderId, null);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        Order order = response.getBody();
+
+        assertThat(order.getCustomerId()).isEqualTo(previousOrder.getCustomerId());
+        assertThat(order.getVendorId()).isEqualTo(previousOrder.getVendorId());
+        assertThat(order.getDishes()).isEqualTo(previousOrder.getDishes());
+        assertThat(order.getOrderTime()).isNotNull();
+        assertThat(order.getStatus()).isEqualTo(Status.PENDING);
+        assertThat(order.getLocation()).isEqualTo(previousOrder.getLocation());
+        assertThat(order.getTotalPrice()).isEqualTo(previousOrder.getTotalPrice());
+    }
+
+    @Test
+    void testCorrectNewPriceDishQty() {
+        DataValidator mockDataValidator = mock(DataValidator.class);
+        UserAuthorizationValidator mockUserAuthorizationValidator = mock(UserAuthorizationValidator.class);
+        when(applicationContext.getBean(eq(DataValidator.class), anyList())).thenReturn(mockDataValidator);
+        when(applicationContext.getBean(UserAuthorizationValidator.class)).thenReturn(mockUserAuthorizationValidator);
+
+        UpdateDishQtyRequest updateDishQtyRequest = new UpdateDishQtyRequest();
+        updateDishQtyRequest.setQuantity(5);
+
+        OrderedDish orderedDish = new OrderedDish();
+        Dish dish = new Dish();
+        dish.setID(dishId);
+        dish.setPrice(15.0);
+        orderedDish.setDish(dish);
+        orderedDish.setQuantity(2);
+
+        Order order = new Order();
+        order.setDishes(new ArrayList<>(List.of(orderedDish)));
+
+        when(orderService.findById(orderId)).thenReturn(order);
+        when(orderService.calculateOrderPrice(anyList())).thenAnswer(invocation -> {
+            return calculateOrderPrice(invocation.getArgument(0));
+        });
+        // Mock the behavior of orderService.save
+        when(orderService.save(any(Order.class))).thenAnswer(invocation -> {
+            return invocation.getArgument(0);
+        });
+
+        ResponseEntity<Order> response = customerController
+                .updateDishQty(customerId, orderId, dishId, updateDishQtyRequest);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(orderedDish.getQuantity()).isEqualTo(5);
+        assertThat(response.getBody().getTotalPrice()).isEqualTo(75.0);
+        verify(orderService).save(any(Order.class));
+    }
+
+    @Test
+    void testCorrectNewPriceAddingDish() {
+        DataValidator mockDataValidator = mock(DataValidator.class);
+        UserAuthorizationValidator mockUserAuthorizationValidator = mock(UserAuthorizationValidator.class);
+        when(applicationContext.getBean(eq(DataValidator.class), anyList())).thenReturn(mockDataValidator);
+        when(applicationContext.getBean(UserAuthorizationValidator.class)).thenReturn(mockUserAuthorizationValidator);
+
+        UpdateDishQtyRequest updateDishQtyRequest = new UpdateDishQtyRequest();
+        updateDishQtyRequest.setQuantity(2);
+
+        Dish dish = new Dish();
+        dish.setName("New Dish");
+        dish.setID(dishId);
+        dish.setPrice(15.0);
+
+        Order order = createOrder();
+
+        when(orderService.findById(orderId)).thenReturn(order);
+        when(dishService.findById(dishId)).thenReturn(dish);
+        when(orderService.orderedDishInOrder(order, dishId)).thenReturn(Optional.empty());
+
+        when(orderService.calculateOrderPrice(anyList())).thenAnswer(invocation -> {
+            return calculateOrderPrice(invocation.getArgument(0));
+        });
+        // Mock the behavior of orderService.save
+        when(orderService.save(any(Order.class))).thenAnswer(invocation -> {
+            return invocation.getArgument(0);
+        });
+
+        ResponseEntity<Order> response = customerController
+                .addDishToOrder(customerId, orderId, dishId, updateDishQtyRequest);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().getTotalPrice()).isEqualTo(30.0);
+        verify(orderService).save(any(Order.class));
+    }
+
+    @Test
+    void testCorrectPriceRemovingDish() {
+        when(customerFacade.checkRoleById(customerId)).thenReturn(true);
+        when(customerFacade.existsById(customerId)).thenReturn(true);
+
+        Order order = createOrder();
+        UUID vendorId = order.getVendorId();
+
+        Dish dish = new Dish();
+        dish.setName("New Dish");
+        dish.setVendorId(vendorId);
+        dish.setID(dishId);
+        dish.setPrice(12.0);
+        Dish newDish = new Dish();
+        newDish.setID(UUID.randomUUID());
+        newDish.setPrice(14.0);
+
+        OrderedDish newOrderedDish = new OrderedDish();
+        newOrderedDish.setDish(newDish);
+        order.addDishesItem(newOrderedDish);
+        OrderedDish orderedDish = new OrderedDish();
+        orderedDish.setDish(dish);
+        orderedDish.setId(dishId);
+        order.addDishesItem(orderedDish);
+
+        List<Dish> dishes = new ArrayList<>();
+        dishes.add(dish);
+
+        when(orderService.findById(orderId)).thenReturn(order);
+        when(dishService.findAllByVendorId(vendorId)).thenReturn(dishes);
+
+        when(orderService.calculateOrderPrice(anyList())).thenAnswer(invocation -> {
+            return calculateOrderPrice(invocation.getArgument(0));
+        });
+        // Mock the behavior of orderService.save
+        when(orderService.save(any(Order.class))).thenAnswer(invocation -> {
+            return invocation.getArgument(0);
+        });
+
+        ResponseEntity<Order> response = customerController.removeDishFromOrder(customerId, orderId, dishId);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().getTotalPrice()).isEqualTo(0.0);
+        verify(orderService).save(any(Order.class));
+    }
+
+    private double calculateOrderPrice(List<OrderedDish> dishes) {
+        return dishes.stream()
+                .mapToDouble(orderedDish -> orderedDish.getDish().getPrice() * orderedDish.getQuantity())
+                .sum();
+    }
+
+    private CustomerDTO setupCustomer(String... customerAllergens) {
+        CustomerDTO customerDTO = new CustomerDTO();
+        if (customerAllergens != null) {
+            List<String> allergens = new ArrayList<>(Arrays.asList(customerAllergens));
+            customerDTO.setAllergens(allergens);
+        }
+        return customerDTO;
+    }
+
+    private Address createTestingAddress(Integer housenumber) {
+        Address address = new Address();
+        address.setLatitude(1.0);
+        address.setLongitude(1.0);
+        address.setHouseNumber(housenumber);
+        address.setZipCode("1344AH");
+
+        return address;
+    }
+
+    private List<Dish> setupVendorDishes(String[]... dishAllergens) {
+        List<Dish> vendorDishes = new ArrayList<>();
+        for (String[] allergens : dishAllergens) {
+            Dish dish = new Dish();
+            dish.setAllergens(Arrays.asList(allergens));
+            vendorDishes.add(dish);
+        }
+        return vendorDishes;
     }
 
     private Order createOrder() {
