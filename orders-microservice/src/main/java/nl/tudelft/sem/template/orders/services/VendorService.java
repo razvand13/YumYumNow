@@ -9,6 +9,7 @@ import nl.tudelft.sem.template.orders.external.PaymentMock;
 import nl.tudelft.sem.template.orders.external.VendorDTO;
 import nl.tudelft.sem.template.orders.integration.VendorFacade;
 import nl.tudelft.sem.template.orders.mappers.VendorMapper;
+import nl.tudelft.sem.template.orders.mappers.interfaces.IVendorMapper;
 import nl.tudelft.sem.template.orders.repositories.DishRepository;
 import nl.tudelft.sem.template.orders.repositories.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,8 +25,8 @@ public class VendorService implements IVendorService {
     private final transient DishRepository dishRepository;
     private final transient OrderRepository orderRepository;
     private final transient PaymentMock paymentMock;
-    private VendorMapper vendorMapper =  new VendorMapper();
-    private VendorFacade vendorFacade;
+    private final transient VendorFacade vendorFacade;
+    private final transient VendorMapper vendorMapper;
 
     /**
      * Constructor for Vendor Service
@@ -33,13 +34,17 @@ public class VendorService implements IVendorService {
      * @param dishRepository  the dish repo
      * @param orderRepository the order repo
      * @param paymentMock     the payment mock
-     * @param vendorFacade
+     * @param vendorFacade    vendor facade
+     * @param vendorMapper   vendor mapper
      */
     @Autowired
-    public VendorService(DishRepository dishRepository, OrderRepository orderRepository, PaymentMock paymentMock) {
+    public VendorService(DishRepository dishRepository, OrderRepository orderRepository,
+                         PaymentMock paymentMock, VendorFacade vendorFacade, VendorMapper vendorMapper) {
         this.dishRepository = dishRepository;
         this.orderRepository = orderRepository;
         this.paymentMock = paymentMock;
+        this.vendorFacade = vendorFacade;
+        this.vendorMapper = vendorMapper;
     }
 
     /**

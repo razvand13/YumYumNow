@@ -215,8 +215,6 @@ public class CustomerController implements CustomerApi {
 
         CustomerDTO customer = customerFacade.requestCustomer(customerId);
 
-        List<String> customerAllergens = new ArrayList<>();
-        customerAllergens.addAll(customer.getAllergens());
 
         List<Dish> dishesToRemove = serviceManager.getOrderService().getDishesForCustomer(order.getVendorId(), customerId);
         vendorDishes.removeAll(dishesToRemove);
