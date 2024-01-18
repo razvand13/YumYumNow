@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doThrow;
@@ -266,11 +267,14 @@ class AdminControllerTest {
         Order savedOrder = new Order();
         when(adminFacade.checkRoleById(adminId)).thenReturn(true);
         when(adminFacade.existsById(adminId)).thenReturn(true);
-        when(orderService.save(updatedOrder)).thenReturn(savedOrder);
+        when(orderService.save(any(Order.class))).thenAnswer(invocation -> {
+            return invocation.getArgument(0);
+        });
 
         ResponseEntity<Order> response = adminController.adminUpdateOrder(adminId, orderId, updatedOrder);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().getID()).isEqualTo(orderId);
         verify(adminFacade).checkRoleById(adminId);
         verify(adminFacade).existsById(adminId);
         verify(orderService, atLeast(1)).findById(orderId);

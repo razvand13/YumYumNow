@@ -41,7 +41,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.Optional;
 import java.util.Collections;
-import java.util.Optional;
 import java.util.Arrays;
 import java.util.ArrayList;
 
@@ -1011,6 +1010,11 @@ class CustomerControllerTest {
         ResponseEntity<Void> response = customerController.payOrder(customerId, orderId, payOrderRequest);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+        verify(orderService, times(1)).save(orderCaptor.capture());
+        Order savedOrder = orderCaptor.getValue();
+        assertThat(savedOrder.getStatus()).isEqualTo(Status.ACCEPTED);
     }
 
     @Test
@@ -1022,6 +1026,11 @@ class CustomerControllerTest {
         ResponseEntity<Void> response = customerController.payOrder(customerId, orderId, payOrderRequest);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+        verify(orderService, times(1)).save(orderCaptor.capture());
+        Order savedOrder = orderCaptor.getValue();
+        assertThat(savedOrder.getStatus()).isEqualTo(Status.REJECTED);
     }
 
     @Test
