@@ -35,7 +35,6 @@ class OrderServiceTest {
     @BeforeEach
     void setup() {
         MockitoAnnotations.openMocks(this);
-
     }
 
     @Test
@@ -149,13 +148,98 @@ class OrderServiceTest {
         assertThat(result).isNotPresent();
     }
 
+    @Test
+    void findOrdersByCustomerIdTest() {
+        UUID customerId = UUID.randomUUID();
+        List<Order> mockOrders = Arrays.asList(new Order(), new Order());
+
+        when(orderRepository.findByCustomerId(customerId)).thenReturn(mockOrders);
+
+        List<Order> resultOrders = orderService.findOrdersByCustomerId(customerId);
+
+        assertThat(resultOrders).isEqualTo(mockOrders);
+        assertThat(resultOrders.size()).isEqualTo(2);
+    }
+
+    @Test
+    void findAllReturnsEmptyList() {
+        List<Order> orderList = new ArrayList<>();
+        orderList.add(createOrderByPrice(12.0));
+        orderList.add(createOrderByPrice(42.0));
+        when(orderRepository.findAll()).thenReturn(orderList);
+
+        List<Order> expectedList = new ArrayList<>();
+        expectedList.add(createOrderByPrice(12.0));
+        expectedList.add(createOrderByPrice(42.0));
+
+        List<Order> result = orderService.findAll();
+        assertThat(result.size()).isNotEqualTo(0);
+        assertThat(result).isEqualTo(expectedList);
+    }
+
+    @Test
+    void checkDeleteCallRepository() {
+        UUID orderId = UUID.randomUUID();
+        orderService.delete(orderId);
+        verify(orderRepository).deleteById(orderId);
+    }
+
+    @Test
+    void orderedDishInOrderFilterCheck() {
+        UUID dishIdToFind = UUID.randomUUID();
+        OrderedDish dish = createOrderedDishFromDish(createDish(UUID.randomUUID(), "Wrong Dish"));
+        OrderedDish dish2 = createOrderedDishFromDish(createDish(dishIdToFind, "Right Dish"));
+
+        List<OrderedDish> dishes = new ArrayList<>();
+        dishes.add(dish);
+        dishes.add(dish2);
+
+        Order order = createOrderByPrice(0.0);
+        order.setDishes(dishes);
+
+        Optional<OrderedDish> result = orderService.orderedDishInOrder(order, dishIdToFind);
+        assertThat(result.get().getDish().getName()).isEqualTo("Right Dish");
+    }
+
+    @Test
+    void removeDishOrderFilterCheck() {
+        UUID dishIdToFind = UUID.randomUUID();
+        OrderedDish dish = createOrderedDishFromDish(createDish(UUID.randomUUID(), "Wrong Dish"));
+        OrderedDish dish2 = createOrderedDishFromDish(createDish(dishIdToFind, "Found Dish"));
+
+        List<OrderedDish> dishes = List.of(dish, dish2);
+
+        Optional<OrderedDish> result = orderService.removeDishOrder(dishes, dishIdToFind);
+        assertThat(result.get().getDish().getName()).isEqualTo("Found Dish");
+    }
+
     // Utility methods for creating test objects
-    private OrderedDish createOrderedDish(double price, int quantity) {
-        Dish dish = mock(Dish.class);
-        when(dish.getPrice()).thenReturn(price);
+
+    private Order createOrderByPrice(double price) {
+        Order order = new Order();
+        order.setTotalPrice(price);
+        return order;
+    }
+
+    private Dish createDish(UUID dishId, String name) {
+        Dish dish = new Dish();
+        dish.setID(dishId);
+        dish.setName(name);
+        return dish;
+    }
+
+    private Order createOrderWithDish(UUID dishId) {
+        Order order = new Order();
+        List<OrderedDish> orderedDishes = new ArrayList<>();
+        orderedDishes.add(createOrderedDish(10.0, 2, dishId));
+        order.setDishes(orderedDishes);
+        return order;
+    }
+
+    private OrderedDish createOrderedDishFromDish(Dish dish) {
         OrderedDish orderedDish = new OrderedDish();
         orderedDish.setDish(dish);
-        orderedDish.setQuantity(quantity);
+        orderedDish.setId(dish.getID());
         return orderedDish;
     }
 
@@ -169,25 +253,13 @@ class OrderServiceTest {
         return orderedDish;
     }
 
-    private Order createOrderWithDish(UUID dishId) {
-        Order order = new Order();
-        List<OrderedDish> orderedDishes = new ArrayList<>();
-        orderedDishes.add(createOrderedDish(10.0, 2, dishId));
-        order.setDishes(orderedDishes);
-        return order;
-    }
-
-    @Test
-    void findOrdersByCustomerIdTest() {
-        UUID customerId = UUID.randomUUID();
-        List<Order> mockOrders = Arrays.asList(new Order(), new Order());
-
-        when(orderRepository.findByCustomerId(customerId)).thenReturn(mockOrders);
-
-        List<Order> resultOrders = orderService.findOrdersByCustomerId(customerId);
-
-        assertThat(resultOrders).isEqualTo(mockOrders);
-        assertThat(resultOrders.size()).isEqualTo(2);
+    private OrderedDish createOrderedDish(double price, int quantity) {
+        Dish dish = mock(Dish.class);
+        when(dish.getPrice()).thenReturn(price);
+        OrderedDish orderedDish = new OrderedDish();
+        orderedDish.setDish(dish);
+        orderedDish.setQuantity(quantity);
+        return orderedDish;
     }
 
 }

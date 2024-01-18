@@ -2,6 +2,7 @@ package nl.tudelft.sem.template.orders.controllers;
 
 import nl.tudelft.sem.template.model.Dish;
 import nl.tudelft.sem.template.model.Order;
+import nl.tudelft.sem.template.orders.VendorNotFoundException;
 import nl.tudelft.sem.template.orders.integration.CustomerFacade;
 import nl.tudelft.sem.template.orders.repositories.OrderRepository;
 import nl.tudelft.sem.template.orders.services.DishService;
@@ -22,12 +23,13 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.times;
 
 class VendorControllerTest {
 
@@ -75,6 +77,7 @@ class VendorControllerTest {
         vendorId = UUID.randomUUID();
         orderId = UUID.randomUUID();
         customerId = UUID.randomUUID();
+        orderId = UUID.randomUUID();
     }
 
     @Test
@@ -135,6 +138,41 @@ class VendorControllerTest {
         verify(vendorFacade).existsById(vendorId);
         verify(dishService).addDish(vendorId, dishEntity);
 
+    }
+
+    @Test
+    void addDishToMenuVendorNotFound() {
+        UUID nonExistentVendorId = UUID.randomUUID();
+        Dish dish = new Dish();
+
+        when(vendorFacade.checkRoleById(any(UUID.class))).thenReturn(true);
+        when(vendorFacade.existsById(any(UUID.class))).thenReturn(true);
+        when(dishService.addDish(any(UUID.class), any(Dish.class)))
+            .thenThrow(new VendorNotFoundException());
+
+        ResponseEntity<Dish> response = vendorController.addDishToMenu(nonExistentVendorId, dish);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+
+        // Verify interactions
+        verify(vendorFacade).checkRoleById(nonExistentVendorId);
+        verify(vendorFacade).existsById(nonExistentVendorId);
+        verify(dishService).addDish(nonExistentVendorId, dish);
+    }
+
+    @Test
+    void addDishToMenuBadRequest() {
+        Dish dish = new Dish();
+        Dish dishEntity = new Dish();
+
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
+        when(vendorFacade.existsById(vendorId)).thenReturn(true);
+        when(dishService.addDish(vendorId, dishEntity)).thenThrow(new IllegalArgumentException());
+
+        ResponseEntity<Dish> response = vendorController.addDishToMenu(vendorId, dish);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        verify(dishService).addDish(vendorId, dish);
     }
 
     @Test
@@ -790,4 +828,16 @@ class VendorControllerTest {
 
         assertThat(response.getBody()).isEqualTo(result);
     }
+
+    @Test
+    void getVendorOrdersInternalServerError() {
+        when(vendorFacade.checkRoleById(vendorId)).thenReturn(true);
+        when(vendorFacade.existsById(vendorId)).thenReturn(true);
+        when(vendorService.getVendorOrders(vendorId)).thenThrow(new RuntimeException());
+
+        ResponseEntity<List<Order>> response = vendorController.getVendorOrders(vendorId);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
 }

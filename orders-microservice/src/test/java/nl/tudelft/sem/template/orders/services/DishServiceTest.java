@@ -1,6 +1,7 @@
 package nl.tudelft.sem.template.orders.services;
 
 import nl.tudelft.sem.template.model.Dish;
+import nl.tudelft.sem.template.model.Order;
 import nl.tudelft.sem.template.orders.repositories.DishRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -8,11 +9,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.util.List;
+import java.util.ArrayList;
 import java.util.UUID;
 import java.util.Optional;
 import java.util.Collections;
 import java.util.Arrays;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.never;
@@ -237,11 +239,89 @@ public class DishServiceTest {
         assertThat(result).containsExactlyInAnyOrder(dish1, dish2);
     }
 
+    @Test
+    void addDishVendorIdCorrectlySet() {
+        Dish dish = createDish(UUID.randomUUID());
+        UUID vendorId = UUID.randomUUID();
+
+        when(dishRepository.save(any(Dish.class))).thenAnswer(invocation -> {
+            return invocation.getArgument(0);
+        });
+
+        Dish result = dishService.addDish(vendorId, dish);
+        assertThat(result.getVendorId()).isEqualTo(vendorId);
+    }
+
+    @Test
+    void checkAttributesUpdateDish() {
+        UUID dishId = UUID.randomUUID();
+        Dish updatedDish = createDish(dishId);
+        updatedDish.setName("Dish Name");
+        updatedDish.setDescription("Dish Description");
+        updatedDish.setPrice(12.0);
+        updatedDish.setImageLink("Some Image Link");
+        updatedDish.setAllergens(Collections.singletonList("Gluten"));
+        updatedDish.setIngredients(Collections.singletonList("Milk"));
+
+        when(dishRepository.findById(dishId)).thenReturn(Optional.of(createDish(dishId)));
+
+        when(dishRepository.save(any(Dish.class))).thenAnswer(invocation -> {
+            return invocation.getArgument(0);
+        });
+
+        Dish result = dishService.updateDish(dishId, updatedDish);
+        assertThat(result.getID()).isEqualTo(dishId);
+        assertThat(result.getName()).isEqualTo("Dish Name");
+        assertThat(result.getImageLink()).isEqualTo("Some Image Link");
+        assertThat(result.getDescription()).isEqualTo("Dish Description");
+        assertThat(result.getPrice()).isEqualTo(12.0);
+        assertThat(result.getAllergens()).isEqualTo(Collections.singletonList("Gluten"));
+        assertThat(result.getIngredients()).isEqualTo(Collections.singletonList("Milk"));
+    }
+
+    @Test
+    void findByIdDeletedDish() {
+        UUID dishId = UUID.randomUUID();
+        Dish dish = createDish(dishId);
+        dish.setIsDeleted(true);
+
+        when(dishRepository.findById(dishId)).thenReturn(Optional.of(dish));
+
+        Dish result = dishService.findByIdNotDeleted(dishId);
+        assertThat(result).isNull();
+    }
+
+    @Test
+    void findAllByVendorIdDeletedDish() {
+        UUID dishId = UUID.randomUUID();
+        Dish dish = createDish(dishId);
+        dish.setIsDeleted(true);
+        UUID anotherDishId = UUID.randomUUID();
+        Dish anotherDish = createDish(anotherDishId);
+        List<Dish> dishes = new ArrayList<>();
+        dishes.add(dish);
+        dishes.add(anotherDish);
+
+        when(dishRepository.getDishesByVendorId(any(UUID.class))).thenReturn(dishes);
+
+        List<Dish> result = dishService.findAllByVendorIdNotDeleted(UUID.randomUUID());
+        assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(Collections.singletonList(createDish(anotherDishId)));
+    }
+
+    @Test
+    void isDishInOrderReturnCheck() {
+        UUID dishId = UUID.randomUUID();
+        List<Dish> dishes = Arrays.asList(createDish(dishId), createDish(UUID.randomUUID()));
+
+        boolean result = dishService.isDishInOrder(dishes, dishId);
+
+        assertThat(result).isTrue();
+    }
+
     private Dish createDish(UUID dishId) {
         Dish dish = new Dish();
         dish.setID(dishId);
         return dish;
     }
-
-
 }
