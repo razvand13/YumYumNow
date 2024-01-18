@@ -5,6 +5,7 @@ import nl.tudelft.sem.template.model.Dish;
 import nl.tudelft.sem.template.model.Order;
 import nl.tudelft.sem.template.orders.external.PaymentMock;
 import nl.tudelft.sem.template.orders.external.VendorDTO;
+import nl.tudelft.sem.template.orders.integration.VendorFacade;
 import nl.tudelft.sem.template.orders.repositories.DishRepository;
 import nl.tudelft.sem.template.orders.repositories.OrderRepository;
 import org.junit.jupiter.api.BeforeEach;

@@ -28,6 +28,8 @@ import nl.tudelft.sem.template.orders.external.PaymentMock;
 import nl.tudelft.sem.template.orders.external.CustomerDTO;
 import nl.tudelft.sem.template.orders.external.VendorDTO;
 import nl.tudelft.sem.template.orders.integration.VendorFacade;
+import nl.tudelft.sem.template.orders.services.ServiceManager;
+import nl.tudelft.sem.template.orders.services.VendorService;
 import nl.tudelft.sem.template.orders.validator.DataValidationField;
 import nl.tudelft.sem.template.orders.validator.DataValidator;
 import nl.tudelft.sem.template.orders.validator.UserAuthorizationValidator;
@@ -44,36 +46,28 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class CustomerController implements CustomerApi {
     private final transient IVendorMapper IVendorMapper;
-    private final transient IVendorService vendorService;
-    private final transient IDishService dishService;
-    private final transient IOrderService orderService;
-    private final transient ICustomerService customerService;
     private final transient CustomerFacade customerFacade;
     private final transient VendorFacade vendorFacade;
     private final transient ApplicationContext applicationContext;
     private final transient PaymentMock paymentMock;
+    private transient  ServiceManager serviceManager;
 
     /**
      * Constructor for this controller
      *
+     * @param serviceManager service manager
      * @param vendorMapper    vendor mapper
-     * @param vendorService   vendor service
-     * @param dishService     dish service
-     * @param orderService    order service
      * @param customerFacade customer facade
      * @param vendorFacade   vendor facade
      */
     @Autowired
-    public CustomerController(IVendorMapper vendorMapper, IVendorService vendorService,
-                              IDishService dishService, IOrderService orderService, ICustomerService customerService,
+    public CustomerController(IVendorMapper vendorMapper,
+                              ServiceManager serviceManager,
                               CustomerFacade customerFacade, VendorFacade vendorFacade,
                               ApplicationContext applicationContext,
                               PaymentMock paymentMock) {
         this.IVendorMapper = vendorMapper;
-        this.vendorService = vendorService;
-        this.dishService = dishService;
-        this.orderService = orderService;
-        this.customerService = customerService;
+        this.serviceManager = serviceManager;
         this.customerFacade = customerFacade;
         this.vendorFacade = vendorFacade;
         this.applicationContext = applicationContext;
@@ -119,17 +113,14 @@ public class CustomerController implements CustomerApi {
 
         // Get the customer's delivery location
         CustomerDTO customer = customerFacade.requestCustomer(customerId);
-        Address customerLocation = customerService.getDeliveryLocation(customer);
+        Address customerLocation = serviceManager.getCustomerService().getDeliveryLocation(customer);
 
         if (customerLocation == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
-        // Filter vendors by name, average price and distance to delivery location
-        List<VendorDTO> vendors = vendorFacade.requestVendors();
-        List<VendorDTO> filteredVendors = vendorService.filterVendors(
-                vendors, name, minAvgPrice, maxAvgPrice, customerLocation);
-        var filteredVendorEntities = filteredVendors.stream().map(IVendorMapper::toEntity).collect(Collectors.toList());
+        var filteredVendorEntities = serviceManager.getVendorService().getFilteredVendorEntities(name, minAvgPrice,
+                maxAvgPrice, customerLocation);
 
         return ResponseEntity.ok(filteredVendorEntities);
     }
@@ -179,7 +170,7 @@ public class CustomerController implements CustomerApi {
         order.setOrderTime(OffsetDateTime.now());
         order.setVendorId(vendorId);
         order.setCustomerId(customerId);
-        Order savedOrder = orderService.save(order);
+        Order savedOrder = serviceManager.getOrderService().save(order);
 
         return ResponseEntity.ok(savedOrder);
     }
@@ -217,30 +208,17 @@ public class CustomerController implements CustomerApi {
             return ResponseEntity.status(e.getFailureStatus()).build();
         }
 
-        Order order = orderService.findById(orderId);
+        Order order = serviceManager.getOrderService().findById(orderId);
 
         // Get the vendor's dishes from the repository
-        List<Dish> vendorDishes = dishService.findAllByVendorId(order.getVendorId());
+        List<Dish> vendorDishes = serviceManager.getDishService().findAllByVendorId(order.getVendorId());
 
         CustomerDTO customer = customerFacade.requestCustomer(customerId);
 
         List<String> customerAllergens = new ArrayList<>();
         customerAllergens.addAll(customer.getAllergens());
-        List<Dish> dishesToRemove = new ArrayList<>();
 
-        // Find the dishes from the vendor that the customer is allergic to
-        for (int i = 0; i < vendorDishes.size(); i++) {
-            List<String> dishAllergens = vendorDishes.get(i).getAllergens();
-            if (dishAllergens != null) {
-                for (String allergen : dishAllergens) {
-                    if (customerAllergens.contains(allergen)) {
-                        dishesToRemove.add(vendorDishes.get(i));
-                        break;
-                    }
-                }
-            }
-        }
-
+        List<Dish> dishesToRemove = serviceManager.getOrderService().getDishesForCustomer(order.getVendorId(), customerId);
         vendorDishes.removeAll(dishesToRemove);
 
         return ResponseEntity.ok(vendorDishes);
@@ -285,11 +263,11 @@ public class CustomerController implements CustomerApi {
         }
 
         // Fetch order
-        Order order = orderService.findById(orderId);
+        Order order = serviceManager.getOrderService().findById(orderId);
 
-        Dish dishToAdd = dishService.findById(dishId);
+        Dish dishToAdd = serviceManager.getDishService().findById(dishId);
 
-        Optional<OrderedDish> existingOrderedDish = orderService.orderedDishInOrder(order, dishId);
+        Optional<OrderedDish> existingOrderedDish = serviceManager.getOrderService().orderedDishInOrder(order, dishId);
 
         if (existingOrderedDish.isPresent()) {
             // Dish is already in the order, update the quantity
@@ -304,12 +282,12 @@ public class CustomerController implements CustomerApi {
         }
 
         // Recalculate total price
-        double newTotalPrice = orderService.calculateOrderPrice(order.getDishes());
+        double newTotalPrice = serviceManager.getOrderService().calculateOrderPrice(order.getDishes());
 
         order.setTotalPrice(newTotalPrice);
 
         // Save the updated order
-        Order updatedOrder = orderService.save(order);
+        Order updatedOrder = serviceManager.getOrderService().save(order);
 
         return ResponseEntity.ok(updatedOrder);
     }
@@ -350,7 +328,7 @@ public class CustomerController implements CustomerApi {
             return ResponseEntity.status(e.getFailureStatus()).build();
         }
 
-        Order order = orderService.findById(orderId);
+        Order order = serviceManager.getOrderService().findById(orderId);
 
         // Check if the dish is part of the order
         List<OrderedDish> orderedDishes = order.getDishes();
@@ -368,12 +346,12 @@ public class CustomerController implements CustomerApi {
         order.setDishes(orderedDishes);
 
         // Calculate new price of order
-        double newTotalPrice = orderService.calculateOrderPrice(orderedDishes);
+        double newTotalPrice = serviceManager.getOrderService().calculateOrderPrice(orderedDishes);
 
         order.setTotalPrice(newTotalPrice);
 
         // Save the updated order
-        Order updatedOrder = orderService.save(order);
+        Order updatedOrder = serviceManager.getOrderService().save(order);
 
         return ResponseEntity.ok(updatedOrder);
 
@@ -415,7 +393,7 @@ public class CustomerController implements CustomerApi {
             return ResponseEntity.status(e.getFailureStatus()).build();
         }
 
-        Order order = orderService.findById(orderId);
+        Order order = serviceManager.getOrderService().findById(orderId);
 
         // Get the current list of ordered dishes in the order
         List<OrderedDish> orderedDishes = order.getDishes();
@@ -430,13 +408,13 @@ public class CustomerController implements CustomerApi {
         order.setDishes(orderedDishes);
 
         // Recalculate the total price of the order
-        double newTotalPrice = orderService.calculateOrderPrice(orderedDishes);
+        double newTotalPrice = serviceManager.getOrderService().calculateOrderPrice(orderedDishes);
 
         // Update the total price of the order
         order.setTotalPrice(newTotalPrice);
 
         // Save the order with the updated list of ordered dishes
-        Order updatedOrder = orderService.save(order);
+        Order updatedOrder = serviceManager.getOrderService().save(order);
 
         return ResponseEntity.ok(updatedOrder);
     }
@@ -471,7 +449,7 @@ public class CustomerController implements CustomerApi {
             return ResponseEntity.status(e.getFailureStatus()).build();
         }
 
-        Order order = orderService.findById(orderId);
+        Order order = serviceManager.getOrderService().findById(orderId);
 
         return ResponseEntity.ok(order);
     }
@@ -508,7 +486,7 @@ public class CustomerController implements CustomerApi {
         }
 
         // Fetch the list of previous orders for the customer
-        List<Order> orders = orderService.findOrdersByCustomerId(customerId);
+        List<Order> orders = serviceManager.getOrderService().findOrdersByCustomerId(customerId);
         if (orders.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
@@ -550,8 +528,8 @@ public class CustomerController implements CustomerApi {
             return ResponseEntity.status(e.getFailureStatus()).build();
         }
 
-        Dish dish = dishService.findById(dishId);
-        Order order = orderService.findById(orderId);
+        Dish dish = serviceManager.getDishService().findById(dishId);
+        Order order = serviceManager.getOrderService().findById(orderId);
         List<OrderedDish> dishes = order.getDishes();
 
         for (OrderedDish orderedDish : dishes) {
@@ -598,7 +576,7 @@ public class CustomerController implements CustomerApi {
         }
 
         // Fetch the previous order
-        Order previousOrder = orderService.findById(orderId);
+        Order previousOrder = serviceManager.getOrderService().findById(orderId);
 
         // Create a new order with identical contents
         Order newOrder = new Order();
@@ -611,7 +589,7 @@ public class CustomerController implements CustomerApi {
         newOrder.setTotalPrice(previousOrder.getTotalPrice());
 
         // Save the new order
-        Order savedOrder = orderService.save(newOrder);
+        Order savedOrder = serviceManager.getOrderService().save(newOrder);
 
         return ResponseEntity.ok(savedOrder);
     }
@@ -650,10 +628,10 @@ public class CustomerController implements CustomerApi {
             return ResponseEntity.status(e.getFailureStatus()).build();
         }
 
-        Order order = orderService.findById(orderId);
+        Order order = serviceManager.getOrderService().findById(orderId);
 
         order.setSpecialRequirements(updateSpecialRequirementsRequest.getSpecialRequirements());
-        Order updatedOrder = orderService.save(order);
+        Order updatedOrder = serviceManager.getOrderService().save(order);
 
         return ResponseEntity.ok(updatedOrder);
     }
@@ -695,18 +673,18 @@ public class CustomerController implements CustomerApi {
         }
 
         // Fetch order
-        Order order = orderService.findById(orderId);
+        Order order = serviceManager.getOrderService().findById(orderId);
 
         boolean paymentSuccess = paymentMock.pay(orderId, payOrderRequest);
 
         if (paymentSuccess) {
             order.setStatus(Status.ACCEPTED);
-            orderService.save(order);
+            serviceManager.getOrderService().save(order);
             return ResponseEntity.ok().build();
         }
 
         order.setStatus(Status.REJECTED);
-        orderService.save(order);
+        serviceManager.getOrderService().save(order);
         return ResponseEntity.badRequest().build();
 
     }

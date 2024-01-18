@@ -22,4 +22,6 @@ public interface IOrderService {
     Optional<OrderedDish> orderedDishInOrder(Order order, UUID dishId);
 
     List<Order> findOrdersByCustomerId(UUID customerId);
+
+    List<Dish> getDishesForCustomer(UUID vendorId, UUID customerId);
 }

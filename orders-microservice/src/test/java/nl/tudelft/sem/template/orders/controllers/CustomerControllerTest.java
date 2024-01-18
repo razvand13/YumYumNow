@@ -24,6 +24,7 @@ import nl.tudelft.sem.template.orders.mappers.VendorMapper;
 import nl.tudelft.sem.template.orders.mappers.interfaces.IVendorMapper;
 import nl.tudelft.sem.template.orders.integration.CustomerFacade;
 import nl.tudelft.sem.template.orders.integration.VendorFacade;
+import nl.tudelft.sem.template.orders.services.ServiceManager;
 import nl.tudelft.sem.template.orders.validator.DataValidator;
 import nl.tudelft.sem.template.orders.validator.DataValidationField;
 import nl.tudelft.sem.template.orders.validator.UserAuthorizationValidator;
@@ -91,6 +92,7 @@ class CustomerControllerTest {
     private DataValidator dataValidator;
     private UserAuthorizationValidator userAuthorizationValidator;
     private PaymentMock paymentMock;
+    private ServiceManager serviceManager;
 
     @BeforeEach
     void setup() {
@@ -104,6 +106,8 @@ class CustomerControllerTest {
         applicationContext = mock(ApplicationContext.class);
         dataValidator = mock(DataValidator.class);
         paymentSuccessDecider = mock(PaymentSuccessDecider.class);
+
+        serviceManager = new ServiceManager(vendorService, dishService, orderService, customerService);
 
         when(applicationContext.getBean(eq(DataValidator.class), anyList()))
                 .thenReturn(dataValidator);
@@ -202,9 +206,8 @@ class CustomerControllerTest {
         updateSpecialRequirementsRequest = new UpdateSpecialRequirementsRequest();
         createOrderRequest = new CreateOrderRequest();
 
-        customerController = new CustomerController(IVendorMapper, vendorService, dishService, orderService,
-                customerService, customerFacade, vendorFacade, applicationContext, paymentMock);
-
+        customerController = new CustomerController(IVendorMapper, serviceManager, customerFacade,
+                vendorFacade, applicationContext, paymentMock);
         when(orderService.findById(orderId)).thenReturn(order);
         when(dishService.findById(dishId)).thenReturn(new Dish());
     }
@@ -383,7 +386,7 @@ class CustomerControllerTest {
         when(vendorService.filterVendors(vendors, null, null, null, customer.getCurrentLocation()))
                 .thenReturn(vendors);
 
-        when(IVendorMapper.toEntity(new VendorDTO())).thenReturn(new Vendor());
+        when(IVendorMapper.toEntity(any(VendorDTO.class))).thenReturn(new Vendor());
 
         ResponseEntity<List<Vendor>> response = customerController.getVendors(customerId, null, null, null);
 
