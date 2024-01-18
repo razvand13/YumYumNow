@@ -34,6 +34,7 @@ import nl.tudelft.sem.template.orders.validator.UserAuthorizationValidator;
 import nl.tudelft.sem.template.orders.validator.UserType;
 import nl.tudelft.sem.template.orders.validator.ValidationFailureException;
 import nl.tudelft.sem.template.orders.validator.ValidatorRequest;
+import org.aspectj.weaver.ast.Or;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpStatus;
@@ -601,11 +602,18 @@ public class CustomerController implements CustomerApi {
         // Fetch the previous order
         Order previousOrder = orderService.findById(orderId);
 
+        List<OrderedDish> orderedDishes = new ArrayList<>();
+        for (OrderedDish od : previousOrder.getDishes()) {
+            OrderedDish orderedDish = new OrderedDish();
+            orderedDish.setQuantity(od.getQuantity());
+            orderedDish.setDish(od.getDish());
+        }
+
         // Create a new order with identical contents
         Order newOrder = new Order();
+        newOrder.setDishes(orderedDishes);
         newOrder.setCustomerId(customerId);
         newOrder.setVendorId(previousOrder.getVendorId());
-        newOrder.setDishes(new ArrayList<>(previousOrder.getDishes()));
         newOrder.setOrderTime(OffsetDateTime.now());
         newOrder.setStatus(Status.PENDING);
         newOrder.setLocation(address != null ? address : previousOrder.getLocation());
