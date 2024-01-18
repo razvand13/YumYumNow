@@ -23,7 +23,7 @@ public class CustomerMapperTest {
                 "isBlocked":false,
                 "payment":"Credit Card",
                 "homeAddress":{},
-                "allergens":[],
+                "allergens":"",
                 "currentLocation":{}
                 }""";
 
