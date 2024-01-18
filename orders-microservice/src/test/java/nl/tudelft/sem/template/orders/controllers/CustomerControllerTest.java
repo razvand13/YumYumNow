@@ -480,11 +480,6 @@ class CustomerControllerTest {
 
     @Test
     void getVendorsNullCustomerLocation() {
-        ArrayList<DataValidationField> fields = new ArrayList<DataValidationField>();
-        fields.add(DataValidationField.USER);
-
-        dataValidator = new DataValidator(orderService, dishService, vendorFacade, fields);
-
         when(applicationContext.getBean(eq(DataValidator.class), eq(List.of(DataValidationField.USER))))
                 .thenReturn(dataValidator);
 
