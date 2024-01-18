@@ -8,21 +8,23 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import nl.tudelft.sem.template.api.CustomerApi;
+import nl.tudelft.sem.template.model.Address;
+import nl.tudelft.sem.template.model.CreateOrderRequest;
 import nl.tudelft.sem.template.model.Dish;
 import nl.tudelft.sem.template.model.Order;
-import nl.tudelft.sem.template.model.Vendor;
-import nl.tudelft.sem.template.model.UpdateSpecialRequirementsRequest;
-import nl.tudelft.sem.template.model.UpdateDishQtyRequest;
-import nl.tudelft.sem.template.model.Status;
-import nl.tudelft.sem.template.model.Address;
 import nl.tudelft.sem.template.model.OrderedDish;
-import nl.tudelft.sem.template.model.CreateOrderRequest;
+import nl.tudelft.sem.template.model.PayOrderRequest;
+import nl.tudelft.sem.template.model.Status;
+import nl.tudelft.sem.template.model.UpdateDishQtyRequest;
+import nl.tudelft.sem.template.model.UpdateSpecialRequirementsRequest;
+import nl.tudelft.sem.template.model.Vendor;
 import nl.tudelft.sem.template.orders.domain.ICustomerService;
 import nl.tudelft.sem.template.orders.domain.IDishService;
 import nl.tudelft.sem.template.orders.domain.IOrderService;
 import nl.tudelft.sem.template.orders.domain.IVendorService;
 import nl.tudelft.sem.template.orders.mappers.interfaces.IVendorMapper;
 import nl.tudelft.sem.template.orders.integration.CustomerFacade;
+import nl.tudelft.sem.template.orders.external.PaymentMock;
 import nl.tudelft.sem.template.orders.external.CustomerDTO;
 import nl.tudelft.sem.template.orders.external.VendorDTO;
 import nl.tudelft.sem.template.orders.integration.VendorFacade;
@@ -49,6 +51,7 @@ public class CustomerController implements CustomerApi {
     private final transient CustomerFacade customerFacade;
     private final transient VendorFacade vendorFacade;
     private final transient ApplicationContext applicationContext;
+    private final transient PaymentMock paymentMock;
 
     /**
      * Constructor for this controller
@@ -64,7 +67,8 @@ public class CustomerController implements CustomerApi {
     public CustomerController(IVendorMapper vendorMapper, IVendorService vendorService,
                               IDishService dishService, IOrderService orderService, ICustomerService customerService,
                               CustomerFacade customerFacade, VendorFacade vendorFacade,
-                              ApplicationContext applicationContext) {
+                              ApplicationContext applicationContext,
+                              PaymentMock paymentMock) {
         this.IVendorMapper = vendorMapper;
         this.vendorService = vendorService;
         this.dishService = dishService;
@@ -73,6 +77,7 @@ public class CustomerController implements CustomerApi {
         this.customerFacade = customerFacade;
         this.vendorFacade = vendorFacade;
         this.applicationContext = applicationContext;
+        this.paymentMock = paymentMock;
     }
 
     /**
@@ -241,6 +246,9 @@ public class CustomerController implements CustomerApi {
         return ResponseEntity.ok(vendorDishes);
     }
 
+
+
+
     /**
      * POST /customer/{customerId}/order/{orderId}/dish/{dishId} : Add dish to order
      * Adds the specified dish to the order.
@@ -269,7 +277,7 @@ public class CustomerController implements CustomerApi {
         dataValidator.setNext(userAuthorizationValidator);
         //Create and fill validation request
         ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER, orderId, dishId,
-                updateDishQtyRequest, null, null, null);
+                updateDishQtyRequest, null, null, null, null);
         try {
             dataValidator.handle(request);
         } catch (ValidationFailureException e) {
@@ -400,7 +408,7 @@ public class CustomerController implements CustomerApi {
         dataValidator.setNext(userAuthorizationValidator);
         //Create and fill validation request
         ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER,
-                orderId, dishId, updateDishQtyRequest, null, null, null);
+                orderId, dishId, updateDishQtyRequest, null, null, null, null);
         try {
             dataValidator.handle(request);
         } catch (ValidationFailureException e) {
@@ -456,7 +464,7 @@ public class CustomerController implements CustomerApi {
         dataValidator.setNext(userAuthorizationValidator);
         //Create and fill validation request
         ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER,
-                orderId, null, null, null, null, null);
+                orderId, null, null, null, null, null, null);
         try {
             dataValidator.handle(request);
         } catch (ValidationFailureException e) {
@@ -492,7 +500,7 @@ public class CustomerController implements CustomerApi {
         dataValidator.setNext(userAuthorizationValidator);
         // Create and fill validation request
         ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER, null,
-                null, null, null, null, null);
+                null, null, null, null, null, null);
         try {
             dataValidator.handle(request);
         } catch (ValidationFailureException e) {
@@ -535,7 +543,7 @@ public class CustomerController implements CustomerApi {
         dataValidator.setNext(userAuthorizationValidator);
         //Create and fill validation request
         ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER,
-                orderId, dishId, null, null, null, null);
+                orderId, dishId, null, null, null, null, null);
         try {
             dataValidator.handle(request);
         } catch (ValidationFailureException e) {
@@ -582,7 +590,7 @@ public class CustomerController implements CustomerApi {
         dataValidator.setNext(userAuthorizationValidator);
         // Create and fill validation request
         ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER, orderId,
-                null, null, null, null, null);
+                null, null, null, null, null, null);
         try {
             dataValidator.handle(request);
         } catch (ValidationFailureException e) {
@@ -635,7 +643,7 @@ public class CustomerController implements CustomerApi {
         // Create and fill validation request
         ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER, orderId,
                 null, null, null, null,
-                updateSpecialRequirementsRequest);
+                updateSpecialRequirementsRequest, null);
         try {
             dataValidator.handle(request);
         } catch (ValidationFailureException e) {
@@ -648,5 +656,58 @@ public class CustomerController implements CustomerApi {
         Order updatedOrder = orderService.save(order);
 
         return ResponseEntity.ok(updatedOrder);
+    }
+
+
+    /**
+     * POST /customer/{customerId}/order/{orderId}/pay : Pay for an order
+     * Processes payment for the specified order.
+     *
+     * @param customerId           (required)
+     * @param orderId              (required)
+     * @param payOrderRequest       (optional) Payment details provided by the customer.
+     * @return Payment processed successfully, order status set to accepted. (status code 200)
+     *     or Bad Request - Payment information missing or payment unsuccessful. (status code 400)
+     *     or Unauthorized - Order does not belong to user/user is not a customer. (status code 401)
+     *     or Not Found - Order or user does not exist. (status code 404)
+     *     or Internal Server Error - An unexpected error occurred on the server. (status code 500)
+     */
+    @Override
+    public ResponseEntity<Void> payOrder(UUID customerId, UUID orderId, PayOrderRequest payOrderRequest) {
+
+        //Chain of responsibility validation
+        //Get Validators
+        DataValidator dataValidator = applicationContext.getBean(DataValidator.class,
+                List.of(DataValidationField.USER, DataValidationField.ORDER,
+                        DataValidationField.PAYORDERREQUEST));
+        UserAuthorizationValidator userAuthorizationValidator = applicationContext.getBean(UserAuthorizationValidator.class);
+
+        // Set validation chain
+        dataValidator.setNext(userAuthorizationValidator);
+        // Create and fill validation request
+        ValidatorRequest request = new ValidatorRequest(customerId, UserType.CUSTOMER, orderId,
+            null, null, null, null,
+                null, payOrderRequest);
+        try {
+            dataValidator.handle(request);
+        } catch (ValidationFailureException e) {
+            return ResponseEntity.status(e.getFailureStatus()).build();
+        }
+
+        // Fetch order
+        Order order = orderService.findById(orderId);
+
+        boolean paymentSuccess = paymentMock.pay(orderId, payOrderRequest);
+
+        if (paymentSuccess) {
+            order.setStatus(Status.ACCEPTED);
+            orderService.save(order);
+            return ResponseEntity.ok().build();
+        }
+
+        order.setStatus(Status.REJECTED);
+        orderService.save(order);
+        return ResponseEntity.badRequest().build();
+
     }
 }
