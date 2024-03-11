@@ -1,0 +1,1719 @@
+{
+	"info": {
+		"_postman_id": "81a3f49c-0b2d-44f9-ad6f-8a290c78a311",
+		"name": "vendor - adding/modifying/deleting/retrieving dishes",
+		"description": "This collection will represent a regular workflow of a vendor modifying their menu.\n\nFirst, we create a vendor entity in the users microservice\n\nThen, we add two distinct dishes\n\nWe retrieve both of them\n\nWe modify one of them\n\nWe retrieve the modified one\n\nWe then delete the other dish\n\nAnd we retrieve the deleted one",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "31458650"
+	},
+	"item": [
+		{
+			"name": "test vendor in range",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var response = pm.response.json();\r",
+							"if (response && response.vendorId) {\r",
+							"    pm.globals.set(\"vendorIdInRange\", response.vendorId);\r",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"name\": \"Test Restaurant In Range\",\r\n  \"isBlocked\": false,\r\n  \"email\": \"restaurant@restaurant.com\",\r\n  \"isApproved\": false,\r\n  \"location\": {\r\n    \"latitude\": 34.092,\r\n    \"longitude\": 34.092,\r\n    \"zipCode\": \"2554EZ\",\r\n    \"houseNumber\": 24\r\n  },\r\n  \"schedule\": null\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:8088/vendors"
+			},
+			"response": []
+		},
+		{
+			"name": "Add a new dish to the vendor menu",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var response = pm.response.json();\r",
+							"if (response && response.ID) {\r",
+							"    pm.globals.set(\"dishId1\", response.ID);\r",
+							"}\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Dish 1\",\n  \"imageLink\": \"httpimagelink.com\",\n  \"price\": \"23.43\",\n  \"isDeleted\": false,\n  \"allergens\": [\n    \"Salt\",\n    \"Vinegar\"\n  ],\n  \"ingredients\": [\n    \"Pizza\",\n    \"Mozarella\"\n  ],\n  \"description\": \"Nice example dish\",\n  \"vendorId\": \"{{vendorIdInRange}}\"\n}",
+					"options": {
+						"raw": {
+							"headerFamily": "json",
+							"language": "json"
+						}
+					}
+				},
+				"url": "{{baseUrl}}/vendor/{{vendorIdInRange}}/dish"
+			},
+			"response": [
+				{
+					"name": "New dish has been added to the vendor menu",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ID\": \"<uuid>\",\n  \"name\": \"<string>\",\n  \"imageLink\": \"<string>\",\n  \"price\": \"<double>\",\n  \"isDeleted\": false,\n  \"allergens\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"ingredients\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"description\": \"<string>\",\n  \"vendorId\": \"<uuid>\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								}
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n  \"ID\": \"<uuid>\",\n  \"name\": \"<string>\",\n  \"imageLink\": \"<string>\",\n  \"price\": \"<double>\",\n  \"isDeleted\": false,\n  \"allergens\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"ingredients\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"description\": \"<string>\",\n  \"vendorId\": \"<uuid>\"\n}"
+				},
+				{
+					"name": "Bad Request - Incorrect dish details format or missing required fields.",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ID\": \"<uuid>\",\n  \"name\": \"<string>\",\n  \"imageLink\": \"<string>\",\n  \"price\": \"<double>\",\n  \"isDeleted\": false,\n  \"allergens\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"ingredients\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"description\": \"<string>\",\n  \"vendorId\": \"<uuid>\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								}
+							]
+						}
+					},
+					"status": "Bad Request",
+					"code": 400,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "Unauthorized - User is not a vendor",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ID\": \"<uuid>\",\n  \"name\": \"<string>\",\n  \"imageLink\": \"<string>\",\n  \"price\": \"<double>\",\n  \"isDeleted\": false,\n  \"allergens\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"ingredients\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"description\": \"<string>\",\n  \"vendorId\": \"<uuid>\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								}
+							]
+						}
+					},
+					"status": "Unauthorized",
+					"code": 401,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "Vendor not found",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ID\": \"<uuid>\",\n  \"name\": \"<string>\",\n  \"imageLink\": \"<string>\",\n  \"price\": \"<double>\",\n  \"isDeleted\": false,\n  \"allergens\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"ingredients\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"description\": \"<string>\",\n  \"vendorId\": \"<uuid>\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								}
+							]
+						}
+					},
+					"status": "Not Found",
+					"code": 404,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "Internal Server Error - An unexpected error occurred on the server.",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ID\": \"<uuid>\",\n  \"name\": \"<string>\",\n  \"imageLink\": \"<string>\",\n  \"price\": \"<double>\",\n  \"isDeleted\": false,\n  \"allergens\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"ingredients\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"description\": \"<string>\",\n  \"vendorId\": \"<uuid>\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								}
+							]
+						}
+					},
+					"status": "Internal Server Error",
+					"code": 500,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				}
+			]
+		},
+		{
+			"name": "Adds a dish without allergens",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var response = pm.response.json();\r",
+							"if (response && response.ID) {\r",
+							"    pm.globals.set(\"dishId2\", response.ID);\r",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Dish 2\",\n  \"imageLink\": \"imagelink.com\",\n  \"price\": \"41.3\",\n  \"isDeleted\": false,\n  \"allergens\": [\n    \"Vinegar\"\n  ],\n  \"ingredients\": [\n    \"Salad\",\n    \"Chips\"\n  ],\n  \"description\": \"Another example dish\",\n  \"vendorId\": \"{{vendorIdInRange}}\"\n}",
+					"options": {
+						"raw": {
+							"headerFamily": "json",
+							"language": "json"
+						}
+					}
+				},
+				"url": "{{baseUrl}}/vendor/{{vendorIdInRange}}/dish"
+			},
+			"response": [
+				{
+					"name": "New dish has been added to the vendor menu",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ID\": \"<uuid>\",\n  \"name\": \"<string>\",\n  \"imageLink\": \"<string>\",\n  \"price\": \"<double>\",\n  \"isDeleted\": false,\n  \"allergens\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"ingredients\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"description\": \"<string>\",\n  \"vendorId\": \"<uuid>\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								}
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n  \"ID\": \"<uuid>\",\n  \"name\": \"<string>\",\n  \"imageLink\": \"<string>\",\n  \"price\": \"<double>\",\n  \"isDeleted\": false,\n  \"allergens\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"ingredients\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"description\": \"<string>\",\n  \"vendorId\": \"<uuid>\"\n}"
+				},
+				{
+					"name": "Bad Request - Incorrect dish details format or missing required fields.",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ID\": \"<uuid>\",\n  \"name\": \"<string>\",\n  \"imageLink\": \"<string>\",\n  \"price\": \"<double>\",\n  \"isDeleted\": false,\n  \"allergens\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"ingredients\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"description\": \"<string>\",\n  \"vendorId\": \"<uuid>\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								}
+							]
+						}
+					},
+					"status": "Bad Request",
+					"code": 400,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "Unauthorized - User is not a vendor",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ID\": \"<uuid>\",\n  \"name\": \"<string>\",\n  \"imageLink\": \"<string>\",\n  \"price\": \"<double>\",\n  \"isDeleted\": false,\n  \"allergens\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"ingredients\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"description\": \"<string>\",\n  \"vendorId\": \"<uuid>\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								}
+							]
+						}
+					},
+					"status": "Unauthorized",
+					"code": 401,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "Vendor not found",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ID\": \"<uuid>\",\n  \"name\": \"<string>\",\n  \"imageLink\": \"<string>\",\n  \"price\": \"<double>\",\n  \"isDeleted\": false,\n  \"allergens\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"ingredients\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"description\": \"<string>\",\n  \"vendorId\": \"<uuid>\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								}
+							]
+						}
+					},
+					"status": "Not Found",
+					"code": 404,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "Internal Server Error - An unexpected error occurred on the server.",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ID\": \"<uuid>\",\n  \"name\": \"<string>\",\n  \"imageLink\": \"<string>\",\n  \"price\": \"<double>\",\n  \"isDeleted\": false,\n  \"allergens\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"ingredients\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"description\": \"<string>\",\n  \"vendorId\": \"<uuid>\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								}
+							]
+						}
+					},
+					"status": "Internal Server Error",
+					"code": 500,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				}
+			]
+		},
+		{
+			"name": "Get list of dishes from a vendor Copy",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Properties of Dish 1 are correct\", function () {\r",
+							"    var jsonData = pm.response.json();\r",
+							"    var dish1 = jsonData.find(function (dish) {\r",
+							"        return dish.ID === pm.globals.get(\"dishId1\");\r",
+							"    });\r",
+							"\r",
+							"    pm.expect(dish1).to.exist;\r",
+							"    pm.expect(dish1.imageLink).to.eql(\"httpimagelink.com\");\r",
+							"    pm.expect(dish1.price).to.eql(23.43);\r",
+							"    pm.expect(dish1.allergens).to.eql([\"Salt\", \"Vinegar\"]);\r",
+							"    pm.expect(dish1.ingredients).to.eql([\"Pizza\", \"Mozarella\"]);\r",
+							"    pm.expect(dish1.description).to.eql(\"Nice example dish\");\r",
+							"    pm.expect(dish1.vendorId).to.eql(pm.globals.get(\"vendorIdInRange\"));\r",
+							"    pm.expect(dish1.ID).to.eql(pm.globals.get(\"dishId1\"));\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Properties of Dish 2 are correct\", function () {\r",
+							"    var jsonData = pm.response.json();\r",
+							"    var dish2 = jsonData.find(function (dish) {\r",
+							"        return dish.ID === pm.globals.get(\"dishId2\");\r",
+							"    });\r",
+							"\r",
+							"    pm.expect(dish2).to.exist;\r",
+							"    pm.expect(dish2.imageLink).to.eql(\"imagelink.com\");\r",
+							"    pm.expect(dish2.price).to.eql(41.3);\r",
+							"    pm.expect(dish2.allergens).to.eql([\"Vinegar\"]);\r",
+							"    pm.expect(dish2.ingredients).to.eql([\"Salad\", \"Chips\"]);\r",
+							"    pm.expect(dish2.description).to.eql(\"Another example dish\");\r",
+							"    pm.expect(dish2.vendorId).to.eql(pm.globals.get(\"vendorIdInRange\"));\r",
+							"    pm.expect(dish2.ID).to.eql(pm.globals.get(\"dishId2\"));\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": "{{baseUrl}}/vendor/{{vendorIdInRange}}/dishes",
+				"description": "Allows a vendor to see their own menu."
+			},
+			"response": [
+				{
+					"name": "A list of dishes offered by the vendor.",
+					"originalRequest": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dishes",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dishes"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								}
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "[\n  {\n    \"ID\": \"<uuid>\",\n    \"name\": \"<string>\",\n    \"imageLink\": \"<string>\",\n    \"price\": \"<double>\",\n    \"isDeleted\": false,\n    \"allergens\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"ingredients\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"description\": \"<string>\",\n    \"vendorId\": \"<uuid>\"\n  },\n  {\n    \"ID\": \"<uuid>\",\n    \"name\": \"<string>\",\n    \"imageLink\": \"<string>\",\n    \"price\": \"<double>\",\n    \"isDeleted\": false,\n    \"allergens\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"ingredients\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"description\": \"<string>\",\n    \"vendorId\": \"<uuid>\"\n  }\n]"
+				},
+				{
+					"name": "Bad Request - Invalid request parameters.",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dishes",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dishes"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								}
+							]
+						}
+					},
+					"status": "Bad Request",
+					"code": 400,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "Unauthorized - User is not a vendor.",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dishes",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dishes"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								}
+							]
+						}
+					},
+					"status": "Unauthorized",
+					"code": 401,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "Vendor not found",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dishes",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dishes"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								}
+							]
+						}
+					},
+					"status": "Not Found",
+					"code": 404,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "Internal Server Error - An unexpected error occurred on the server.",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dishes",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dishes"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								}
+							]
+						}
+					},
+					"status": "Internal Server Error",
+					"code": 500,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				}
+			]
+		},
+		{
+			"name": "Update details of a dish Copy",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Properties of the updated dish are correct\", function () {\r",
+							"    var jsonData = pm.response.json();\r",
+							"\r",
+							"    pm.expect(jsonData.name).to.eql(\"Changed dish\");\r",
+							"    pm.expect(jsonData.imageLink).to.eql(\"Changedlink.com\");\r",
+							"    pm.expect(jsonData.price).to.eql(100.0);\r",
+							"    pm.expect(jsonData.isDeleted).to.be.false;\r",
+							"    pm.expect(jsonData.allergens).to.eql([\"None\"]);\r",
+							"    pm.expect(jsonData.ingredients).to.eql([\"Gold\", \"Pizza\"]);\r",
+							"    pm.expect(jsonData.description).to.eql(\"Golden pizza\");\r",
+							"    pm.expect(jsonData.vendorId).to.eql(pm.globals.get(\"vendorIdInRange\")); \r",
+							"    pm.expect(jsonData.ID).to.eql(pm.globals.get(\"dishId2\")); \r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Changed dish\",\n  \"imageLink\": \"Changedlink.com\",\n  \"price\": \"100.00\",\n  \"allergens\": [\n    \"None\"\n  ],\n  \"ingredients\": [\n    \"Gold\",\n    \"Pizza\"\n  ],\n  \"description\": \"Golden pizza\"\n}",
+					"options": {
+						"raw": {
+							"headerFamily": "json",
+							"language": "json"
+						}
+					}
+				},
+				"url": "{{baseUrl}}/vendor/{{vendorIdInRange}}/dish/{{dishId2}}"
+			},
+			"response": [
+				{
+					"name": "Dish details updated successfully.",
+					"originalRequest": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ID\": \"<uuid>\",\n  \"name\": \"<string>\",\n  \"imageLink\": \"<string>\",\n  \"price\": \"<double>\",\n  \"isDeleted\": false,\n  \"allergens\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"ingredients\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"description\": \"<string>\",\n  \"vendorId\": \"<uuid>\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish/:dishId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish",
+								":dishId"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								},
+								{
+									"key": "dishId"
+								}
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n  \"ID\": \"<uuid>\",\n  \"name\": \"<string>\",\n  \"imageLink\": \"<string>\",\n  \"price\": \"<double>\",\n  \"isDeleted\": false,\n  \"allergens\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"ingredients\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"description\": \"<string>\",\n  \"vendorId\": \"<uuid>\"\n}"
+				},
+				{
+					"name": "Bad Request - Incorrect dish details format or missing required fields.",
+					"originalRequest": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ID\": \"<uuid>\",\n  \"name\": \"<string>\",\n  \"imageLink\": \"<string>\",\n  \"price\": \"<double>\",\n  \"isDeleted\": false,\n  \"allergens\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"ingredients\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"description\": \"<string>\",\n  \"vendorId\": \"<uuid>\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish/:dishId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish",
+								":dishId"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								},
+								{
+									"key": "dishId"
+								}
+							]
+						}
+					},
+					"status": "Bad Request",
+					"code": 400,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "Unauthorized - User is not a vendor/dish does not belong to vendor.",
+					"originalRequest": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ID\": \"<uuid>\",\n  \"name\": \"<string>\",\n  \"imageLink\": \"<string>\",\n  \"price\": \"<double>\",\n  \"isDeleted\": false,\n  \"allergens\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"ingredients\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"description\": \"<string>\",\n  \"vendorId\": \"<uuid>\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish/:dishId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish",
+								":dishId"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								},
+								{
+									"key": "dishId"
+								}
+							]
+						}
+					},
+					"status": "Unauthorized",
+					"code": 401,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "Not Found - Dish or vendor not found.",
+					"originalRequest": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ID\": \"<uuid>\",\n  \"name\": \"<string>\",\n  \"imageLink\": \"<string>\",\n  \"price\": \"<double>\",\n  \"isDeleted\": false,\n  \"allergens\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"ingredients\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"description\": \"<string>\",\n  \"vendorId\": \"<uuid>\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish/:dishId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish",
+								":dishId"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								},
+								{
+									"key": "dishId"
+								}
+							]
+						}
+					},
+					"status": "Not Found",
+					"code": 404,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "Internal Server Error - An unexpected error occurred.",
+					"originalRequest": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ID\": \"<uuid>\",\n  \"name\": \"<string>\",\n  \"imageLink\": \"<string>\",\n  \"price\": \"<double>\",\n  \"isDeleted\": false,\n  \"allergens\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"ingredients\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"description\": \"<string>\",\n  \"vendorId\": \"<uuid>\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish/:dishId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish",
+								":dishId"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								},
+								{
+									"key": "dishId"
+								}
+							]
+						}
+					},
+					"status": "Internal Server Error",
+					"code": 500,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				}
+			]
+		},
+		{
+			"name": "Get details of a specific dish Copy",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Properties of the updated dish are correct\", function () {\r",
+							"    var jsonData = pm.response.json();\r",
+							"\r",
+							"    pm.expect(jsonData.name).to.eql(\"Changed dish\");\r",
+							"    pm.expect(jsonData.imageLink).to.eql(\"Changedlink.com\");\r",
+							"    pm.expect(jsonData.price).to.eql(100.0);\r",
+							"    pm.expect(jsonData.isDeleted).to.be.false;\r",
+							"    pm.expect(jsonData.allergens).to.eql([\"None\"]);\r",
+							"    pm.expect(jsonData.ingredients).to.eql([\"Gold\", \"Pizza\"]);\r",
+							"    pm.expect(jsonData.description).to.eql(\"Golden pizza\");\r",
+							"    pm.expect(jsonData.vendorId).to.eql(pm.globals.get(\"vendorIdInRange\")); \r",
+							"    pm.expect(jsonData.ID).to.eql(pm.globals.get(\"dishId2\")); \r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": "{{baseUrl}}/vendor/{{vendorIdInRange}}/dish/{{dishId2}}",
+				"description": "Get detailed information about a specific dish offered by the vendor."
+			},
+			"response": [
+				{
+					"name": "Detailed information about the specified dish.",
+					"originalRequest": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish/:dishId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish",
+								":dishId"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								},
+								{
+									"key": "dishId"
+								}
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n  \"ID\": \"<uuid>\",\n  \"name\": \"<string>\",\n  \"imageLink\": \"<string>\",\n  \"price\": \"<double>\",\n  \"isDeleted\": false,\n  \"allergens\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"ingredients\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"description\": \"<string>\",\n  \"vendorId\": \"<uuid>\"\n}"
+				},
+				{
+					"name": "Bad Request - Invalid request parameters.",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish/:dishId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish",
+								":dishId"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								},
+								{
+									"key": "dishId"
+								}
+							]
+						}
+					},
+					"status": "Bad Request",
+					"code": 400,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "Unauthorized - User is a vendor/dish does not belong to vendor.",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish/:dishId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish",
+								":dishId"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								},
+								{
+									"key": "dishId"
+								}
+							]
+						}
+					},
+					"status": "Unauthorized",
+					"code": 401,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "Dish or vendor not found.",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish/:dishId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish",
+								":dishId"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								},
+								{
+									"key": "dishId"
+								}
+							]
+						}
+					},
+					"status": "Not Found",
+					"code": 404,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "Internal Server Error - An unexpected error occurred on the server.",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish/:dishId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish",
+								":dishId"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								},
+								{
+									"key": "dishId"
+								}
+							]
+						}
+					},
+					"status": "Internal Server Error",
+					"code": 500,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				}
+			]
+		},
+		{
+			"name": "Delete a dish from the menu Copy",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": "{{baseUrl}}/vendor/{{vendorIdInRange}}/dish/{{dishId1}}"
+			},
+			"response": [
+				{
+					"name": "Dish removed successfully from the menu.",
+					"originalRequest": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish/:dishId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish",
+								":dishId"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								},
+								{
+									"key": "dishId"
+								}
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "Bad Request - Dish not deleted.",
+					"originalRequest": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish/:dishId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish",
+								":dishId"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								},
+								{
+									"key": "dishId"
+								}
+							]
+						}
+					},
+					"status": "Bad Request",
+					"code": 400,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "Unauthorized - User is not a vendor/dish does not belong to vendor.",
+					"originalRequest": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish/:dishId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish",
+								":dishId"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								},
+								{
+									"key": "dishId"
+								}
+							]
+						}
+					},
+					"status": "Unauthorized",
+					"code": 401,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "Not Found - Dish or vendor not found.",
+					"originalRequest": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish/:dishId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish",
+								":dishId"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								},
+								{
+									"key": "dishId"
+								}
+							]
+						}
+					},
+					"status": "Not Found",
+					"code": 404,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "Internal Server Error - An unexpected error occurred.",
+					"originalRequest": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish/:dishId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish",
+								":dishId"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								},
+								{
+									"key": "dishId"
+								}
+							]
+						}
+					},
+					"status": "Internal Server Error",
+					"code": 500,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				}
+			]
+		},
+		{
+			"name": "Get details of a specific dish Copy",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Properties of the dish are correct\", function () {\r",
+							"    var jsonData = pm.response.json();\r",
+							"\r",
+							"    pm.expect(jsonData.name).to.eql(\"Dish 1\");\r",
+							"    pm.expect(jsonData.imageLink).to.eql(\"httpimagelink.com\");\r",
+							"    pm.expect(jsonData.price).to.eql(23.43);\r",
+							"    pm.expect(jsonData.isDeleted).to.be.true;\r",
+							"    pm.expect(jsonData.allergens).to.eql([\"Salt\", \"Vinegar\"]);\r",
+							"    pm.expect(jsonData.ingredients).to.eql([\"Pizza\", \"Mozarella\"]);\r",
+							"    pm.expect(jsonData.description).to.eql(\"Nice example dish\");\r",
+							"    pm.expect(jsonData.vendorId).to.eql(pm.globals.get(\"vendorIdInRange\")); \r",
+							"    pm.expect(jsonData.ID).to.eql(pm.globals.get(\"dishId1\")); \r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": "{{baseUrl}}/vendor/{{vendorIdInRange}}/dish/{{dishId1}}",
+				"description": "Get detailed information about a specific dish offered by the vendor."
+			},
+			"response": [
+				{
+					"name": "Detailed information about the specified dish.",
+					"originalRequest": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish/:dishId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish",
+								":dishId"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								},
+								{
+									"key": "dishId"
+								}
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"cookie": [],
+					"body": "{\n  \"ID\": \"<uuid>\",\n  \"name\": \"<string>\",\n  \"imageLink\": \"<string>\",\n  \"price\": \"<double>\",\n  \"isDeleted\": false,\n  \"allergens\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"ingredients\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"description\": \"<string>\",\n  \"vendorId\": \"<uuid>\"\n}"
+				},
+				{
+					"name": "Bad Request - Invalid request parameters.",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish/:dishId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish",
+								":dishId"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								},
+								{
+									"key": "dishId"
+								}
+							]
+						}
+					},
+					"status": "Bad Request",
+					"code": 400,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "Unauthorized - User is a vendor/dish does not belong to vendor.",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish/:dishId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish",
+								":dishId"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								},
+								{
+									"key": "dishId"
+								}
+							]
+						}
+					},
+					"status": "Unauthorized",
+					"code": 401,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "Dish or vendor not found.",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish/:dishId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish",
+								":dishId"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								},
+								{
+									"key": "dishId"
+								}
+							]
+						}
+					},
+					"status": "Not Found",
+					"code": 404,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				},
+				{
+					"name": "Internal Server Error - An unexpected error occurred on the server.",
+					"originalRequest": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/vendor/:vendorId/dish/:dishId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"vendor",
+								":vendorId",
+								"dish",
+								":dishId"
+							],
+							"variable": [
+								{
+									"key": "vendorId"
+								},
+								{
+									"key": "dishId"
+								}
+							]
+						}
+					},
+					"status": "Internal Server Error",
+					"code": 500,
+					"_postman_previewlanguage": "text",
+					"header": [],
+					"cookie": [],
+					"body": ""
+				}
+			]
+		}
+	]
+}

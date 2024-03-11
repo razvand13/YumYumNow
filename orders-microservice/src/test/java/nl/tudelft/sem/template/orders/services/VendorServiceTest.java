@@ -3,8 +3,12 @@ package nl.tudelft.sem.template.orders.services;
 import nl.tudelft.sem.template.model.Address;
 import nl.tudelft.sem.template.model.Dish;
 import nl.tudelft.sem.template.model.Order;
+import nl.tudelft.sem.template.model.Vendor;
 import nl.tudelft.sem.template.orders.external.PaymentMock;
 import nl.tudelft.sem.template.orders.external.VendorDTO;
+import nl.tudelft.sem.template.orders.integration.VendorFacade;
+import nl.tudelft.sem.template.orders.mappers.VendorMapper;
+import nl.tudelft.sem.template.orders.mappers.interfaces.IVendorMapper;
 import nl.tudelft.sem.template.orders.repositories.DishRepository;
 import nl.tudelft.sem.template.orders.repositories.OrderRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,6 +19,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -30,13 +35,17 @@ class VendorServiceTest {
 
     private Address vendorLocation;
     private Address customerLocation;
+    private VendorFacade vendorFacade;
+    private VendorMapper vendorMapper;
 
     @BeforeEach
     void setup() {
         dishRepository = mock(DishRepository.class);
         orderRepository = mock(OrderRepository.class);
+        vendorFacade = mock(VendorFacade.class);
+        vendorMapper = new VendorMapper();
         paymentMock = new PaymentMock();
-        vendorService = new VendorService(dishRepository, orderRepository, paymentMock);
+        vendorService = new VendorService(dishRepository, orderRepository, paymentMock, vendorFacade, vendorMapper);
         vendorLocation = new Address();
         customerLocation = new Address();
     }
@@ -196,4 +205,34 @@ class VendorServiceTest {
 
         assertThat(result).containsExactlyInAnyOrder(order1, order3);
     }
+
+    @Test
+    void testGetFilteredVendorEntitiesWithAllFilters() {
+        Address customerLocation = new Address();
+        customerLocation.setLatitude(5.0);
+        customerLocation.setLongitude(5.0);
+
+        List<VendorDTO> mockVendors = Arrays.asList(
+                new VendorDTO(UUID.randomUUID(), "Vendor1", false, "vendor1@example.com", true, customerLocation),
+                new VendorDTO(UUID.randomUUID(), "Vendor2", false, "vendor2@example.com", true, customerLocation)
+        );
+        when(vendorFacade.requestVendors()).thenReturn(mockVendors);
+
+        // Declare the variables as final
+        final String nameFilter = "Vendor1";
+        final Integer minAvgPrice = null;
+        final Integer maxAvgPrice = null;
+
+        List<Vendor> filteredVendors = vendorService.getFilteredVendorEntities(nameFilter,
+                minAvgPrice, maxAvgPrice, customerLocation);
+
+
+        assertThat(filteredVendors).hasSize(1);
+        assertThat(filteredVendors.get(0).getName()).isEqualTo(nameFilter);
+    }
+
+
+
+
+
 }
